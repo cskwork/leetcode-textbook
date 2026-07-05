@@ -1,0 +1,20 @@
+# Compiled Java class files
+*.class
+
+# macOS
+.DS_Store
+
+# Editor / IDE
+*.swp
+*~
+.idea/
+.vscode/
+*.iml
+
+# Build output
+build/
+out/
+target/
+
+# OS junk
+Thumbs.db
