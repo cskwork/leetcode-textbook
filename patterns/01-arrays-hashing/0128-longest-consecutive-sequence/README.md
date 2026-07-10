@@ -4,6 +4,16 @@
 **Pattern:** Arrays & Hashing
 **LeetCode:** https://leetcode.com/problems/longest-consecutive-sequence/
 
+## Concepts used
+
+- **Hash set** -- a container that answers "is x in here?" instantly (O(1)). We pour every value
+  in first, then query. [glossary](../../../docs/10-glossary.md#hash-set)
+- **Linear scan** -- walking the array (or the set) one value at a time.
+  [glossary](../../../docs/10-glossary.md#linear-scan)
+- **Amortized** -- occasionally expensive but cheap on average over many operations; this is why
+  the total work is O(n) despite an inner counting loop.
+  [glossary](../../../docs/10-glossary.md#amortized)
+
 ## Problem
 
 Given an unsorted array of integers `nums`, return the length of the longest sequence of
@@ -24,14 +34,56 @@ Examples:
 
 ## Intuition
 
-Sorting would give O(n log n) -- close, but the problem demands O(n). The hashing trick is: dump
-every value into a HashSet, which gives O(1) "is x present?" forever after. Now, a consecutive
-sequence is just a chain `x, x+1, x+2, ...` all present in the set. The crucial optimization: we
-must not walk the chain from every value -- that would revisit numbers and blow up to O(n^2).
-Instead, walk the chain **only from its start**. A value `x` is a start exactly when `x - 1` is
-*not* in the set (nothing comes before it). For every start we count how long the chain runs; for
-non-starts we do nothing. Each value is touched by a chain-walk at most once across the whole run,
-so the total work is O(n).
+You hold a handful of numbered raffle tickets and want the longest unbroken run -- something like
+5, 6, 7, 8. You could sort the pile first, but that is slower than the problem allows. Instead,
+dump every ticket into a hat. Then for each ticket, ask the hat "do you hold the next numbers up?"
+and count how far the run extends. The trick is to start counting only from a ticket whose
+predecessor is NOT in the hat -- otherwise you recount the same run over and over.
+
+Walk the smallest case, `nums = [100, 4, 200, 1, 3, 2]`. The hat holds
+`{1, 2, 3, 4, 100, 200}`. Pick `1`: is `0` in the hat? No -- so `1` begins a run. `1, 2, 3, 4`
+are all in the hat; `5` is not. Run length `4`. Pick `2`: is `1` in the hat? Yes -- skip, this is
+not a start. The longest run found is `4`.
+
+The general rule: first pour every value into a [hash set](../../../docs/10-glossary.md#hash-set),
+which makes "is `x` present?" an O(1) question forever after. A consecutive sequence is simply a
+chain `x, x+1, x+2, ...` whose every member is in the set. The key move: walk a chain only from
+its leftmost value. A value `x` is the leftmost exactly when `x - 1` is NOT in the set (nothing
+comes before it). For every such start, count upward how long the chain runs, and track the
+longest.
+
+Why does the start-guard keep this O(n)? Without it, you would walk the chain from every element
+and revisit the same numbers many times -- O(n^2) in the worst case (think
+`nums = [1, 2, 3, ..., n]`). With the guard, each value belongs to at most one chain and is
+visited at most once across the whole scan, so the total chain-walking is O(n)
+([amortized](../../../docs/10-glossary.md#amortized): a single chain may be long, but summed over
+all starts the work is bounded by `n`).
+
+### Checkpoint A -- The start-guard
+
+Pause before expanding.
+
+**Q1 (recall).** A value `x` is treated as the START of a sequence only when...
+- a) `x` is the smallest in the array
+- b) `x - 1` is NOT in the set
+- c) `x + 1` is in the set
+
+<details><summary>Show answer</summary>
+
+**(b)** -- if `x - 1` is absent, nothing comes before `x`, so `x` is the leftmost of its run and we count upward from here. This guard is what keeps the whole algorithm O(n).
+
+</details>
+
+**Q2 (comprehend).** Without the start-guard, why would the solution become O(n^2)?
+- a) The set would be too large
+- b) Every element would re-walk its chain; on input like [1,2,...,n] the chain is walked n times for ~n^2 total steps
+- c) Sorting would be required
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the guard ensures each value is walked by a chain at most once. Without it, every element of a long consecutive run re-traverses the same run, blowing up to quadratic.
+
+</details>
 
 ## Pseudocode
 
@@ -109,6 +161,38 @@ Output: `4` (the chain `1, 2, 3, 4`).
 
 Notice only the three starts (100, 200, 1) did any chain-walking; 4, 3, 2 were skipped because
 each has a predecessor in the set.
+
+### Checkpoint B -- Trace and edge cases
+
+**Q1 (apply).** Set = `{1, 2, 3, 4, 100, 200}`. Which values trigger chain-walking, and what is `best`?
+- a) Every value walks; best = 4
+- b) Only 1, 100, 200 walk (their predecessors are absent); best = 4
+- c) Only 4 walks; best = 4
+
+<details><summary>Show answer</summary>
+
+**(b)** -- 1, 100, 200 have no predecessor in the set, so each starts a chain. 1's chain runs 1,2,3,4 (length 4); the others are length 1. `best = 4`.
+
+</details>
+
+**Q2 (analyze).** What does `longestConsecutive([])` return, and which line makes it work?
+- a) Throws; the set is empty
+- b) `0` -- the set is empty so the loop never runs and `best` stays at its initial 0
+- c) `1`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- an empty array yields an empty set, the for-each body executes zero times, and `best` initialized to 0 is returned. No special case needed.
+
+</details>
+
+**Q3 (transfer).** If the O(n) constraint were dropped, what simpler approach would you use, and what would it cost?
+
+<details><summary>Show answer</summary>
+
+Sort the array, then one pass counting adjacent differences of exactly 1. Simpler to write, but O(n log n) due to the sort -- which is exactly why this problem forbids it.
+
+</details>
 
 ## Common mistakes
 

@@ -158,6 +158,69 @@ the BST ordering property turns harder checks into simple comparisons.
   uses `O(n)` stack space and can `StackOverflowError` on very large inputs. Iterative traversal
   (an explicit stack or Morris threading) is the escape hatch, but is rarely required on LeetCode.
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what is the single move that solves almost every tree problem in this pattern?
+
+<details><summary>Show answer</summary>
+
+Solve the same problem on the left subtree, solve it on the right subtree, then combine the two answers at the current node -- guarded by a `node == null` base case. Everything else is variations on what "combine" means.
+
+</details>
+
+**Q2 (pattern recognition).** A new problem: "given the root of a binary tree, return the average value of the nodes at each depth." Which technique fits?
+- a) DFS postorder
+- b) BFS level-order with a queue, summing each level
+- c) Inorder traversal
+
+<details><summary>Show answer</summary>
+
+**(b)** -- "at each depth" / "by level" is the level-order trigger. Snapshot the level size, sum the row, divide by its count, repeat per row.
+
+</details>
+
+**Q3 (pattern recognition).** A new problem: "given a BST, find the node whose value is closest to a target `T`." Which approach is best?
+- a) BFS level-order
+- b) Exploit the BST ordering: descend left or right by comparing each node to `T`, tracking the closest seen -- `O(h)`
+- c) Full inorder into a list, then scan
+
+<details><summary>Show answer</summary>
+
+**(b)** -- it is a BST problem, so one comparison per node tells you which subtree `T` lives in. A single descending walk reaches the relevant region in `O(h)` while remembering the nearest value seen.
+
+</details>
+
+**Q4 (apply).** Trace `isBalanced` on this right-skewed chain:
+
+```
+1
+ \
+  2
+   \
+    3
+```
+
+What is returned, and where does the `-1` sentinel first fire?
+- a) `false`; `-1` first fires at the root (node `1`)
+- b) `false`; `-1` first fires at node `2`
+- c) `true`; the tree is balanced
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `checkHeight(3)=1`, `checkHeight(2)=2` (`|0-1|=1`, ok), but `checkHeight(1)` sees left height `0` and right height `2`, difference `2 > 1`, so it returns `-1`. The root is where the imbalance is first detected.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) how to check whether a binary tree `s` *contains* another binary tree `t` as an exact subtree -- that is, some node of `s` roots a subtree identical to `t`.
+
+<details><summary>Show answer</summary>
+
+Walk `s` (DFS or BFS). At each node, run the Same Tree twin DFS (problem 0100) comparing that node's subtree against `t`; if any check returns `true`, the answer is `true`. The only new idea is applying the existing pair-check at every node of `s` rather than just once at the roots.
+
+</details>
+
 ---
 
 Next problem: [0226 - Invert Binary Tree](./0226-invert-binary-tree/).

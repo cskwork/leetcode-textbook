@@ -4,6 +4,13 @@
 **Pattern:** Binary Search
 **LeetCode:** https://leetcode.com/problems/search-in-rotated-sorted-array/
 
+## Concepts used
+
+- **Binary search** -- narrowing a range by halves to find a target index. [glossary](../../../docs/10-glossary.md#binary-search)
+- **Array** -- a row of numbered slots holding values, read instantly by position. [glossary](../../../docs/10-glossary.md#array)
+- **Sorting** -- putting values in order so each value tells you about its neighbours. [glossary](../../../docs/10-glossary.md#sorting)
+- **Invariant** -- a condition that is always true at the start of every loop iteration. [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 Given the array `nums` of **distinct** integers sorted in ascending order and
@@ -29,34 +36,66 @@ Examples (verbatim from LeetCode):
 
 ## Intuition
 
-This is LC 153 with an extra twist: instead of just *finding the minimum*, we
-*find a target*. The trigger signals are "rotated sorted array" and "O(log n)".
-The challenge is identical to 153 -- a rotated array is not globally sorted, so
-a naive midpoint comparison does not tell you which half to keep. But the same
-invariant saves us: **at every step, at least one of the two halves is sorted**,
-and a sorted half is the only thing we need to decide where the target lives.
+A *rotated* sorted array is a sorted array with the last few elements moved to
+the front, so it looks like two sorted chunks glued at one drop:
+`[4, 5, 6, 7, 0, 1, 2]` is `[4,5,6,7]` followed by `[0,1,2]`. (LC 153 explains
+rotation in full.) This problem asks the same thing as LC 704 -- find a target's
+index -- but on a rotated array, so a plain middle-comparison no longer tells
+you which half to keep.
 
-The recipe at each step is therefore:
+The saving grace is the same as in LC 153: **at every step, at least one of the
+two halves is normally sorted.** A sorted half is the only thing that lets us
+reason about where the target is, so each step asks two questions, always in
+this order:
 
-1. Compute `mid`. If `nums[mid] == target`, done.
-2. Otherwise, figure out **which half is sorted** by comparing `nums[mid]`
-   against `nums[lo]`.
-   - If `nums[lo] <= nums[mid]`, the **left** half `[lo..mid]` is sorted. With a
-     sorted half in hand, we can test membership with two comparisons: if
-     `nums[lo] <= target < nums[mid]`, the target *must* be in that left half,
-     so search there; otherwise the target *cannot* be in the left half, so
-     search the right half.
-   - Else the **right** half `[mid..hi]` is sorted, and we use the symmetric
-     test: if `nums[mid] < target <= nums[hi]`, search the right half;
-     otherwise search the left half.
+1. *Which half is sorted?* Compare `nums[mid]` against `nums[lo]`.
+2. *Is the target inside that sorted half?* If yes, search there; if no, it must
+   be in the other half.
 
-The crucial habit -- and the classic beginner mistake -- is to **first** decide
-which half is sorted, and *only then* ask where the target is. Comparing
-`nums[mid]` against `target` before you know which half is sorted sends you into
-the wrong half on rotated inputs.
+Trace `nums = [4, 5, 6, 7, 0, 1, 2]`, `target = 0` (answer index `4`):
 
-This is Template A (`while (lo <= hi)`, both pointers move by `±1`), because we
-want an *exact* index and we return from inside the loop on a hit.
+1. `lo = 0, hi = 6, mid = 3`, `nums[mid] = 7`. Which half is sorted?
+   `nums[lo] = 4 <= nums[mid] = 7`, so the *left* half `[4,5,6,7]` is sorted.
+   Is `0` inside `[4, 7)`? No -- so `0` must be in the other half. Discard the
+   left: `lo = 4`.
+2. `lo = 4, hi = 6, mid = 5`, `nums[mid] = 1`. Which half is sorted?
+   `nums[lo] = 0 <= nums[mid] = 1`, so the left half `[0, 1]` is sorted. Is `0`
+   inside `[0, 1)`? Yes -- search there: `hi = 4`.
+3. `lo = 4, hi = 4, mid = 4`, `nums[mid] = 0 == target` -- return `4`.
+
+The **invariant** is LC 704's: *if the target is in the array, it lies in
+`[lo, hi]`.* The only difference is that, because the array is rotated, we
+cannot decide which half to discard just by comparing `nums[mid]` to the target
+-- we must first identify the sorted half and test the target against *its*
+known range. The classic beginner mistake is to compare `nums[mid]` to the
+target *before* finding the sorted half; on a rotated array that comparison is
+meaningless and sends you into the wrong half.
+
+### Checkpoint A -- Find the sorted half first
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** After the exact-match check fails, what is the FIRST thing the loop decides each iteration?
+- a) Which half is sorted, by testing `nums[lo] <= nums[mid]`
+- b) Whether the target is bigger than `nums[mid]`
+- c) Whether the array is rotated
+
+<details><summary>Show answer</summary>
+
+**(a)** -- on a rotated array a bare `nums[mid]` vs `target` comparison tells you nothing, so you first locate the one sorted half and reason against its known range.
+
+</details>
+
+**Q2 (comprehend).** On `nums = [4,5,6,7,0,1,2]`, `target = 0`, iteration 1 finds `nums[mid] = 7` and the left half `[4,5,6,7]` is sorted. Why is the left half then DISCARDED (`lo = mid + 1`)?
+- a) The target 0 is not in the sorted left half's range `[4, 7)`, so it must be in the other half
+- b) Because the left half has already been searched
+- c) Because 7 is the largest value in the array
+
+<details><summary>Show answer</summary>
+
+**(a)** -- once a half is known sorted, you can test the target against its range; if it is outside, the target can only be in the other half.
+
+</details>
 
 ## Pseudocode
 
@@ -162,6 +201,38 @@ Dry-run for a miss, `nums = [4, 5, 6, 7, 0, 1, 2]`, `target = 3`
 
 Each iteration the target is found *not* in the sorted half, so we go to the
 other half until the range empties.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `nums = [6, 7, 0, 1, 2, 3, 4]`, `target = 6`. What is returned?
+- a) `0` (index of 6)
+- b) `-1`, target not found
+- c) `1`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- iter 1: `mid=3 (1)`, right half sorted, `6` not in `(1,4]` -> `hi=2`; iter 2: `mid=1 (7)`, left half `[6,7]` sorted, `6` in `[6,7)` -> `hi=0`; iter 3: `nums[0]=6==6`, return `0`.
+
+</details>
+
+**Q2 (analyze).** Why is the test `nums[lo] <= nums[mid]` written with `<=`, not `<`? Think about a two-element range where `lo == mid`.
+- a) On a two-element range `lo == mid`, so strict `<` would wrongly call the right half sorted and send the search the wrong way
+- b) To avoid integer overflow
+- c) It makes no difference; `<` would work identically
+
+<details><summary>Show answer</summary>
+
+**(a)** -- when `lo == mid` the left "half" is a single element and is sorted; the `<=` correctly classifies it instead of misrouting into the right branch.
+
+</details>
+
+**Q3 (transfer).** Why does this algorithm degrade toward O(n) on an array WITH duplicates? What comparison becomes uninformative?
+
+<details><summary>Show answer</summary>
+
+With duplicates, `nums[lo] <= nums[mid]` can be true even when the left half is not really sorted (equal values spanning the rotation), so the "which half is sorted" test becomes unreliable and you can no longer guarantee halving every step.
+
+</details>
 
 ## Common mistakes
 

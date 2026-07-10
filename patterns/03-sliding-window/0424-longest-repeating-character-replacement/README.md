@@ -4,6 +4,12 @@
 **Pattern:** Sliding Window
 **LeetCode:** https://leetcode.com/problems/longest-repeating-character-replacement/
 
+## Concepts used
+
+- **Array** (as a frequency table) -- a row of numbered slots; here 26 slots, one per uppercase letter, each holding that letter's count inside the window. [glossary](../../../docs/10-glossary.md#array)
+- **Sliding window** -- expand `right` to grow the window; when a budget is exceeded, shrink `left` until it is valid again. [glossary](../../../docs/10-glossary.md#sliding-window)
+- **Invariant** -- a condition always true at each loop step; here, "the window needs at most `k` replacements to become one repeated letter". [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 You are given a string `s` consisting of **uppercase English letters** and an integer
@@ -30,17 +36,66 @@ Example 2:
 
 ## Intuition
 
-Trigger signal: "longest substring with a constraint". For any window, the minimum
-number of replacements needed to make it all one letter is
+You have a row of letters and a budget of `k` erasers. One eraser turns one letter into any
+other letter. You want the longest stretch of the row you can turn into all-the-same-letter
+using at most `k` erasers. Slide a magnifying glass across the row; whenever making the
+letters inside all match would cost more than `k` erasers, slide the glass's left edge
+forward until you are back under budget.
 
-    (window length) - (count of the most frequent letter in the window)
+The key insight: for any window, the fewest changes needed to make every letter the same is
 
-because the most frequent letter is the one worth keeping; everything else must change.
-So the problem becomes: find the longest window for which that quantity is `<= k`. A
-variable-size window slides across `s`; whenever the replacement cost exceeds `k`,
-shrink from the left until it is back in budget. Because the alphabet is fixed at 26
-uppercase letters, the "most frequent letter in the window" is an O(26) scan of a small
-frequency array -- constant time per step.
+    (window length) - (count of the most common letter in the window)
+
+because you keep the most common letter and erase all the others. So a window is "valid"
+exactly when `window length - max count <= k`.
+
+Smallest example, `s = "ABAB", k = 2`:
+
+- right=0 'A': window "A", max count 1, cost 1 - 1 = 0 <= 2. Length 1.
+- right=1 'A': "AB", max count 1, cost 2 - 1 = 1 <= 2. Length 2.
+- right=2 'B': "ABA", max count 2, cost 3 - 2 = 1 <= 2. Length 3.
+- right=3 'B': "ABAB", max count 2, cost 4 - 2 = 2 <= 2. Length 4. Best = 4.
+
+The second example, `s = "AABABBA", k = 1`, gives best 4 (replace one middle 'B' to get a
+window of four 'A's).
+
+General rule: keep a frequency array of 26 counts. Expand `right` (add one letter, bump its
+count). While `window length - max count > k`, shrink `left` (remove one letter, drop its
+count). After each step the window is valid, so update the best length.
+
+The **invariant** is: *after the shrink loop, the window needs at most `k` replacements*. We
+only stop shrinking once the cost is back within budget, so every `best` update sees a valid
+window. Because the alphabet is fixed at 26 letters, recomputing the max count each step is
+O(26) -- constant time -- and keeps the budget test honest.
+
+This is a variable-size sliding window like [0003 Longest Substring Without Repeating Characters](../0003-longest-substring-without-repeating-characters/),
+but the validity check counts frequencies instead of testing for zero repeats.
+
+### Checkpoint A -- The replacement budget
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** A window is "valid" (needs at most `k` replacements) exactly when which condition holds?
+- a) `window length == max count`
+- b) `window length - max count <= k`
+- c) `max count <= k`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- keep the most frequent letter and erase all others, so the cost is `length - max count`; the window is valid while that cost stays within `k`.
+
+</details>
+
+**Q2 (comprehend).** Why use `max(freq)` (the most frequent letter's count) rather than `freq[s[right]]` (the just-arrived letter's count)?
+- a) The optimal letter to keep is whichever is most common, which may not be the one that just arrived
+- b) The current letter is always the most common
+- c) It avoids an array lookup
+
+<details><summary>Show answer</summary>
+
+**(a)** -- to minimise replacements you keep the majority letter. Basing the cost on the current letter alone would over-count erasures whenever some other letter dominates the window.
+
+</details>
 
 ## Pseudocode
 
@@ -118,6 +173,38 @@ Step-by-step on `s = "AABABBA", k = 1` (A=0, B=1):
 | 6     | A  | [2,3]                | 3   | 5        | 2         | yes  | freq[s[2]=B]-- -> [2,2]; left=3; win=4; 4-2=2>1 yes; freq[s[3]=A]-- -> [1,2]; left=4; win=3; 3-2=1>1 no, stop | 4 | 4 |
 
 Return `4`.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `s = "ABBC", k = 1`. What is returned?
+- a) 2
+- b) 3
+- c) 4
+
+<details><summary>Show answer</summary>
+
+**(b)** -- right=0..2 build "ABB" (max count 2, cost 1, best 3). At right=3 'C' the window "ABBC" has cost 4-2=2 > 1, so `left` shrinks past 'A' to give window "BBC" of size 3 (cost 3-2=1). Best stays 3.
+
+</details>
+
+**Q2 (analyze).** Trace `s = "AAAA", k = 2`. Does any shrink happen, and what is returned?
+- a) No shrink ever fires; cost is always 0, so best climbs to 4
+- b) It shrinks at every step and returns 1
+- c) It returns 2
+
+<details><summary>Show answer</summary>
+
+**(a)** -- every added 'A' keeps max count equal to the window length, so `length - max = 0 <= 2` at all times; the while-loop body never runs and best reaches 4.
+
+</details>
+
+**Q3 (transfer).** How would you adapt the solution for a string of lowercase letters (a-z) plus digits?
+
+<details><summary>Show answer</summary>
+
+Swap `int[26]` for a frequency container indexed by the actual character, e.g. `int[128]` indexed by the char's ASCII value (or a `HashMap<Character,Integer>`). The `window - maxFreq <= k` logic is identical; only the alphabet width changes.
+
+</details>
 
 ## Common mistakes
 

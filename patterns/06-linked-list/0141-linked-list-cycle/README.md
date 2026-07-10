@@ -4,6 +4,12 @@
 **Pattern:** Linked List
 **LeetCode:** https://leetcode.com/problems/linked-list-cycle/
 
+## Concepts used
+
+- **Linked list** -- a chain of nodes where each node stores a value and an arrow (pointer) to the next node. [glossary](../../../docs/10-glossary.md#linked-list)
+- **Two pointers** -- a slow pointer (one step) and a fast pointer (two steps) that collide if a loop exists. [glossary](../../../docs/10-glossary.md#two-pointers)
+- **Cycle** -- a path that returns to a node already visited; here a node's arrow points back to an earlier node instead of to `null`. [glossary](../../../docs/10-glossary.md#cycle)
+
 ## Problem
 
 Given `head`, the head of a linked list, determine whether the list has a cycle in it. A
@@ -29,18 +35,72 @@ Examples:
 
 ## Intuition
 
-The brute-force idea is "remember every node I have visited in a Set; if I ever see a node
-twice, there is a cycle". That is O(n) time but O(n) space. We can do it in O(1) space with
-**Floyd's slow / fast technique**. Send two pointers out from the head: `slow` takes one
-step per turn, `fast` takes two. If there is no cycle, `fast` simply reaches the end first
-and we report false. If there *is* a cycle, `fast` enters the loop and runs forever -- but
-because it moves one extra node per turn relative to `slow`, it gains on `slow` by one node
-each step, and on a closed loop it is mathematically guaranteed to land on top of `slow`.
-The moment they point to the *same node*, a cycle is proven.
+The simplest detection idea is "remember every node I visit in a set; if I ever
+see one twice, there is a loop." That works but costs O(n) memory. We can detect
+a loop with **zero** extra memory using a footrace.
 
-Why the gain must close the gap: once both are inside the cycle, the distance (gap) between
-them shrinks by 1 each step (fast gains 1, modulo the cycle length). A gap of `g` reaches 0
-in at most `g` steps -- it never skips over `slow` because the gap changes by exactly 1.
+Analogy: two runners share a track that may or may not loop back on itself. They
+start together; the slow runner takes one step per tick, the fast runner takes
+two. On a straight track the fast runner simply reaches the end first, and we
+report "no loop". But if the track bends into a
+[cycle](../../../docs/10-glossary.md#cycle), the fast runner enters the loop and
+circles forever -- and because he gains exactly one step on the slow runner every
+tick, he *must* eventually lap her. The moment they share the same spot, a loop
+is proven. (This footrace is widely called Floyd's algorithm, but the
+"fast runner laps the slow runner" picture is all you need; we never invoke the
+name as if it were magic.)
+
+A [linked list](../../../docs/10-glossary.md#linked-list) is exactly such a
+track: each node holds a value and a *pointer* -- an arrow to the next node. A
+cycle means some node's arrow points backward to an earlier node instead of
+forward to `null`.
+
+Smallest meaningful case, `1 -> 2 -> 3 -> 2` (node `3` points back to node `2`,
+so the loop is `2 -> 3 -> 2`). Track the two runners (each tick: slow moves one
+arrow, fast moves two):
+
+| tick | slow | fast                                   |
+|------|------|----------------------------------------|
+| 0 (start) | 1 | 1                                  |
+| 1    | 2    | 3 (fast: 1->2->3)                      |
+| 2    | 3    | 3 (fast: 3->2->3) -- collide on node 3|
+
+At tick 2 both runners stand on node `3` -- collision, return `true`.
+
+Why must the fast runner always catch up, never skip past forever? Once both are
+inside the loop, the gap between them (measured around the loop) shrinks by
+exactly 1 each tick: the fast runner gains one node, so a gap of `g` reaches 0 in
+at most `g` ticks. Because the gap changes by exactly 1, it can never *jump over*
+the slow runner -- it lands on her precisely. This is
+[two pointers](../../../docs/10-glossary.md#two-pointers) with different step
+sizes; the loop condition `fast != null && fast.next != null` guarantees that a
+flat tail (no cycle) is detected without a null-pointer crash.
+
+### Checkpoint A -- The runner picture
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** On each tick, how far do the two pointers move?
+- a) slow: 1 node, fast: 2 nodes
+- b) slow: 2 nodes, fast: 1 node
+- c) both: 1 node
+
+<details><summary>Show answer</summary>
+
+**(a)** -- slow advances one `.next`, fast advances two (`.next.next`); that one-step-per-tick gain is what lets fast lap slow inside a loop.
+
+</details>
+
+**Q2 (comprehend).** Why is the loop condition `fast != null && fast.next != null` rather than just `while fast != null`?
+- a) Because the next line dereferences `fast.next.next`, so both `fast` and `fast.next` must exist or it crashes
+- b) To make the loop finish sooner
+- c) Because `slow` might be `null`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- reading `fast.next.next` needs `fast` and `fast.next` to be non-null; Java's `&&` short-circuits so checking them first prevents an NPE on a flat tail.
+
+</details>
 
 ## Pseudocode
 
@@ -113,6 +173,38 @@ false, exit, return `false`.
 
 Edge cases: empty list -- `fast` starts null, loop skipped, return false. Single node with a
 self-cycle (`pos = 0`) -- step 1 slow=head, fast=head.next.next=head, both on head, true.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `hasCycle` on `head = [1, 2, 3]` with no cycle (`pos = -1`). What is returned, and why does the loop stop?
+- a) `true`, at step 1
+- b) `false`, because `fast.next` is `null` on the last node so the condition fails
+- c) `false`, because `slow` reaches the end first
+
+<details><summary>Show answer</summary>
+
+**(b)** -- after one tick slow is on 2 and fast is on 3; the next check finds `fast.next` is `null`, the loop exits, and control reaches the final `return false`.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if you compare `slow == fast` *before* either pointer has moved?
+- a) Nothing -- it is a harmless extra check
+- b) Both start at the head, so even a flat list falsely reports a cycle
+- c) It throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- at the starting line both pointers are `head`, so the comparison is instantly true; the check must come *after* the moves.
+
+</details>
+
+**Q3 (transfer).** If you were allowed O(n) memory, how would you detect a cycle in a simpler way?
+
+<details><summary>Show answer</summary>
+
+Walk the list and drop each visited node into a `HashSet`; the first node already in the set is where the cycle begins. It uses more memory than the runner trick, but it is simpler to reason about and also finds the cycle's entry point directly.
+
+</details>
 
 ## Common mistakes
 

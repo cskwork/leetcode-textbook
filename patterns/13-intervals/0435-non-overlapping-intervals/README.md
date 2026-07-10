@@ -57,6 +57,32 @@ to the choice the argument proved safe.
 After sorting by end, the algorithm is one walk: keep each interval whose
 start is at or past the previous kept interval's end; otherwise remove it.
 
+### Checkpoint A -- Greedy by end
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** To minimize the number of intervals removed, the algorithm sorts by:
+- a) Start, ascending
+- b) End, ascending
+- c) Interval length
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the exchange argument licenses committing to the earliest-ending interval first, which leaves the most room for everything after it. This is the line that separates this problem from Merge Intervals.
+
+</details>
+
+**Q2 (comprehend).** Why sort by end and not by start? Think about `[[1,10],[2,3],[4,5]]`:
+- a) End-sort keeps the two short intervals and removes only the long one (answer 1); start-sort would wrongly keep the long one and remove two
+- b) Both sort keys give the same answer on this input
+- c) Start-sort is correct and end-sort is wrong
+
+<details><summary>Show answer</summary>
+
+**(a)** -- a long interval that starts early but ends late blocks several short ones if you sort by start. Sorting by end greedily commits to the choice the exchange argument proved safe.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -158,6 +184,38 @@ Had we sorted by start instead (`[[1,10],[2,3],[4,5]]`), the walk would
 keep `[1,10]` (prevEnd = 10), then be forced to drop both `[2,3]` and
 `[4,5]`, returning `2` — the wrong answer. This is exactly why the
 sort key is END for the min-removal flavour.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `intervals = [[1,2],[1,2],[1,2]]` after sorting by end. What is returned?
+- a) 0
+- b) 1
+- c) 2
+
+<details><summary>Show answer</summary>
+
+**(c)** -- sorted by end the order is unchanged (all tie). Step 1 keeps `[1,2]` (`prevEnd = 2`); steps 2 and 3 each have `start 1 >= 2`? no, so each is removed. `removed = 2`.
+
+</details>
+
+**Q2 (analyze).** On `[[1,2],[2,3]]` the keep test is `cur.start >= prevEnd`. What would happen if you wrote `cur.start > prevEnd` (strict) instead?
+- a) Correct: returns 0
+- b) Wrong: returns 1, because the touching pair `[1,2]`/`[2,3]` would be flagged as conflicting
+- c) It throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- touching intervals are compatible in this problem. With `>`, `[2,3]` (`start 2`) versus `prevEnd 2` gives `2 > 2` false, so it is removed and the answer becomes 1 instead of 0.
+
+</details>
+
+**Q3 (transfer).** Suppose in a variant touching intervals ARE considered overlapping (the opposite rule from this problem). What single change adapts the algorithm?
+
+<details><summary>Show answer</summary>
+
+Change the keep test from `cur.start >= prevEnd` to `cur.start > prevEnd`. The sort-by-end key and the greedy rule stay the same; only the compatibility operator flips to match the new touching rule.
+
+</details>
 
 ## Common mistakes
 

@@ -4,6 +4,11 @@
 **Pattern:** Linked List
 **LeetCode:** https://leetcode.com/problems/add-two-numbers/
 
+## Concepts used
+
+- **Linked list** -- a chain of nodes where each node stores one digit and an arrow (pointer) to the next node; digits are stored least-significant first. [glossary](../../../docs/10-glossary.md#linked-list)
+- **Sentinel (dummy head)** -- a throwaway node in front of the real head, so the first result digit is attached the same way as every other. [glossary](../../../docs/10-glossary.md#sentinel)
+
 ## Problem
 
 You are given two non-empty linked lists, `l1` and `l2`, representing two non-negative
@@ -28,16 +33,63 @@ Examples:
 
 ## Intuition
 
-This is grade-school column addition, played out across two pointers. Because the digits are
-in reverse (least-significant first), we can walk both lists from their heads and add column
-by column -- exactly how you add on paper, right to left. Each column produces one digit of
-the answer plus a `carry` (0 or 1) that propagates to the next column. The only subtlety
-versus paper: the two lists may have different lengths, and a carry can survive past the last
-digit of both (e.g. 5 + 5 = 10 needs an extra node for the leading 1).
+This is grade-school column addition, the way you add two numbers on paper from
+right to left. Each column produces one digit of the answer plus a *carry* --
+the small "1" you write on top of the next column when a column sums to 10 or
+more. The only twist: here the digits live in
+[linked lists](../../../docs/10-glossary.md#linked-list) -- each node holds one
+digit and a *pointer* (an arrow to the next node) -- and they are stored
+*reversed*, least-significant digit first. That reversal is a gift: it means we
+can start at the heads and add column by column exactly as on paper, with no
+reversing needed up front.
 
-The result is built node-by-node as we go, so this is another **dummy head** problem: a
-throwaway node in front lets us attach the first digit without a special case, and we return
-`dummy.next` at the end.
+Smallest meaningful case, `l1 = 2 -> 4 -> 3` (the number 342) and
+`l2 = 5 -> 6 -> 4` (465). Expected sum 807, written reversed as `7 -> 0 -> 8`.
+
+- Column 1 (the heads): 2 + 5 = 7. Write `7`, carry 0.
+- Column 2: 4 + 6 = 10. Write `0`, carry 1.
+- Column 3: 3 + 4 + 1 (carry) = 8. Write `8`, carry 0.
+- Result so far: `7 -> 0 -> 8`, which read as a number is 807. Correct.
+
+The general rule: walk both lists together, add the two visible digits plus any
+carry from the previous column, write `sum % 10` as the new digit, and carry
+`sum / 10` into the next column. Because two single digits plus a carry of 1
+total at most 19, the carry is always 0 or 1.
+
+Two details make it bullet-proof, and both are classic beginner traps. First, the
+lists may be different lengths -- when one runs out, treat its missing digit as
+`0` and keep going. Second, a carry can survive *past* the last digit of both
+lists (5 + 5 = 10 needs an extra node for the leading 1), so the loop must also
+run one more time while a carry remains. We build the answer node by node, so
+this is a **dummy head** problem: a throwaway node in front of the real head (a
+[sentinel](../../../docs/10-glossary.md#sentinel)) lets us attach the first
+digit exactly like every other digit, and we return `dummy.next` at the end.
+
+### Checkpoint A -- Column addition with a carry
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** Each list stores its number with which digit at the head?
+- a) The most significant digit
+- b) The least significant digit (the ones place)
+- c) A random digit
+
+<details><summary>Show answer</summary>
+
+**(b)** -- digits are reversed on purpose, least-significant first, so column addition can stream straight from the head with no reversing.
+
+</details>
+
+**Q2 (comprehend).** Why does the loop condition include `|| carry != 0`?
+- a) To skip empty lists
+- b) Because a carry can survive past the last digit of both lists (e.g. 5 + 5 = 10 needs an extra node)
+- c) To reverse the output
+
+<details><summary>Show answer</summary>
+
+**(b)** -- once both lists end, a leftover carry (0 or 1) may still need its own node; that third clause runs one extra iteration to emit it.
+
+</details>
 
 ## Pseudocode
 
@@ -128,6 +180,38 @@ Final-carry case `l1 = [5]`, `l2 = [5]`: iter 1 sum = 0+5+5 = 10, digit 0, carry
 both inputs null but carry = 1, so the condition `carry != 0` fires, sum = 1, digit 1, carry
 0. Output `[0, 1]` = 10. Correct -- without the `carry != 0` clause we would have dropped the
 leading 1.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `addTwoNumbers(l1 = [9, 9], l2 = [1])` (that is, 99 + 1). What is returned?
+- a) `[0, 0, 1]`
+- b) `[1, 0, 0]`
+- c) `[0, 1]`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- column 1: 9+1 = 10, write 0 carry 1; column 2: 9+0+1 = 10, write 0 carry 1; then `carry != 0` fires to write the final 1, giving `0 -> 0 -> 1` (100).
+
+</details>
+
+**Q2 (analyze).** With a buggy condition `while l1 != null && l2 != null`, what does `addTwoNumbers([5], [5])` return?
+- a) `[0, 1]` (correct)
+- b) `[0]` -- the carry node is dropped because the loop stops as soon as both inputs are exhausted
+- c) `[10]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the single iteration writes 0 and sets carry 1, but then both lists are null so the loop ends immediately, silently dropping the leading 1.
+
+</details>
+
+**Q3 (transfer).** How would the approach change if the digits were stored MOST-significant-first instead?
+
+<details><summary>Show answer</summary>
+
+Carries flow toward the more-significant end, so you can no longer stream from the head. The clean fix is to reverse both input lists first, run this same column-addition solution, then reverse the result -- reusing Reverse Linked List as a setup step.
+
+</details>
 
 ## Common mistakes
 

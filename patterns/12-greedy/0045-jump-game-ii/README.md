@@ -4,6 +4,12 @@
 **Pattern:** Greedy
 **LeetCode:** https://leetcode.com/problems/jump-game-ii/
 
+## Concepts used
+
+- **Greedy** -- make the locally-best choice at each step and never revisit it; works only when you can prove that choice is part of some optimal solution. [glossary](../../../docs/10-glossary.md#greedy)
+- **Array** -- a row of numbered slots holding values, accessed by position in O(1). [glossary](../../../docs/10-glossary.md#array)
+- **Invariant** -- a condition that is always true at the start of every loop iteration; stating it clearly is how you prove a loop correct. [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 Same setup as Jump Game: integer array `nums`, you start at index `0`, and
@@ -53,6 +59,32 @@ this is one-dimensional BFS where the "neighbours" are implicit in
 `nums[i]`. The local choice ("take the whole next level") is safe because
 any minimum-jump solution must pass through some index in each level, and
 the level boundary is the same regardless of which index you picked.
+
+### Checkpoint A -- Levels and boundaries
+
+Pause and answer before expanding.
+
+**Q1 (recall).** What does `currentEnd` represent?
+- a) The last index of the array
+- b) The farthest index reachable using the current jump count
+- c) The total number of jumps so far
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `currentEnd` is the boundary of the current "level"; `farthest` is the boundary of the next level, still being built.
+
+</details>
+
+**Q2 (comprehend).** The jump counter is incremented when:
+- a) Every time the loop visits a new index
+- b) The cursor `i` reaches `currentEnd` -- the current level is fully explored
+- c) `nums[i]` is large
+
+<details><summary>Show answer</summary>
+
+**(b)** -- incrementing only at the level boundary is what gives the *minimum* count; incrementing per index would give the maximum.
+
+</details>
 
 ## Pseudocode
 
@@ -149,6 +181,38 @@ Contrast with `nums = [1,1,1,1]` (linear chain, last = 3):
 | 3    | 2 | 1       | 3     | 3        | yes   | —                | —     | —          |
 
 Return `jumps + 1 = 3` — three hops of length 1 each.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `nums = [2, 1, 1, 1, 4]` (last index 4). How many jumps are returned?
+- a) 2 jumps
+- b) 3 jumps
+- c) 4 jumps
+
+<details><summary>Show answer</summary>
+
+**(b)** -- level 1 ends at index 2 (jumps=1); level 2 ends at index 3 (jumps=2); at index 3 `farthest` reaches 4, so the early return gives jumps+1 = 3.
+
+</details>
+
+**Q2 (analyze).** If the `last == 0` guard at the top were removed, what would `jump([0])` return?
+- a) 0 -- correct
+- b) 1 -- wrong, no jump is needed when already at the goal
+- c) -1
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the loop's first iteration hits `farthest >= last` (both 0) and returns `jumps + 1 = 1`. The guard exists to return 0 for the single-element case.
+
+</details>
+
+**Q3 (transfer).** If you also wanted to print one minimum-jump path (the indices landed on), what would you record?
+
+<details><summary>Show answer</summary>
+
+At each level boundary, remember the index `i` that produced the best `farthest` for that level. Reconstruct the path by walking these remembered "best-from" indices level by level.
+
+</details>
 
 ## Common mistakes
 

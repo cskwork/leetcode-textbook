@@ -4,6 +4,11 @@
 **Pattern:** Stack (monotonic decreasing)
 **LeetCode:** https://leetcode.com/problems/daily-temperatures/
 
+## Concepts used
+
+- **Array** — a row of numbered slots holding values, each reached in O(1) by its index. [glossary](../../../docs/10-glossary.md#array)
+- **Monotonic stack** — a stack kept sorted in one direction; used to answer "next greater element" in one pass. [glossary](../../../docs/10-glossary.md#monotonic-stack)
+
 ## Problem
 
 Given an array `temperatures` of daily temperatures, return an array `answer`
@@ -28,19 +33,66 @@ Examples (verbatim from LeetCode):
 
 ## Intuition
 
-For each day we want the **next** day with a higher temperature — a classic
-"next greater element" question, which is the flagship use of a **monotonic
-stack**.
+For each day we want the **next** day that is warmer — a "next greater element"
+question. The brute force is to scan everyone after each day, but that checks
+pairs over and over. We can do it in one pass with a waiting list.
 
-The idea: scan left to right, keeping a stack of days whose warmer partner has
-**not yet appeared**. To make finding that partner cheap, we keep the stack
-strictly *decreasing* in temperature. When today's temperature is higher than the
-temperature of the day on top of the stack, today *is* that day's partner — so we
-pop it, record the distance, and keep popping until the stack is again decreasing
-(or empty). Then today itself goes on the stack to wait.
+Walk down the days left to right. Some days have not yet met anyone warmer; keep
+those waiting days on a [stack](../../../docs/10-glossary.md#stack) that we keep
+**sorted in one direction** — specifically, strictly *decreasing* in temperature
+from bottom to top (hottest at the bottom, coldest at the top). A stack kept
+sorted like this is called a [monotonic stack](../../../docs/10-glossary.md#monotonic-stack);
+"monotonic" just means "always moving one way, never reversing."
 
-We store **indices** (not temperatures) so we can write `answer[idx]` and compute
-the day difference `i - idx`.
+Why **decreasing**, and why does it find the answer? The top of the stack is the
+coldest day still waiting. The moment a warmer day arrives, that warmer day must
+be the answer for the top — because every day between the top and today was even
+colder (otherwise the top would have been popped already). So we pop the top,
+record the gap "today minus that day," and repeat, because today might also be
+the answer for the next colder day waiting below. When the top is no longer
+colder than today, today itself joins the stack to wait for its own warmer
+future.
+
+Trace the smallest case, `T = [73, 74, 75]` (expected `[1, 1, 0]`). The stack
+holds **indices**, and we compare temperatures through them:
+
+- i=0, T=73: stack empty, push 0. Stack: `[0]`.
+- i=1, T=74: 74 > T[0]=73, so day 0 is answered — pop 0, answer[0] = 1 - 0 = 1.
+  Stack empty, push 1. Stack: `[1]`.
+- i=2, T=75: 75 > T[1]=74, pop 1, answer[1] = 2 - 1 = 1. Stack empty, push 2.
+  Stack: `[2]`.
+- End. Day 2 (75) never found a warmer day, so answer[2] stays 0.
+
+Final: `[1, 1, 0]`. Although a `while` sits inside the `for`, each index is
+pushed once and popped at most once across the whole run, so the total work is
+O(n), not O(n²) — this "cheap on average over many operations" property is called
+[amortized](../../../docs/10-glossary.md#amortized) cost.
+
+### Checkpoint A -- Indices and monotonicity
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** What does the stack store -- the temperatures, or the indices of the days?
+- a) The temperatures
+- b) The indices
+- c) Both, as index-temperature pairs
+
+<details><summary>Show answer</summary>
+
+**(b)** -- indices, so we can write `answer[j]` and compute the day gap `i - j`; the temperature is looked up through the index.
+
+</details>
+
+**Q2 (comprehend).** The `for` loop contains a `while` loop. Why is the whole algorithm still O(n), not O(n^2)?
+- a) Because the input array is small
+- b) Because each index is pushed once and popped at most once across the entire run, so the inner loop's total work is O(n)
+- c) Because the stack is kept sorted
+
+<details><summary>Show answer</summary>
+
+**(b)** -- across all n iterations the `while` body fires at most n times in total (amortized O(1) per element), so the total is O(n).
+
+</details>
 
 ## Pseudocode
 
@@ -112,6 +164,38 @@ Step-by-step on `temperatures = [73,74,75,71,69,72,76,73]` (expected
 
 Indices `6` and `7` remain on the stack -> their answers stay `0`. Final result:
 `[1,1,4,2,1,1,0,0]`.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `temperatures = [50, 40, 30, 60]`. What is `answer`?
+- a) `[1, 1, 1, 0]`
+- b) `[3, 2, 1, 0]`
+- c) `[3, 2, 0, 0]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- days 0, 1, 2 all wait until day 3 (60); gaps are 3, 2, 1; day 3 finds nothing warmer, so it stays 0.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if the `while` condition uses `>=` instead of `>`?
+- a) Nothing changes
+- b) Equal temperatures get reported as "warmer" -- for `[70, 70]` it would wrongly set `answer[0] = 1`
+- c) It throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `>=` pops on a tie, treating an equal day as warmer; `[70, 70]` would set `answer[0] = 1`, when the correct answer is `0` (no STRICTLY warmer day).
+
+</details>
+
+**Q3 (transfer).** How would you adapt the algorithm to find the "next SMALLER day" (next day with a LOWER temperature)?
+
+<details><summary>Show answer</summary>
+
+Flip the monotonicity: keep an INCREASING stack and pop while the current temperature is smaller than the top. Storing indices, the distance formula `i - j`, and the zero default all stay the same.
+
+</details>
 
 ## Common mistakes
 

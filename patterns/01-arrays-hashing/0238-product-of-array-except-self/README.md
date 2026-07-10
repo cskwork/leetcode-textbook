@@ -4,6 +4,15 @@
 **Pattern:** Arrays & Hashing
 **LeetCode:** https://leetcode.com/problems/product-of-array-except-self/
 
+## Concepts used
+
+- **Array** -- a row of numbered slots; the answer is built directly inside one.
+  [glossary](../../../docs/10-glossary.md#array)
+- **Linear scan** -- walking the array once in each direction (two passes total).
+  [glossary](../../../docs/10-glossary.md#linear-scan)
+- **In-place** -- computing the answer using only a fixed amount of extra memory beyond the
+  output. [glossary](../../../docs/10-glossary.md#in-place)
+
 ## Problem
 
 Given an integer array `nums`, return an array `answer` such that `answer[i]` is the product of
@@ -25,14 +34,56 @@ Examples:
 
 ## Intuition
 
-The brute-force "multiply every other element for each i" is O(n^2). Division would make it O(n)
-(count zeros, divide total by nums[i]) but division is banned -- and breaks on zeros anyway. The
-key insight: the product-except-self at position `i` is exactly **(product of everything to the
-left of i) x (product of everything to the right of i)**. So if we precompute all left-products
-and all right-products, each answer is one multiplication. We can even fuse both passes into the
-single output array: the left-to-right sweep writes the running left-product into each slot, and
-the right-to-left sweep multiplies in the running right-product. No division, no extra array --
-the "memory" lives in two running integers.
+Picture a row of four switches. For each switch you must report "the combined setting of all the
+OTHER switches." The slow way: for switch `i`, walk the whole row again, skipping `i`. The fast
+way: notice that the answer for position `i` is simply (everything to its left) times (everything
+to its right). If you knew the running product of all left neighbors and all right neighbors, each
+answer would be one multiplication.
+
+Check the smallest case, `nums = [1, 2, 3, 4]`. The answer for slot 2 (the value `3`) should be
+`1 * 2 * 4 = 8`. That splits as (product of the left, `1 * 2 = 2`) times (product of the right,
+`4`): `2 * 4 = 8`. Correct.
+
+The general rule: for position `i`, the answer equals (product of everything strictly left of `i`)
+times (product of everything strictly right of `i`). Make two passes over a single output
+[array](../../../docs/10-glossary.md#array). Pass one runs left-to-right carrying a running "left
+product": at each slot, write the running product in, then multiply the current element into it.
+Pass two runs right-to-left carrying a running "right product", multiplying it into each slot.
+After both passes every slot holds left times right. Division is never used, so zeros cause no
+trouble.
+
+Why write the running product BEFORE multiplying in the current element? Because the left product
+for slot `i` must exclude `nums[i]`. Writing `prefix` into `result[i]` first and only then doing
+`prefix *= nums[i]` keeps `nums[i]` out of slot `i` -- it joins the running product for the next
+slot instead. The right pass mirrors this exactly, and because we reuse the one output array, only
+two integer accumulators are needed beyond the answer itself -- an
+[in-place](../../../docs/10-glossary.md#in-place) result.
+
+### Checkpoint A -- Prefix and postfix
+
+Pause before expanding.
+
+**Q1 (recall).** The answer for position `i` equals (product of everything strictly ___ of i) times (product of everything strictly ___ of i).
+- a) left of / right of
+- b) equal to / less than
+- c) before sort / after sort
+
+<details><summary>Show answer</summary>
+
+**(a)** -- "left of" times "right of". Each slot's answer excludes exactly its own element, so it's everything on the left paired with everything on the right.
+
+</details>
+
+**Q2 (comprehend).** In the left-to-right pass, why write `prefix` into `result[i]` BEFORE doing `prefix *= nums[i]`?
+- a) Order doesn't matter
+- b) So that `nums[i]` is excluded from its own slot; it only joins the running product for the NEXT slot
+- c) To avoid overflow
+
+<details><summary>Show answer</summary>
+
+**(b)** -- writing first keeps slot i as the product strictly to its left. Multiplying afterward rolls `nums[i]` into `prefix` for the benefit of slot i+1.
+
+</details>
 
 ## Pseudocode
 
@@ -110,6 +161,38 @@ Second pass (multiply right-products):
 | 0 | 24               | 1 * 24 = 24       | 24 * 1 = 24                         |
 
 result = `[24, 12, 8, 6]`. Output matches.
+
+### Checkpoint B -- Trace, zeros, and a variant
+
+**Q1 (apply).** Left pass on `nums = [a, b]`: what does `result` become after the LEFT pass only?
+- a) `[a, b]`
+- b) `[1, a]` (prefix at each slot, before its own element)
+- c) `[a*b, a*b]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- slot 0 gets prefix=1, then prefix*=a -> a; slot 1 gets prefix=a. So `result = [1, a]`. The right pass then yields `[b, a]`, the product-except-self.
+
+</details>
+
+**Q2 (analyze).** The problem forbids division. Why does division also BREAK on input like `[0, 1, 2, 0]`?
+- a) Division is slow
+- b) Dividing a total product by 0 is undefined, and multiple zeros make every "except self" product zero, which naive division can't distinguish
+- c) It doesn't break, it's just banned
+
+<details><summary>Show answer</summary>
+
+**(b)** -- you can't divide by a zero element, and with two or more zeros the nonzero cases are themselves zero, which division-based code mishandles. The prefix/postfix method never divides, so zeros are a non-issue.
+
+</details>
+
+**Q3 (transfer).** Could you solve this with explicit `left[]` and `right[]` arrays? What do you gain and lose versus the fused one-array version?
+
+<details><summary>Show answer</summary>
+
+Yes -- compute left and right products separately, then multiply pointwise. It's easier to read but uses O(n) EXTRA space; the fused version reuses the output array for O(1) extra space, which is the problem's intended point.
+
+</details>
 
 ## Common mistakes
 

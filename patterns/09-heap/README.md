@@ -216,5 +216,60 @@ Heaps are simple but the bugs are subtle and silent. Beginners hit these repeate
   field. If the score can change (task scheduler with cooldown), do not mutate in place -- remove,
   update, and re-insert, or rebuild.
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what is the size-K heap trick?
+
+<details><summary>Show answer</summary>
+
+Keep a heap capped at K elements; on every insert, if size exceeds K, evict the root. The root is chosen to be the "worst" survivor, so the K that remain are the K best, and (for k-th problems) the root is the answer. It turns an O(N log N) sort into O(N log K).
+
+</details>
+
+**Q2 (pattern recognition).** New problem: "from a class of 500 students, return the 3 with the highest scores." Which heap do you reach for?
+- a) A max-heap of size 3
+- b) A min-heap of size 3
+- c) Sort all 500 and take the top 3
+
+<details><summary>Show answer</summary>
+
+**(b)** -- "3 highest" = top 3 largest, so the survivor you evict is the smallest of the 3 kept -> a min-heap of size 3. A max-heap of size 3 would evict the largest and keep the wrong three. (Sorting (c) also works but is O(N log N) instead of O(N log K).)
+
+</details>
+
+**Q3 (pattern recognition).** New problem: "given K sorted arrays, merge them into one sorted array." Which heap shape fits?
+- a) A size-K heap of survivors that evicts the worst
+- b) A K-way merge heap seeded with each array's first element, popping the smallest and re-pushing that array's next
+- c) Bucket sort by value
+
+<details><summary>Show answer</summary>
+
+**(b)** -- this is the K-way merge (the Design Twitter shape), not the size-K survivor trick. The heap holds one candidate per array; each pop emits the next global element and feeds the next candidate from the same array. Total cost O(total elements * log K).
+
+</details>
+
+**Q4 (apply).** Run the size-K min-heap trick on the stream `[10, 20, 30, 40]` with `k = 2`. What is the root after all four are processed?
+- a) 30
+- b) 40
+- c) 10
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the heap keeps the 2 largest, {30, 40}. A min-heap puts the smaller survivor (30) on top, and that root is the 2nd largest of the stream.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) how to track the running median of a stream using two heaps.
+
+<details><summary>Show answer</summary>
+
+Use a max-heap for the lower half of values seen and a min-heap for the upper half, keeping their sizes within one of each other. The median is the root of the larger half (or the average of both roots when they are equal in size). Each new value is pushed into the half whose root it belongs to, then the two heaps are rebalanced by moving one root to the other. This is the "two heaps" variant in the trigger table.
+
+</details>
+
+---
+
 With those in mind, open
 [0703-kth-largest-element-in-a-stream](./0703-kth-largest-element-in-a-stream/) and start.

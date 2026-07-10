@@ -172,6 +172,59 @@ Tries look simple in pseudocode but have many places to slip:
 - **Walking off the board / revisiting cells in LC 212.** Backtracking DFS needs a `visited`
   marker (usually a temporary on-board sentinel or a separate set), undone on the way out.
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what is the core advantage a trie holds over a HashSet for prefix queries?
+
+<details><summary>Show answer</summary>
+
+A trie answers "does any word start with this prefix?" in O(L) by walking L edges, whereas a HashSet must scan every stored word -- O(n * L) -- because it cannot tell that a string is merely the start of a word.
+
+</details>
+
+**Q2 (pattern recognition).** New problem: "a search box that, after every keystroke, lists all dictionary words beginning with the typed prefix." Which tool fits best?
+- a) A HashSet of words, rescanned on each keystroke
+- b) A trie; walk to the prefix node, then collect every end-of-word descendant
+- c) A sorted list, binary-searched on each keystroke and then expanded
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the trie makes each prefix lookup O(L + number of suggestions), independent of the dictionary size. A HashSet rescan is O(n * L) per keystroke, and the sorted-list option still has to walk the sorted tail to gather suggestions.
+
+</details>
+
+**Q3 (pattern recognition).** New problem: "given a board of letters and a list of words, count how many of the words appear somewhere on the board." Which approach?
+- a) Build a trie of the words and DFS the board guided by the trie (the Word Search II skeleton)
+- b) For each word, scan the whole board independently with no shared structure
+- c) Throw every board substring into a HashSet and look each word up
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the trie prunes dead prefixes so the search does not redo work per word; (b) repeats the board walk for every word, and (c) enumerates an exponential number of board strings.
+
+</details>
+
+**Q4 (apply).** A trie is built from `["to", "tea", "ted"]`. What do `search("te")` and `startsWith("te")` return?
+- a) `search("te")` -> `false`; `startsWith("te")` -> `true`
+- b) both -> `true`
+- c) `search("te")` -> `true`; `startsWith("te")` -> `false`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the path `t -> e` exists (under it sit "tea" and "ted"), so the walk lands on the `e` node. But "te" was never inserted, so that node's `isEnd` is false: not a word for `search`, yet a perfectly good prefix for `startsWith`.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) how to add a `delete(word)` operation that removes a word without breaking other words that share its prefix.
+
+<details><summary>Show answer</summary>
+
+Walk to the word's end node and clear its `isEnd` flag -- that alone makes `search` stop returning the word. Then walk back up and remove any node that is now a leaf and not end-of-word, stopping at the first node that still has children or its own `isEnd`. That upward prune reclaims dead nodes while leaving shared prefixes intact.
+
+</details>
+
 ---
 
 Next: [0208 - Implement Trie (Prefix Tree)](./0208-implement-trie-prefix-tree/) -- start here,

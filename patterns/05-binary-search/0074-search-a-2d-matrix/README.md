@@ -4,6 +4,13 @@
 **Pattern:** Binary Search
 **LeetCode:** https://leetcode.com/problems/search-a-2d-matrix/
 
+## Concepts used
+
+- **Binary search** -- finding a target in sorted data by repeatedly halving the search space. [glossary](../../../docs/10-glossary.md#binary-search)
+- **Array** -- a row of numbered slots holding values, read instantly by position. [glossary](../../../docs/10-glossary.md#array)
+- **Sorting** -- putting values in order so each value tells you about its neighbours. [glossary](../../../docs/10-glossary.md#sorting)
+- **Invariant** -- a condition that is always true at the start of every loop iteration. [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 You are given an `m x n` integer matrix `matrix` with two properties:
@@ -29,32 +36,64 @@ Examples (verbatim from LeetCode):
 
 ## Intuition
 
-The two given properties are exactly what makes a 1-D array sorted: read the
-matrix row by row and you get one long ascending sequence. So a 3x4 matrix
+Imagine writing a long list of numbers in order -- 1, 2, 3, 4, ... -- but the
+paper is narrow, so after every 4 numbers you start a new line. You haven't
+changed the order; you've just *wrapped* one sorted list onto several lines.
+This matrix is exactly that: each row is sorted, *and* the first number of each
+row is bigger than the last number of the row above, so reading row-by-row
+produces one long sorted list.
+
+Concretely, the matrix
 
     [[ 1,  3,  5,  7],
      [10, 11, 16, 20],
      [23, 30, 34, 60]]
 
-is, for all ordering purposes, the array
+is, for all ordering purposes, the flat array
+`[1, 3, 5, 7, 10, 11, 16, 20, 23, 30, 34, 60]`. So LC 704 solves this problem
+-- we only need a way to translate a position in that long list back into a
+`(row, column)` so we can read the actual number. If each line holds `n`
+numbers, then flat position `i` lives at row `i / n` and column `i % n` (integer
+division and remainder).
 
-    [1, 3, 5, 7, 10, 11, 16, 20, 23, 30, 34, 60]
+Trace the search for `target = 3`. The flat list has 12 entries, so the search
+range is `lo = 0, hi = 11`:
 
-That means LC 704 solves this problem -- we just need a way to translate a
-1-D index into the corresponding `(row, col)` so we can read the value. The
-standard mapping is division and modulo by the row length:
+1. `mid = 5` -> row `5/4 = 1`, col `5%4 = 1` -> value `11`. `11 > 3`, so
+   `hi = 4`.
+2. `mid = 2` -> row `0`, col `2` -> value `5`. `5 > 3`, so `hi = 1`.
+3. `mid = 0` -> value `1`. `1 < 3`, so `lo = 1`.
+4. `mid = 1` -> value `3`. Match -- return `true`.
 
-- `row = index / n` (where `n` is the number of columns),
-- `col = index % n`.
+The **invariant** is the same as LC 704's: *if the target is in the matrix, it
+lies in the flat-index range `[lo, hi]`.* The only new idea is the row/column
+translation; everything else is the exact LC 704 loop.
 
-The trigger signals are "sorted rows", "first of each row > last of previous",
-and `O(log(m*n))` -- all pointing at classic binary search (Template A) on a
-flattened index range `[0, m*n - 1]`.
+### Checkpoint A -- Flatten, then search
 
-(There is also a two-search variant: binary-search the first column to find the
-candidate row, then binary-search that row. It is correct and also logarithmic,
-but the flatten-it approach is shorter, has only one loop to reason about, and
-teaches the index-mapping trick that recurs in heap-backed 2-D structures.)
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** The solution treats the matrix as one long sorted array. Given flat index `i` and `n` columns, which pair gives the (row, col)?
+- a) row `= i / n`, col `= i % n`
+- b) row `= i % n`, col `= i / n`
+- c) row `= i / m`, col `= i % m` (where m = number of rows)
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the column count is the divisor: each row holds `n` entries, so `i / n` is the row and the remainder `i % n` is the column.
+
+</details>
+
+**Q2 (comprehend).** Why is flattening valid here -- why is the resulting flat list actually sorted?
+- a) Each row is sorted AND each row's first element is greater than the previous row's last element
+- b) Because every matrix is sorted by default
+- c) Because binary search sorts the data first
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the two guarantees together mean reading row-by-row produces one globally increasing sequence, so a single binary search is correct.
+
+</details>
 
 ## Pseudocode
 
@@ -148,6 +187,38 @@ Dry-run for the miss case `target = 13` (expected `false`):
 | 2    | 6  | 11 | 8   | (2, 0)  | 23    | 23 > 13    | hi = mid-1=7  |
 | 3    | 6  | 7  | 6   | (1, 2)  | 16    | 16 > 13    | hi = mid-1=5  |
 | exit | 6  | 5  | -   | -       | -     | lo > hi    | return **false** |
+
+### Checkpoint B -- Trace and break it
+
+**Q1 (apply).** `matrix = [[1,3,5],[7,9,11]]` (so `m = 2`, `n = 3`), `target = 11`. The flat list is `[1,3,5,7,9,11]`. What is returned, and at which step?
+- a) `true`, on the third probe (flat index 5 maps to `matrix[1][2] = 11`)
+- b) `false`, 11 is never checked
+- c) It throws -- flat index 5 is out of bounds
+
+<details><summary>Show answer</summary>
+
+**(a)** -- probes read 5 (`< 11`, go right), 9 (`< 11`, go right), then `matrix[1][2] = 11 == 11`, return `true`.
+
+</details>
+
+**Q2 (analyze).** What happens if you swap the mapping to `matrix[mid % m][mid / m]`?
+- a) You read the wrong cell (still in bounds), so answers look plausible but are silently incorrect
+- b) It throws immediately on every input
+- c) Nothing; the two formulas are equivalent
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the indices stay within the matrix, so no crash, but the value read is from the wrong cell and the search logic is silently corrupted.
+
+</details>
+
+**Q3 (transfer).** Suppose rows stayed sorted but each row's first element was NOT greater than the previous row's last (rows overlap). Would the flatten trick still work? Why not?
+
+<details><summary>Show answer</summary>
+
+No. The flat list would no longer be globally sorted, so a single binary search over all cells would be invalid. You would have to binary-search each row independently.
+
+</details>
 
 ## Common mistakes
 

@@ -12,6 +12,13 @@
 > **greedy choice with a formal exchange argument** that proves moving the
 > shorter line is safe.
 
+## Concepts used
+
+- **Greedy** -- make the locally-best choice at each step and never revisit it; works only when you can prove that choice is part of some optimal solution. [glossary](../../../docs/10-glossary.md#greedy)
+- **Two pointers** -- placing two indices into an array and moving them based on a comparison, to avoid a nested loop. [glossary](../../../docs/10-glossary.md#two-pointers)
+- **Array** -- a row of numbered slots holding values, accessed by position in O(1). [glossary](../../../docs/10-glossary.md#array)
+- **Invariant** -- a condition that is always true at the start of every loop iteration; stating it clearly is how you prove a loop correct. [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 You are given an integer array `height` of length `n`, where `height[i]` is
@@ -73,6 +80,32 @@ moves we have considered the only candidates that can be optimal.
 This is a textbook **exchange argument**: "any solution that does not make
 the greedy choice can be transformed into one that does, without making it
 worse". That is the exact proof template the Greedy pattern demands.
+
+### Checkpoint A -- Move the shorter line
+
+Pause and answer before expanding.
+
+**Q1 (recall).** At each step, which pointer does the algorithm move?
+- a) The pointer on the taller line
+- b) The pointer on the shorter line
+- c) Both pointers inward together
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the shorter line limits the water height, so keeping it while shrinking the width can only reduce the area; abandon it.
+
+</details>
+
+**Q2 (comprehend).** The exchange argument says keeping the shorter line and shrinking the width never improves the area, because:
+- a) The width gets smaller and the height is still capped by the shorter line
+- b) Taller lines are always worse
+- c) The array is sorted ascending
+
+<details><summary>Show answer</summary>
+
+**(a)** -- area is `width * min(height[left], height[right])`. Shrinking lowers width, and min stays capped by the shorter line, so every such container is strictly worse than the current one already measured.
+
+</details>
 
 ## Pseudocode
 
@@ -160,6 +193,38 @@ Final `best = 49`, achieved at step 2 with lines at indices 1 and 8
 (heights 8 and 7, width 7). Notice how the algorithm abandons line 0
 after measuring it once: keeping a height-1 line while shrinking the width
 could only reduce the area, which is exactly the exchange argument.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `height = [3, 1, 2, 4]` (indices 0..3). What is the max area?
+- a) 9
+- b) 4
+- c) 6
+
+<details><summary>Show answer</summary>
+
+**(a)** -- step 1: min(3,4)=3, width 3, area 9, best 9, move left (shorter). Then pairs (1,4), (2,4) give areas 2 and 2; best stays 9.
+
+</details>
+
+**Q2 (analyze).** What if the code computed `width = right - left + 1` instead of `right - left`?
+- a) Every area is inflated by the extra +1, so the reported max can be too large
+- b) No change, the answer is identical
+- c) It throws an index-out-of-bounds error
+
+<details><summary>Show answer</summary>
+
+**(a)** -- water spans the GAP between the two lines, which is `right - left`. The off-by-one inflates every area and breaks correctness.
+
+</details>
+
+**Q3 (transfer).** Now suppose intermediate "walls" exist between lines that block water from flowing past them. Would the single "move the shorter line" rule still be provably optimal? Why or why not?
+
+<details><summary>Show answer</summary>
+
+Not necessarily. The exchange argument relies on narrower containers with the same shorter line being strictly worse; once intermediate walls block passage that monotonicity breaks. You would need a different approach (e.g. precomputing left/right max heights per cell, as in Trapping Rain Water).
+
+</details>
 
 ## Common mistakes
 

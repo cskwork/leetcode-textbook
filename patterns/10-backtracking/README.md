@@ -210,6 +210,59 @@ introduction to cartesian-product backtracking.
   to look for other answers -- record then `return`, do not stop the whole
   search.
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what three steps does every branch of a backtracking solution perform?
+
+<details><summary>Show answer</summary>
+
+Choose (add the option to the path), explore (recurse into the subtree that choice opens), un-choose (remove the option so the next sibling starts from a clean state). The un-choose is the step beginners forget.
+
+</details>
+
+**Q2 (pattern recognition).** New problem: "list every way to choose exactly `k` numbers from `1..n` (order does not matter)." Which variant fits?
+- a) Permutations-style: loop over all indices gated by a `used[]` mask
+- b) Combinations-style: loop from a moving start index, pass `i + 1` to the child
+- c) Cartesian-product: loop over a fixed letter map
+
+<details><summary>Show answer</summary>
+
+**(b)** -- order does not matter and there is no reuse, so the "look forward only" rule applies: a start index that advances to `i + 1`. A `used[]` mask is for when order matters (Permutations).
+
+</details>
+
+**Q3 (pattern recognition).** New problem: "list every word that can be typed by pressing a given sequence of phone digits." Which variant?
+- a) Cartesian-product backtrack (one slot per digit, loop over that digit's letters)
+- b) Subsets with duplicate-skipping
+- c) Grid backtrack with in-place marking
+
+<details><summary>Show answer</summary>
+
+**(a)** -- each digit is an independent slot and the letters for one digit do not constrain another, so the recursion is a plain cartesian product -- the cleanest choose/explore/un-choose case.
+
+</details>
+
+**Q4 (apply).** You run the Subsets solution on `nums = [1, 2]`. How many subsets are recorded, and is the empty subset among them?
+- a) 2, and `[]` is not recorded
+- b) 4, and `[]` is recorded
+- c) 4, and `[]` is not recorded
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `2^2 = 4` subsets, and because recording happens at the top of every call before the loop, the very first call records `[]`.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) how to solve Combination Sum if each candidate may be used at most once instead of unlimited times.
+
+<details><summary>Show answer</summary>
+
+Change one character: pass `i + 1` as the child's start (forbid reuse) instead of `i`. Keep the same done condition (`remaining == 0`), the sort-first step, the `break` when a candidate exceeds `remaining`, and the defensive snapshot. That single change turns LC 39 into LC 40.
+
+</details>
+
 ---
 
 Next problem: [0078 - Subsets](./0078-subsets/).

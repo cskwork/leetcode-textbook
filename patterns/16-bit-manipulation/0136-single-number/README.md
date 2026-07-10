@@ -45,6 +45,32 @@ off and cancel (`a ^ a == 0`), and the one value that appears a single time
 survives (`0 ^ that == that`). The running XOR at the end of the array *is*
 the answer.
 
+### Checkpoint A -- The XOR identity
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** What is `x ^ x` for any integer `x` (where `^` is XOR)?
+- a) `x`
+- b) `0`
+- c) `1`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- any value XOR itself cancels to zero. This is the "pairs cancel" fact the whole solution rests on.
+
+</details>
+
+**Q2 (comprehend).** Why does the order of the array not matter to the final answer?
+- a) Because the array is always sorted first
+- b) Because XOR is commutative and associative, so `a ^ b ^ c` can be reordered and regrouped freely
+- c) Because every value is stored in a hash set first
+
+<details><summary>Show answer</summary>
+
+**(b)** -- commutative (`a ^ b == b ^ a`) and associative means every duplicate pair meets its twin and cancels, no matter where it sits in the array.
+
+</details>
+
 ## Pseudocode
 
     function singleNumber(nums):
@@ -107,6 +133,38 @@ survives is `4`, the lone unpaired value.
 Output: `4`.
 
 A faster way to read it: `4 ^ 1 ^ 2 ^ 1 ^ 2 == 4 ^ (1 ^ 1) ^ (2 ^ 2) == 4 ^ 0 ^ 0 == 4`.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `nums = [7, 3, 7]`. What does `singleNumber` return?
+- a) `7`
+- b) `3`
+- c) `0`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `0 ^ 7 = 7`; `7 ^ 3 = 4`; `4 ^ 7 = 3`. The two `7`s cancel, leaving the lone value `3`.
+
+</details>
+
+**Q2 (analyze).** The problem guarantees exactly ONE value appears once. What goes wrong if TWO values each appear once instead?
+- a) Nothing -- the scan still returns both values
+- b) The scan ends at their XOR (`a ^ b`), which is neither of the two single values
+- c) The scan returns 0
+
+<details><summary>Show answer</summary>
+
+**(b)** -- with two unpaired values `a` and `b`, everything else cancels and the running XOR ends at `a ^ b`, not at `a` or `b`. The identity only isolates ONE unpaired value.
+
+</details>
+
+**Q3 (transfer).** Suppose every element appeared THREE times except one that appears once. Would the same XOR scan still work? Why or why not?
+
+<details><summary>Show answer</summary>
+
+No. Three copies XOR to `x ^ x ^ x == x` (not 0), so the triples do not cancel cleanly. That variant (LC 137) needs counting 1-bits at each position instead of a plain XOR scan.
+
+</details>
 
 ## Common mistakes
 

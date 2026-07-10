@@ -41,6 +41,32 @@ sub-problems: drop text1's last character, or drop text2's last character,
 whichever keeps the longer common subsequence. The empty prefix (row 0 or
 column 0) matches nothing, so the base is all zeros.
 
+### Checkpoint A -- The two-string state
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** What does `dp[i][j]` represent?
+- a) The LCS length of the first `i` characters of `text1` and the first `j` characters of `text2`
+- b) Whether `text1[i]` equals `text2[j]`
+- c) The total number of characters common to both strings
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `dp[i][j]` is the longest common subsequence length between those two prefixes; (b) is just one character comparison and (c) ignores order.
+
+</details>
+
+**Q2 (comprehend).** When `text1[i-1] != text2[j-1]`, why is `dp[i][j] = max(dp[i-1][j], dp[i][j-1])`?
+- a) Because a mismatch adds one to the LCS
+- b) Because the mismatched characters cannot both belong to the LCS, so we carry forward the better of "drop text1's char" or "drop text2's char"
+- c) Because the table must stay non-decreasing
+
+<details><summary>Show answer</summary>
+
+**(b)** -- at most one of the two mismatched chars can stay in the common subsequence, so the answer is the longer of the two smaller sub-problems that each drops one.
+
+</details>
+
 ## Pseudocode
 
     function longestCommonSubsequence(text1, text2):
@@ -114,6 +140,38 @@ Walk the three bolded matches to see the LCS building: `dp[1][1] = 1` matches
 `dp[5][3] = 3` matches `e` (extends the diagonal from `dp[4][2] = 2`). The three
 matched characters spell `a c e` -- the LCS itself. `dp[5][3] = 3` is the
 answer.
+
+### Checkpoint B -- Trace a fresh pair
+
+**Q1 (apply).** Trace `text1 = "abc"`, `text2 = "ac"`. What is `dp[3][2]` (the answer)?
+- a) 1
+- b) 2
+- c) 3
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `dp[1][1] = dp[0][0] + 1 = 1` (`a` matches); `dp[2][*]` stays 1 (`b` matches nothing in `ac`); `dp[3][2] = dp[2][1] + 1 = 2` (`c` matches, extends the diagonal). The LCS is `"ac"`.
+
+</details>
+
+**Q2 (analyze).** On a match, why do we use `dp[i-1][j-1] + 1` instead of `max(dp[i-1][j], dp[i][j-1]) + 1`?
+- a) The matched character extends the LCS of the two prefixes WITHOUT this character (the diagonal), not either shorter prefix separately
+- b) The diagonal is always the largest value
+- c) It saves memory
+
+<details><summary>Show answer</summary>
+
+**(a)** -- both matched chars are consumed together, so we extend the sub-problem that excludes both (the diagonal); adding `+1` to a neighbour that still holds one of the chars would double-count it.
+
+</details>
+
+**Q3 (transfer).** Suppose you must RETURN the actual LCS string, not just its length. In one sentence, how do you recover it?
+
+<details><summary>Show answer</summary>
+
+After filling the table, walk back from `dp[m][n]`: on a match, prepend the character and move diagonally to `(i-1, j-1)`; otherwise move to whichever neighbour (above or left) holds the larger value, until you reach a border.
+
+</details>
 
 ## Common mistakes
 

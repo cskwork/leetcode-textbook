@@ -195,3 +195,56 @@ single consecutive-pair overlap check.
   `Comparator`, compare `a[0]` with `b[0]` (the start), not `a[0]` with
   `b[1]`. A typo here makes the sort silently wrong and every later step
   unreliable.
+
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what single preprocessing step does every intervals solution in this section share?
+
+<details><summary>Show answer</summary>
+
+Sort the list of intervals by some key (start for merge/detect/insert, end for min-removal), then do one linear pass. Without that sort, every later step silently misses overlaps between non-adjacent intervals.
+
+</details>
+
+**Q2 (pattern recognition).** A new problem: "Given employees' work schedules as `[start,end]` pairs, find the total time during which AT LEAST ONE employee is working (the union length)." Which tool fits best?
+- a) Sort by start, merge the overlapping intervals, then sum `(end - start)` over the merged list
+- b) Sort by end, count removals
+- c) Compare only consecutive pairs and stop at the first overlap
+
+<details><summary>Show answer</summary>
+
+**(a)** -- this is a coverage/union question, so the merge pass produces exactly the union; its total length is the answer. (b) counts removals and (c) only detects whether any overlap exists.
+
+</details>
+
+**Q3 (pattern recognition).** A new problem: "A conference has many talks as `[start,end]` pairs; find the MAXIMUM number of talks one person can attend with no overlaps." Which approach fits best?
+- a) Sort by start, merge all overlaps
+- b) Sort by end, greedily keep the earliest-ending talk compatible with the last kept one; the number kept is the answer
+- c) Sort by talk length, shortest first
+
+<details><summary>Show answer</summary>
+
+**(b)** -- "maximize count of non-overlapping intervals" is exactly the Non-overlapping Intervals greedy. The exchange argument licenses the end-sort and the earliest-ending rule; the answer is that count (or `n - removed`).
+
+</details>
+
+**Q4 (apply).** You run Merge Intervals on `[[1,4],[0,2],[3,5]]`. After sorting by start the order is `[[0,2],[1,4],[3,5]]`. What is the final merged result?
+- a) `[[0,2],[1,4],[3,5]]`
+- b) `[[0,5]]`
+- c) `[[0,4],[3,5]]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- step 1 appends `[0,2]`; step 2 `[1,4]` has `1 <= 2` overlap, end becomes `max(2,4)=4`, tail is `[0,4]`; step 3 `[3,5]` has `3 <= 4` overlap, end becomes `max(4,5)=5`, tail is `[0,5]`. Final: `[[0,5]]`.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) how to solve "Meeting Rooms II": given meeting intervals, find the MINIMUM number of meeting rooms required so all meetings can run. Use ideas from this pattern.
+
+<details><summary>Show answer</summary>
+
+One approach: sort all start times and all end times into two separate sorted lists, then walk both with two pointers -- increment a "rooms in use" counter at each start, decrement at each end, and track the maximum value reached. The sort-then-walk skeleton is the same as this pattern; the twist is tracking a running count rather than merging. (Equivalently: sort by start and use a min-heap of currently-running meetings' end times; the heap's largest size is the answer.)
+
+</details>

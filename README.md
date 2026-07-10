@@ -32,14 +32,18 @@ exactly 100 problems organized into 16 patterns, ordered easiest-first.
 4. Open [patterns/01-arrays-hashing/](./patterns/01-arrays-hashing/) and read the pattern's
    `README.md` first (it explains *when* the pattern applies and gives a template).
 5. Then do the problems in order inside that folder. For each problem:
-   - Read the **Intuition** section. Try to solve it yourself for 20 minutes first.
-   - Read the **Pseudocode**. Make sure you understand the algorithm language-agnostically.
-   - Read the **Java** solution. Compile and run the test.
-   - Read the **Dry-run** to see the algorithm executed on a concrete input.
+    - Read the **Intuition** section. Try to solve it yourself for 20 minutes first.
+    - Answer **Checkpoint A** (a 2-question concept check, right after Intuition) before reading on.
+    - Read the **Pseudocode**. Make sure you understand the algorithm language-agnostically.
+    - Read the **Java** solution. Compile and run the test.
+    - Read the **Dry-run** to see the algorithm executed on a concrete input.
+    - Answer **Checkpoint B** (trace + edge-case + adapt questions) before moving on.
 
 The rule: **never read the Java before you understand the pseudocode.** Pseudocode is the bridge
 between human thinking and machine code. Skipping it is why beginners get stuck memorizing syntax
-instead of learning patterns.
+instead of learning patterns. Each pattern's README also ends with a **Pattern Mastery Quiz** --
+treat it as the gate before moving to the next pattern. Quiz answers are collapsible: attempt
+first, then reveal.
 
 ---
 

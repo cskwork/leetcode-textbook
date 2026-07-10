@@ -4,6 +4,16 @@
 **Pattern:** Graphs
 **LeetCode:** https://leetcode.com/problems/redundant-connection/
 
+## Concepts used
+
+- **Graph** -- a set of nodes connected by edges; here each node is a person/vertex and each given
+  pair `[u, v]` is an edge. [glossary](../../../docs/10-glossary.md#graph)
+- **Cycle** -- a path that returns to its starting node; the one extra edge in this input creates
+  exactly one cycle. [glossary](../../../docs/10-glossary.md#cycle)
+- **Union-Find (Disjoint Set Union)** -- a structure that tracks which items are in the same group,
+  answering "are these two already connected?" in near-O(1) time.
+  [glossary](../../../docs/10-glossary.md#union-find-disjoint-set-union)
+
 ## Problem
 
 A tree on `n` nodes has exactly `n - 1` edges. You are given a graph that started as a tree with
@@ -26,18 +36,58 @@ Examples:
 
 ## Intuition
 
-A tree cannot contain a cycle, so "the extra edge" is exactly the first edge whose two endpoints are
-**already connected** by previously added edges. The data structure that answers "are these two in
-the same group?" in (amortised) `O(1)` is **Union-Find** (disjoint set). Walk the edges in input
-order; for each `[u, v]`, run `find(u)` and `find(v)` -- if they share a root, adding this edge
-would close a cycle, so return it; otherwise `union` the two sets and continue.
+Think about friend circles. We add friendships one at a time. After a few friendships, some people
+belong to the same circle: A knows B, B knows C, so A, B, and C are one circle even though A and C
+were never directly introduced. Now suppose the next "friendship" to add is a direct link between A
+and C. But A and C are *already* in the same circle (connected through B) -- so this new direct link
+adds nothing and is **redundant**. That redundant link is exactly the edge we must remove.
 
-Trigger signals: "redundant", "already connected", "cycle in an undirected graph" -- all point to
-Union-Find. This problem is the canonical Union-Find introduction.
+Model this as a [graph](../../../docs/10-glossary.md#graph): each person is a **node** (a single
+item), each friendship an **edge** (a link between two nodes). The setup starts as a tree -- a graph
+with no loops -- and one extra edge is added, which creates exactly one
+[cycle](../../../docs/10-glossary.md#cycle) (a path that returns to its start). Walking the edges in
+the order they were given, the first edge whose two endpoints are *already connected* through
+earlier edges is the one that closes the cycle -- and that is our redundant edge. Returning the
+instant we find it also satisfies the "last edge in input order" requirement, because we walk in
+order and stop at the first (and guaranteed-unique) cycle-closer.
 
-The two optimizations that make Union-Find fast are **path compression** (in `find`, point every
-node straight at the root) and **union by rank** (always attach the shorter tree under the taller).
-With both, each operation is amortised inverse-Ackermann -- effectively `O(1)`.
+To answer "are these two already in the same circle?" cheaply, we use
+[Union-Find](../../../docs/10-glossary.md#union-find-disjoint-set-union). Start with every node in its
+own group. For each edge `[u, v]`, run `find(u)` and `find(v)` -- *which group is each one in?* If
+they report the same group, u and v are already connected, so this edge is redundant: return it. If
+they differ, `union` the two groups into one (now u's whole circle and v's whole circle merge) and
+move on.
+
+Trace `edges = [[1,2],[1,3],[2,3]]`: everyone starts alone. `[1,2]`: 1 and 2 are in different groups
+-> union them into one circle `{1,2}`. `[1,3]`: 1 and 3 differ -> union into `{1,2,3}`. `[2,3]`:
+`find(2)` and `find(3)` now report the *same* group -- 2 and 3 are already connected through 1 -- so
+`[2,3]` is redundant; return it.
+
+### Checkpoint A -- Already in the same circle?
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** When is an edge `[u, v]` the redundant one we return?
+- a) When `u` equals `v`
+- b) When `find(u) == find(v)` -- the two endpoints are already connected through earlier edges
+- c) When it is the very last element of the array
+
+<details><summary>Show answer</summary>
+
+**(b)** -- if the endpoints already share a root, adding this edge would close a loop, so it is the redundant connection.
+
+</details>
+
+**Q2 (comprehend).** Why does returning the FIRST edge where `find(u) == find(v)` also satisfy "return the last such edge in input order"?
+- a) It does not -- you must scan the whole array first
+- b) The problem guarantees exactly one cycle, so there is exactly one cycle-closing edge; walking in order and stopping at it is correct
+- c) Because the edges arrive sorted
+
+<details><summary>Show answer</summary>
+
+**(b)** -- with a unique redundant edge guaranteed, the first `find(u) == find(v)` encountered while scanning in order is the answer.
+
+</details>
 
 ## Pseudocode
 
@@ -142,6 +192,38 @@ the triangle. Return `[2,3]`.
 For input `[[1,2],[2,3],[3,4],[1,4],[1,5]]`: the first three edges link `1-2-3-4` into one set
 (rooted at `1`). The fourth edge `[1,4]` would re-connect two nodes already in that set -- it is
 returned as the redundant edge. The fifth edge `[1,5]` is never reached.
+
+### Checkpoint B -- Union a new edge list
+
+**Q1 (apply).** Trace `edges = [[1,2],[2,3],[3,1]]` (a triangle). Which edge is returned?
+- a) `[1,2]`
+- b) `[2,3]`
+- c) `[3,1]` -- after `[1,2]` and `[2,3]`, nodes 1, 2, 3 share one root; `[3,1]` joins two already-connected nodes
+
+<details><summary>Show answer</summary>
+
+**(c)** -- `[1,2]` unions into {1,2}; `[2,3]` unions into {1,2,3}; for `[3,1]`, `find(3) == find(1)`, so it closes the triangle and is returned.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if you omit path compression and union by rank?
+- a) Wrong answers
+- b) The structure can degenerate into a tall linked list, making each `find` `O(n)` and the whole solution `O(n^2)` on adversarial inputs
+- c) It throws `NullPointerException`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the two optimizations keep the trees shallow; without them a bad input order builds a chain and every `find` walks its full length.
+
+</details>
+
+**Q3 (transfer).** How would you adapt Union-Find to COUNT the number of separate friend groups after all edges?
+
+<details><summary>Show answer</summary>
+
+After processing every edge, count the nodes `i` where `find(i) == i` -- each set has exactly one root, so the number of roots equals the number of groups.
+
+</details>
 
 ## Common mistakes
 

@@ -35,6 +35,32 @@ number of paths to `(i, j)` is just the **sum** of the paths to those two
 neighbours. The top row and left column have only one path each (all-right or
 all-down), which gives the base case.
 
+### Checkpoint A -- Read the recurrence
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** In this solution, what does `dp[i][j]` store?
+- a) The number of distinct paths from the top-left corner to cell `(i, j)`
+- b) The shortest distance to cell `(i, j)`
+- c) Whether cell `(i, j)` is reachable at all
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `dp[i][j]` counts distinct right/down paths reaching that cell; the robot always reaches every cell, so (c) is always true and (b) is a different problem.
+
+</details>
+
+**Q2 (comprehend).** Why are the whole first row `dp[0][*]` and first column `dp[*][0]` set to `1`?
+- a) Because the robot can teleport to them
+- b) Because each of those cells is reachable in exactly one way (all-rights, or all-downs)
+- c) Because they hold the final answer
+
+<details><summary>Show answer</summary>
+
+**(b)** -- an edge cell has only one neighbour to come from, so exactly one path reaches it; that single path is the base every interior cell sums from.
+
+</details>
+
 ## Pseudocode
 
     function uniquePaths(m, n):
@@ -121,6 +147,38 @@ Final table:
 Bottom-right `dp[2][2] = 6`, the answer. You can sanity-check it by hand: the
 six paths correspond to the `2 down / 2 right` sequences DDRR, DRDR, DRRD,
 RDDR, RDRD, RRDD.
+
+### Checkpoint B -- Trace and twist the grid
+
+**Q1 (apply).** Trace a fresh `m = 3, n = 4` grid. After the base loops, what is `dp[2][3]` (the bottom-right answer)?
+- a) 6
+- b) 10
+- c) 12
+
+<details><summary>Show answer</summary>
+
+**(b)** -- row 0 and col 0 are all 1; then `dp[1][1]=2, dp[1][2]=3, dp[1][3]=4, dp[2][1]=3, dp[2][2]=6, dp[2][3]=dp[1][3]+dp[2][2]=4+6=10`.
+
+</details>
+
+**Q2 (analyze).** If you initialised the base row and column to `0` instead of `1`, what would `uniquePaths(3, 7)` return?
+- a) 28 (unaffected)
+- b) 0 (every cell sums two zeros)
+- c) 1
+
+<details><summary>Show answer</summary>
+
+**(b)** -- with zero seeds the recurrence `dp[i-1][j] + dp[i][j-1]` stays 0 everywhere, so the answer collapses to 0. The `1` seeds are essential.
+
+</details>
+
+**Q3 (transfer).** Suppose the robot gains a third move -- one step diagonally down-right. In one sentence, how does the recurrence change?
+
+<details><summary>Show answer</summary>
+
+Add the diagonal neighbour: `dp[i][j] = dp[i-1][j] + dp[i][j-1] + dp[i-1][j-1]`. The first row and column stay `1`, since the diagonal move cannot reach them from the start either.
+
+</details>
 
 ## Common mistakes
 

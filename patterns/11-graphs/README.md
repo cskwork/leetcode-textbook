@@ -211,4 +211,67 @@ adds cycle detection; 684 finishes with Union-Find.
 
 ---
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** This whole pattern rests on three core primitives. Which set?
+- a) Sorting, hashing, two pointers
+- b) DFS, BFS, and Union-Find
+- c) Recursion, loops, and arrays
+
+<details><summary>Show answer</summary>
+
+**(b)** -- DFS for connectivity/counting/cycles, BFS for shortest paths and level spreading, Union-Find for "are these already connected?".
+
+</details>
+
+**Q2 (pattern recognition).** New problem: "given a grid of rooms and a start cell, find the FEWEST STEPS to reach the exit." Which technique?
+- a) DFS -- it finds a path
+- b) BFS -- its level-by-level order gives the shortest path on an unweighted graph
+- c) Union-Find
+
+<details><summary>Show answer</summary>
+
+**(b)** -- on an unweighted graph BFS reaches each cell at its minimum distance; DFS finds *a* path, not the shortest.
+
+</details>
+
+**Q3 (pattern recognition).** New problem: "a list of friendships; how many separate friend groups exist?" Which technique?
+- a) Union-Find -- merge groups, then count the distinct roots
+- b) BFS for shortest path
+- c) 3-color cycle detection
+
+<details><summary>Show answer</summary>
+
+**(a)** -- each union merges two groups; the number of remaining roots (`find(i) == i`) is the group count.
+
+</details>
+
+**Q4 (apply).** On the grid below (4-directional), how many islands are there?
+
+    1 0 1
+    0 0 0
+    1 0 1
+
+- a) `1` -- the `1`s connect diagonally
+- b) `4` -- no two `1`s share an edge, so each is its own island
+- c) `2`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- diagonals do not count, so none of the four `1`s touches another; each forms its own single-cell island.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) how to solve "find every cell reachable from a start cell, moving only through neighbors whose value is at least the start cell's value."
+
+<details><summary>Show answer</summary>
+
+Run a DFS or BFS from the start, marking each visited cell; only step into a neighbor whose value is `>=` the start cell's value (pass that start value as the threshold). The marked cells are the answer.
+
+</details>
+
+---
+
 Next problem: [0733 - Flood Fill](./0733-flood-fill/).

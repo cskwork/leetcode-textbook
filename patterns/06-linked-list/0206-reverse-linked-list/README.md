@@ -4,6 +4,12 @@
 **Pattern:** Linked List
 **LeetCode:** https://leetcode.com/problems/reverse-linked-list/
 
+## Concepts used
+
+- **Linked list** -- a chain of nodes where each node stores a value and an arrow (pointer) to the next node; you can only walk forward. [glossary](../../../docs/10-glossary.md#linked-list)
+- **Two pointers** -- two variables that walk the structure together; here `prev` and `curr` move in lockstep so each arrow can be flipped safely. [glossary](../../../docs/10-glossary.md#two-pointers)
+- **In-place** -- modifying the existing nodes directly using only O(1) extra memory, instead of building a second list. [glossary](../../../docs/10-glossary.md#in-place)
+
 ## Problem
 
 Given the `head` of a singly linked list, reverse the list and return the new head.
@@ -25,13 +31,67 @@ Examples:
 
 ## Intuition
 
-Every node currently points forward to the next one. To reverse the list we must flip every
-one of those arrows so each node instead points back at its predecessor. The catch: the
-moment we overwrite `curr.next`, we lose the pointer to the rest of the list. So on each
-node we do three things in order -- remember where `next` used to point, redirect the arrow
-backward, then step forward using the value we saved. This is Template A from the pattern
-intro, and it is the single most reused snippet in the whole section: Reorder, Palindrome,
-and Add-Two-Numbers' reversals all lean on it.
+Think of a linked list as a treasure hunt: each clue (a [node](../../../docs/10-glossary.md#linked-list))
+holds a value and a *pointer* -- a reference to the next node, like an arrow
+drawn on paper pointing from one clue to the next. The last clue's arrow points
+to "nothing" (`null`), which ends the hunt. To reverse the list, picture a
+one-way street where every arrow points forward; we want to flip every single
+arrow so the street runs the other way.
+
+Let us watch the smallest meaningful case, `1 -> 2 -> 3 -> null`:
+
+- Before: `1 -> 2 -> 3 -> null`
+- After:  `3 -> 2 -> 1 -> null`
+
+Node `1` used to point at `2`; now it must point at `null` (it is the new tail).
+Node `3` used to point at `null`; now it must point at `2` (it is the new head).
+Every node's arrow gets flipped to point at the node that used to come *before*
+it.
+
+Here is the catch that freezes beginners. The moment we overwrite a node's arrow
+(say, point `1` at `null`), the old arrow to `2` is gone -- and we still need to
+reach `2` to flip it. So before changing anything we must *save* where the arrow
+currently points. That gives a four-step dance, repeated for every node, using
+two fingers called `prev` (the node we just came from) and `curr` (the node we
+are fixing right now):
+
+1. **Save** the next node: `next = curr.next` (remember where the arrow points).
+2. **Flip**: `curr.next = prev` (point this node's arrow backward, at `prev`).
+3. **Advance `prev`**: `prev = curr` (the current node becomes "behind" next
+   round).
+4. **Advance `curr`**: `curr = next` (step forward using the arrow we saved).
+
+This is [two pointers](../../../docs/10-glossary.md#two-pointers) walking the
+list in lockstep, and because we only restring existing arrows and never allocate
+new nodes, the work is [in-place](../../../docs/10-glossary.md#in-place) -- O(1)
+extra memory. When `curr` finally steps off the end (becomes `null`), `prev` is
+sitting on the old tail, which is the new head, and that is what we return.
+
+### Checkpoint A -- The four-step arrow flip
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** During one step of the reverse loop, what is the very first thing you must do with `curr.next`?
+- a) Overwrite it with `prev`
+- b) Save it into a temporary variable
+- c) Set it to `null`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- after `curr.next = prev`, the old link to the rest of the list is gone; saving `next = curr.next` first is what lets `curr` step forward.
+
+</details>
+
+**Q2 (comprehend).** When the `while (curr != null)` loop exits, which pointer is the new head of the reversed list?
+- a) `curr`
+- b) `prev`
+- c) `head`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the loop stops because `curr` became `null`; `prev` is on the last node touched, which is the old tail and therefore the new head.
+
+</details>
 
 ## Pseudocode
 
@@ -105,6 +165,38 @@ Loop exits because `curr` is now `null`. Return `prev` = node `5`. Output: `[5, 
 
 Edge cases: empty list `[]` -- `curr` starts `null`, loop never runs, return `prev` = null.
 Single node `[1]` -- one iteration flips `1.next` to null, `prev` becomes `1`, return `1`.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `reverseList` on `head = [7, 8, 9]`. After the loop exits, which node does `prev` point at, and what is the output?
+- a) `prev` = node 7, output `[7, 8, 9]`
+- b) `prev` = node 9, output `[9, 8, 7]`
+- c) `prev` = `null`, output `[]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- each iteration flips one arrow and advances; when `curr` steps off the end `prev` sits on the old tail (9), and reading from it gives `[9, 8, 7]`.
+
+</details>
+
+**Q2 (analyze).** What happens if you swap the order and write `curr.next = prev;` *before* `next = curr.next;` on a 3-node list?
+- a) The list reverses correctly
+- b) The link to the remaining nodes is destroyed, so only the first node is reversed and the loop ends early
+- c) It throws a `NullPointerException`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- overwriting `curr.next` first throws away the pointer to node 2, so `curr` has nowhere to advance to and the rest of the list is lost.
+
+</details>
+
+**Q3 (transfer).** Suppose you wanted to reverse only the *first k* nodes and leave the rest attached. In words, what changes?
+
+<details><summary>Show answer</summary>
+
+Run the same four-step dance exactly k times, then point the *original* head (now the tail of the reversed prefix) at the node `curr` is resting on (the first unreversed node). That keeps the unchanged tail spliced on after the reversed prefix.
+
+</details>
 
 ## Common mistakes
 

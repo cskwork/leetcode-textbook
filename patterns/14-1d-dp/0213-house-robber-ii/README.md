@@ -51,6 +51,32 @@ This is a recurring DP meta-pattern: **when a constraint makes the
 state hard to define, split the input so the constraint disappears in
 each piece**, then take the best over the pieces.
 
+### Checkpoint A -- Break the circle
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** House Robber II solves the circle by running House Robber I on how many linear slices, then taking the max?
+- a) One slice: the whole array
+- b) Two slices: [0..n-2] and [1..n-1]
+- c) Three slices: first, middle, last
+
+<details><summary>Show answer</summary>
+
+**(b)** -- exclude the last house, or exclude the first house. Every legal plan appears in at least one slice, since you either rob the first house or you don't.
+
+</details>
+
+**Q2 (comprehend).** Why must a single-house array be handled before slicing?
+- a) It is an optimization, not a correctness issue
+- b) With n=1 both slices would be empty, so the helper would read from an invalid range
+- c) Single houses always have negative money
+
+<details><summary>Show answer</summary>
+
+**(b)** -- robLinear(0, n-2) would become robLinear(0,-1), an empty range; the n==1 guard returns nums[0] directly before any slice is taken.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -145,6 +171,38 @@ Step-by-step on `nums = [2, 3, 2]`:
 
 Notice the two slices overlap on the middle house but never include
 both ends at once, which is exactly the constraint the circle imposes.
+
+### Checkpoint B -- Trace both slices
+
+**Q1 (apply).** Trace `nums = [2, 7, 9, 3]`. What does `rob` return?
+- a) 10
+- b) 11
+- c) 14
+
+<details><summary>Show answer</summary>
+
+**(b)** -- Case A on [2,7,9] gives 11 (rob 2 and 9); Case B on [7,9,3] gives 10 (rob 7 and 3); max(11,10)=11.
+
+</details>
+
+**Q2 (analyze).** On `nums = [2, 3, 2]`, what would happen if you ran House Robber I on the WHOLE array instead of slicing?
+- a) Still 3, which is correct
+- b) 4, wrong -- it would rob house 0 and house 2 (2+2), which the circle forbids
+- c) 2, wrong
+
+<details><summary>Show answer</summary>
+
+**(b)** -- ignoring the circle treats houses 0 and 2 as non-adjacent, so it returns 4 by robbing both; the circle makes them adjacent, so the true answer is 3.
+
+</details>
+
+**Q3 (transfer).** If the houses formed TWO separate circles instead of one, how would you extend the approach in one sentence?
+
+<details><summary>Show answer</summary>
+
+Run the two-slice trick independently on each circle, then sum the results -- each circle is a self-contained House Robber II, and the circles do not interact.
+
+</details>
 
 ## Common mistakes
 

@@ -4,6 +4,12 @@
 **Pattern:** Linked List
 **LeetCode:** https://leetcode.com/problems/remove-nth-node-from-end-of-list/
 
+## Concepts used
+
+- **Linked list** -- a chain of nodes where each node stores a value and an arrow (pointer) to the next node. [glossary](../../../docs/10-glossary.md#linked-list)
+- **Two pointers** -- a fast pointer and a slow pointer kept a fixed distance apart, so the slow one lands on the deletion target's predecessor. [glossary](../../../docs/10-glossary.md#two-pointers)
+- **Sentinel (dummy head)** -- a throwaway node in front of the real head that supplies the predecessor gap and absorbs the "deleting the head" special case. [glossary](../../../docs/10-glossary.md#sentinel)
+
 ## Problem
 
 Given the `head` of a linked list, remove the nth node from the end of the list and return
@@ -26,24 +32,68 @@ Examples:
 
 ## Intuition
 
-To delete a node from a singly linked list you must stand on its *predecessor* and skip past
-it: `prev.next = prev.next.next`. So the real question is "how do I get a pointer onto the
-node *before* the nth-from-last, in a single pass, without knowing the length?"
+To delete a node from a singly [linked list](../../../docs/10-glossary.md#linked-list)
+you cannot just "remove" it -- you must stand on the node *before* it and make
+that node's arrow (its *pointer*, the reference to the next node) skip over the
+target: `prev.next = prev.next.next`. So the real task is: "land a finger on the
+node just before the nth-from-last, in a single pass, without knowing the list's
+length."
 
-The trick: give `fast` an n-node head start. Then advance both `slow` and `fast` together
-until `fast` falls off the end. Because `fast` started exactly n nodes ahead, when `fast` is
-null, `slow` is exactly n nodes behind -- which puts it on the predecessor of the
-nth-from-last node. One skip and we are done.
+Analogy: two friends walk the same path, but one starts exactly `n` paces ahead
+of the other. They always walk at the same speed, so the gap between them stays
+exactly `n`. When the friend in front steps off the end of the path, the friend
+behind is exactly `n` paces from the end -- standing right where we want.
 
-Two details make this bullet-proof:
+Smallest meaningful case, `1 -> 2 -> 3 -> 4 -> 5`, remove `n = 2` from the end
+(the target node is `4`):
 
-- **Off-by-one.** "nth from end" means there are n nodes after... actually, the nth-from-last
-  node has n-1 nodes trailing it. To land `slow` on its *predecessor*, `fast` must start n+1
-  positions ahead of `slow`. We get the "+1" for free by starting both at a **dummy** node
-  in front of the head.
-- **Removing the head.** If the nth-from-last is the head itself (e.g. remove the last node
-  of a length-n list), there is no predecessor among the real nodes. The dummy node *becomes*
-  that predecessor, so deleting the head is no longer a special case.
+- Give the front friend a head start, then march both together until the front
+  friend falls off the end.
+- When the front friend is `null`, the behind friend lands on node `3` -- the
+  *predecessor* of `4`. Make `3` skip `4` (`3.next = 5`), and the list becomes
+  `1 -> 2 -> 3 -> 5`.
+
+Two off-by-one traps hide in "n paces ahead", and a single trick fixes both:
+start both fingers on a **dummy head** -- a throwaway node placed in front of the
+real head (a [sentinel](../../../docs/10-glossary.md#sentinel)).
+
+- *Land on the predecessor, not the target.* The nth-from-last node has `n - 1`
+  nodes trailing it, so to stop on its *predecessor* the front finger must start
+  `n + 1` ahead. Starting both fingers on the dummy contributes that extra `+1`
+  for free.
+- *Deleting the head.* If the target *is* the head (e.g. remove the 5th-from-last
+  in a 5-node list), there is no real predecessor -- but the dummy *becomes* that
+  predecessor, so deleting the head needs no special branch.
+
+This is [two pointers](../../../docs/10-glossary.md#two-pointers) held a fixed
+distance apart, and we return `dummy.next` (not `head`): if the original head was
+deleted, `head` now dangles, while `dummy.next` correctly points to the new one.
+
+### Checkpoint A -- Land on the predecessor
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** To remove the nth-from-last node, the slow pointer must land on which node?
+- a) The target node itself
+- b) The node just before the target (its predecessor)
+- c) The head of the list
+
+<details><summary>Show answer</summary>
+
+**(b)** -- deletion works by making the predecessor's arrow skip the target (`prev.next = prev.next.next`), so you must be standing one node *before* it.
+
+</details>
+
+**Q2 (comprehend).** Why does `fast` get an n+1 step head start instead of just n?
+- a) To move faster through the list
+- b) So that when `fast` falls off the end, `slow` is one node short of the target -- on its predecessor
+- c) To count the length of the list
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the extra step accounts for the "one before" offset; with only n steps `slow` would land *on* the target, too late to unlink it.
+
+</details>
 
 ## Pseudocode
 
@@ -141,6 +191,38 @@ Removing-the-head case `[1, 2, 3, 4, 5]`, `n = 5`: phase 1 sends fast `null` aft
 (A,B,C,D,E then null at i... let's count: i=0->A, i=1->B, i=2->C, i=3->D, i=4->E, i=5->null).
 Phase 2 never runs. `slow` is still on dummy. `slow.next = slow.next.next` makes
 dummy.next = B. Return B -> `[2, 3, 4, 5]`. No special case needed.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `removeNthFromEnd(head = [1, 2, 3], n = 1)`. What is returned?
+- a) `[1, 2]` -- the last node is removed
+- b) `[2, 3]` -- the first node is removed
+- c) `[1, 3]` -- the middle node is removed
+
+<details><summary>Show answer</summary>
+
+**(a)** -- fast gets a 2-step head start (lands on 2), then both slide until fast is `null`, leaving slow on node 2 (the predecessor of 3); unlinking 3 yields `1 -> 2`.
+
+</details>
+
+**Q2 (analyze).** If you advanced `fast` only n steps (a loop `for i < n`), where would slow end up?
+- a) On the target node, so unlinking skips the wrong node
+- b) On the head, which is fine
+- c) On `null`, causing a crash
+
+<details><summary>Show answer</summary>
+
+**(a)** -- short by one, `slow` lands *on* the nth-from-last node; `slow.next.next` then skips the node *after* the target, corrupting the list.
+
+</details>
+
+**Q3 (transfer).** Suppose you were also told the list's length up front. In words, how else could you solve this?
+
+<details><summary>Show answer</summary>
+
+The target sits at index `length - n` from the front, so walk to its predecessor at index `length - n - 1` (or to a dummy if that is -1, i.e. the head case) and skip the target. Same unlink, but the two-pointer version avoids a separate length-counting pass.
+
+</details>
 
 ## Common mistakes
 

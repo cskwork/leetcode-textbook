@@ -4,6 +4,12 @@
 **Pattern:** Backtracking
 **LeetCode:** https://leetcode.com/problems/word-search/
 
+## Concepts used
+
+- **Recursion** -- a function that calls itself on a smaller version of the problem; here "smaller" means "one more letter matched". [glossary](../../../docs/10-glossary.md#recursion)
+- **Backtracking** -- try a choice (step to a cell), recurse, then UNDO it (release the cell) before trying the next direction. [glossary](../../../docs/10-glossary.md#backtracking)
+- **DFS (Depth-First Search)** -- a traversal that goes as deep as possible before backing up; here, walking the grid letter by letter. [glossary](../../../docs/10-glossary.md#dfs-depth-first-search)
+
 ## Problem
 
 Given an `m x n` grid of characters `board` and a string `word`, return `true`
@@ -57,6 +63,32 @@ The two ideas that make this problem tractable:
 
 The base case is "prefix index reached the end of `word`" -- at that point
 every character has been matched and we return true.
+
+### Checkpoint A -- The grid is its own visited mask
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** How does the solution mark a cell visited without a separate `visited[][]` array?
+- a) It keeps a list of visited coordinates
+- b) It overwrites `board[r][c]` with `'#'` in place, then restores the original char after
+- c) It copies the whole board each call
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the cell itself becomes the visited flag: set it to `'#'` before recursing (CHOOSE), restore the saved character after the loop (UN-CHOOSE). No extra matrix is allocated.
+
+</details>
+
+**Q2 (comprehend).** The neighbour check is `board[nr][nc] == word.charAt(index + 1)`. How does this also serve as the visited check?
+- a) It doesn't; a separate check is still needed
+- b) A visited cell holds `'#'`, which never equals any real next character, so the same condition rejects revisits for free
+- c) It checks the array bounds too
+
+<details><summary>Show answer</summary>
+
+**(b)** -- because the in-place marker is `'#'` and the word only contains letters, a marked cell can never match `word[index+1]`, so revisits are blocked by the very same equality test.
+
+</details>
 
 ## Pseudocode
 
@@ -207,6 +239,38 @@ So the answer is `true`, found via the path `(1,3) -> (2,3) -> (2,2)` spelling
 `S-E-E`. Notice how the in-place `'#'` at `(1,3)` correctly blocked both
 attempts to walk back onto the starting cell -- the marker *is* the visited
 mask, no separate array needed.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** On `board = [["A","B"],["C","D"]]`, `word = "AB"`, what is returned and via which path?
+- a) `false` -- no path spells "AB"
+- b) `true` -- via `(0,0)->(0,1)`
+- c) `true` -- via `(0,0)->(1,0)`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `A` sits at `(0,0)`; its right neighbour `(0,1)` is `B`, which matches `word[1]`. At `index == 1 == word.length()-1` the base case returns `true`. Path `(0,0)->(0,1)` spells `A-B`.
+
+</details>
+
+**Q2 (analyze).** What breaks if you restore `board[r][c] = saved` INSIDE the direction loop (after each direction) instead of after it?
+- a) Nothing -- it is equivalent
+- b) You un-mark the cell before trying the next direction, so a direction can walk back onto the cell you are standing on
+- c) The board gets cleared entirely
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the cell must stay marked for the whole frame. Restoring early reopens it, and a sibling direction can step back onto the current cell, producing bogus paths. Restore exactly once, after the loop.
+
+</details>
+
+**Q3 (transfer).** Suppose you must COUNT how many distinct paths spell the word (not just return true/false). What changes in the approach?
+
+<details><summary>Show answer</summary>
+
+Drop the early `return true`; instead, when `index == word.length()-1`, add 1 to a counter and keep recursing through all directions. Keep the in-place mark/restore discipline so sibling paths stay independent. Return the counter at the end.
+
+</details>
 
 ## Common mistakes
 

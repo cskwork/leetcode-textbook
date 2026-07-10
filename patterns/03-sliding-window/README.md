@@ -102,6 +102,63 @@ The first and last are warm-ups; 0209 and 0003 drill the expand/shrink rhythm; 0
 - **Confusing "at most K" with "exactly K".** "At most K distinct" grows freely under a
   budget; "exactly K" usually needs two windows (at-most-K minus at-most-(K-1)).
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In the variable-size window template, which statement about the two pointers is always true?
+
+- a) Both `left` and `right` only ever move forward
+- b) `left` moves forward but `right` can jump backward
+- c) `left` can move backward to re-add dropped elements
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `right` expands one step at a time, and the `while` loop only pulls `left` forward. Moving either pointer backward breaks the "each element enters and leaves once" guarantee that makes the whole scan O(n).
+
+</details>
+
+**Q2 (pattern recognition).** New problem: "longest substring containing **at most K distinct characters**." Which variant of this pattern fits?
+- a) A fixed-size window of width K
+- b) A variable window with a frequency map and a distinct-count; expand `right`, shrink `left` while distinct > K, then record the length
+- c) Sort the string, then use two pointers
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the constraint is on a count (distinct letters), so a frequency map plus a distinct counter drives the shrink loop. It is the 0424 shape with "at most K distinct" replacing "at most K replacements". Sorting is forbidden -- it destroys contiguity.
+
+</details>
+
+**Q3 (pattern recognition).** New problem: "is any value in the array repeated within `k` indices of an earlier equal value?" Which tool is the most direct?
+- a) A hash set holding the last `k` values, evicting the one that falls out of range
+- b) Nested loops comparing every pair
+- c) A running sum of the values
+
+<details><summary>Show answer</summary>
+
+**(a)** -- this is a fixed-distance window: the set answers "is this value nearby?" in O(1), and eviction keeps the look-back range exactly `k`. It is the 0219 reflex.
+
+</details>
+
+**Q4 (apply).** Run the 0209 algorithm (shortest subarray, sum >= target) on `target = 6, nums = [1, 2, 3, 4]`. What is returned?
+- a) 2
+- b) 3
+- c) 4
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the running sums reach 6 at index 2 (window [1,2,3], length 3), and after shrinking at index 3 the tightest valid window is [3,4] of length 2.
+
+</details>
+
+**Q5 (design).** In words, not code, sketch how to solve "longest substring with at most K distinct characters" using this pattern's template.
+
+<details><summary>Show answer</summary>
+
+Keep a frequency map (char -> count) and a `distinct` counter. Expand `right`: add the char, bumping its count; if it was previously 0, increment `distinct`. While `distinct > K`, remove the char at `left` (decrement its count, and `distinct` when a count hits 0), then advance `left`. After the shrink, update `best = max(best, right - left + 1)`. Same expand/shrink/measure skeleton as 0424, with a different validity test.
+
+</details>
+
 ---
 
 Next: start with [0121-best-time-to-buy-and-sell-stock](./0121-best-time-to-buy-and-sell-stock/).

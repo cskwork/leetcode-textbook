@@ -44,6 +44,32 @@ is: accumulate `i ^ nums[i]` for each index, seed the accumulator with `n`,
 and whatever is left at the end is the answer. This is the exact same XOR
 identity that solved Single Number, applied to a different list.
 
+### Checkpoint A -- Why seed with n?
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** Why is the XOR accumulator seeded with `n` (the array length) rather than `0`?
+- a) Because XOR with `n` runs faster
+- b) Because the loop index only reaches `n - 1`, so seeding `n` makes the full range `{0..n}` appear exactly once
+- c) Because seeding with `0` would throw an error
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the index `i` runs `0..n-1`, so the value `n` itself would never be XOR-ed in. Seeding with `n` puts it into the mix, covering every value the range `[0, n]` should contain.
+
+</details>
+
+**Q2 (comprehend).** In the dry-run, the combined list is `{0,1,2,3}` XOR `{3,0,1}`. Why does `2` survive while 0, 1, and 3 cancel?
+- a) Because 2 is the largest value
+- b) Because 2 appears in the range but never in the array, so it has nothing to cancel with; 0, 1, and 3 each appear in both lists and pair off
+- c) Because 2 is a power of two
+
+<details><summary>Show answer</summary>
+
+**(b)** -- XOR only cancels a value that appears in BOTH the range and the array. Since 2 is in the range but missing from the array, it is left unpaired and survives in `running`.
+
+</details>
+
 ## Pseudocode
 
     function missingNumber(nums):
@@ -133,6 +159,38 @@ appears only in the range, never in the array, so it survives in `running`.
 
 Sanity check with the sum formula: expected `= 3*4/2 = 6`; actual
 `= 3+0+1 = 4`; `6 - 4 = 2`. Same answer.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `missingNumber([2, 0, 1])` (so `n = 3`, range `{0,1,2,3}`). What is returned?
+- a) `3`
+- b) `0`
+- c) `2`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- seed `running = 3`. Step 0: `3 ^ 0 ^ 2 = 1`; step 1: `1 ^ 1 ^ 0 = 0`; step 2: `0 ^ 2 ^ 1 = 3`. The value `3` is missing from the array, so it survives and is returned.
+
+</details>
+
+**Q2 (analyze).** Suppose you seeded the accumulator with `0` instead of `n`, on input `nums = [0, 1, 2]` (`n = 3`, so the true missing value is `3`). What would the code return?
+- a) `3` -- still correct
+- b) `0` -- wrong, because `3` is never XOR-ed into the accumulator
+- c) It throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- without the seed, `3` never enters the XOR. The values present (`0, 1, 2`) all cancel with their indices, leaving `0` -- incorrect, since the true missing number is `3`. The seed is what catches a missing `n`.
+
+</details>
+
+**Q3 (transfer).** The sum formula (Gauss) solves this too: `expected = n*(n+1)/2`, answer = `expected - actual_sum`. Give one advantage and one risk of the sum approach versus the XOR approach.
+
+<details><summary>Show answer</summary>
+
+Advantage: it is easier to explain and remember in an interview. Risk: `n * (n + 1)` can overflow a 32-bit `int` for large `n`, so one operand must be cast to `long` first. XOR never overflows, because it never produces a value wider than its inputs.
+
+</details>
 
 ## Common mistakes
 

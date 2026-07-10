@@ -4,6 +4,12 @@
 **Pattern:** Sliding Window
 **LeetCode:** https://leetcode.com/problems/longest-substring-without-repeating-characters/
 
+## Concepts used
+
+- **Hash map** -- a key->value lookup table, O(1) average; here the key is a character and the value is its most recent index. [glossary](../../../docs/10-glossary.md#hash-map)
+- **Sliding window** -- maintain a moving window `[left..right]` that always holds a valid substring; expand `right`, jump `left` when a repeat appears. [glossary](../../../docs/10-glossary.md#sliding-window)
+- **Invariant** -- a condition that is always true at the start of every loop iteration; here, "the window contains no repeated characters". [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 Given a string `s`, find the length of the **longest substring** (contiguous) that
@@ -32,12 +38,72 @@ Example 3:
 
 ## Intuition
 
-Trigger signal: "longest substring with property X", where X here is "all characters
-distinct". Use a variable-size window `[left..right]` that always holds a substring with
-no repeats. Expand `right`; when the new character is already inside the window, jump
-`left` past the previous occurrence. The trick that makes this O(n) is to keep a hash
-map from character to its most recent index, so a collision can be resolved in O(1) by
-moving `left` directly, instead of shrinking one step at a time.
+Picture a magnifying glass sliding left-to-right along a row of letters. Inside the glass
+you want every letter to be different. When the glass reaches a letter that is *already
+inside it*, you slide the glass's left edge past the earlier copy so the duplicate
+disappears, then keep going.
+
+Two terms to nail down. A **substring** is a contiguous run of neighbours (like "abc" inside
+"abcabcbb"), not a subset that skips letters. A **window** `[left..right]` means "the letters
+at positions left, left+1, ..., right".
+
+Smallest example, `s = "abcabcbb"`, walking `right` from 0:
+
+- right=0 'a': window "a", no repeat. Length 1.
+- right=1 'b': window "ab". Length 2.
+- right=2 'c': window "abc". Length 3.
+- right=3 'a': 'a' is already in the window (at position 0)! Jump `left` past it, to 1. Window "bca". Length 3.
+- right=4 'b': 'b' is at position 1, now still inside (left=1). Jump `left` to 2. Window "cab". Length 3.
+- right=5 'c': 'c' at 2, inside. Jump `left` to 3. Window "abc". Length 3.
+- right=6 'b': 'b' last seen at 4, inside (left=3). Jump `left` to 5. Window "cb". Length 2.
+- right=7 'b': 'b' last seen at 6, inside. Jump `left` to 7. Window "b". Length 1.
+
+Best length reached: 3.
+
+General rule: keep a hash map from each character to its most recent index. For each new
+character at `right`: if we have seen it before AND its last position is still inside the
+window (>= left), jump `left` to just past that position. Then record the character's new
+position. The window is now guaranteed repetition-free, so update the best length.
+
+The **invariant** we maintain is: *at the start of each step, the window `[left..right-1]`
+has no repeated letters*. Adding the character at `right` either keeps the invariant (new
+letter) or breaks it (a repeat inside the window) -- and we immediately restore it by
+jumping `left` past the old copy, which removes the duplicate. We jump instead of shrinking
+one step at a time because the map tells us exactly where the duplicate sits. The check
+`prev >= left` matters: the map remembers every character ever seen, but only an occurrence
+*still inside the window* forces a jump -- one that `left` has already passed must be ignored
+(see the `"abba"` dry-run below).
+
+This is the classic variable-size sliding window. [0219 Contains Duplicate II](../0219-contains-duplicate-ii/)
+reuses the "hash structure tracks the recent window" reflex with a fixed-width window, and
+[0424 Longest Repeating Character Replacement](../0424-longest-repeating-character-replacement/)
+uses a window with a richer validity check.
+
+### Checkpoint A -- The jump-left reflex
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** What does the hash map store for each character?
+- a) The total count of that character in the whole string
+- b) The most recent index where that character was seen
+- c) The length of the longest run ending at that character
+
+<details><summary>Show answer</summary>
+
+**(b)** -- each key maps to its most recent index, so a repeat can be located and `left` jumped straight past it in O(1).
+
+</details>
+
+**Q2 (comprehend).** On `s = "abba"`, when `right` reaches the final `'a'`, why does `left` stay put instead of jumping back?
+- a) Because the map has no entry for 'a'
+- b) Because the earlier 'a' sits at index 0, which is now left of `left`, so the `prev >= left` check is false
+- c) Because the window is already invalid
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the earlier 'a' lives at index 0, but `left` has already advanced to 2. Since 0 < 2, that occurrence is outside the window and must be ignored; jumping to it would shrink the window wrongly.
+
+</details>
 
 ## Pseudocode
 
@@ -126,6 +192,38 @@ break:
 
 Without the `prev >= left` guard, step 3 would jump `left` to `1`, shrinking the window
 to "a" instead of correctly staying at "ba".
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `s = "abcb"`. What length is returned?
+- a) 2
+- b) 3
+- c) 4
+
+<details><summary>Show answer</summary>
+
+**(b)** -- "abc" gives best 3; at index 3 the second 'b' was last seen at index 1 (still inside), so `left` jumps to 2, leaving window "cb" of length 2. Best stays 3.
+
+</details>
+
+**Q2 (analyze).** If you deleted the `prev >= left` guard, on which input would the answer first go wrong?
+- a) "abc"
+- b) "abba"
+- c) "aaaa"
+
+<details><summary>Show answer</summary>
+
+**(b)** -- at the final 'a' the stale index 0 would drag `left` back to 1, shrinking the valid window "ba" down to "a". Inputs where no old occurrence is left behind are unaffected.
+
+</details>
+
+**Q3 (transfer).** Suppose the question asked for the substring itself, not just its length. What one piece of bookkeeping would you add?
+
+<details><summary>Show answer</summary>
+
+Track a `bestStart` index: whenever a new best length is found, save the current `left`. Return `s.substring(bestStart, bestStart + best)` (empty string if best is 0). The scan logic is unchanged.
+
+</details>
 
 ## Common mistakes
 

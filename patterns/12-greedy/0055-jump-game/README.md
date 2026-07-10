@@ -4,6 +4,12 @@
 **Pattern:** Greedy
 **LeetCode:** https://leetcode.com/problems/jump-game/
 
+## Concepts used
+
+- **Greedy** -- make the locally-best choice at each step and never revisit it; works only when you can prove that choice is part of some optimal solution. [glossary](../../../docs/10-glossary.md#greedy)
+- **Array** -- a row of numbered slots holding values, accessed by position in O(1). [glossary](../../../docs/10-glossary.md#array)
+- **Invariant** -- a condition that is always true at the start of every loop iteration; stating it clearly is how you prove a loop correct. [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 You are given an integer array `nums` of length `n`. You start at index `0`,
@@ -46,6 +52,32 @@ between the start and `j` is also reachable (because the jump that lands on
 tracking only the single frontier variable is complete — there is no need
 to remember *how* we got there. This monotonic invariant is exactly what
 makes the local choice (always extend the frontier) globally safe.
+
+### Checkpoint A -- The reachable frontier
+
+Pause and answer before expanding.
+
+**Q1 (recall).** What single value does the algorithm track as its only state?
+- a) The exact index you are currently standing on
+- b) The farthest index reachable so far
+- c) The number of jumps taken
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `farthest` is the running frontier; everything up to and including it is reachable, everything beyond is not.
+
+</details>
+
+**Q2 (comprehend).** The algorithm returns false only when:
+- a) Some `nums[i]` equals 0
+- b) The cursor `i` is greater than `farthest` -- we cannot even stand on index `i`
+- c) `farthest` overshoots the array
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a zero is only a trap if every later index depends on passing through it; the `i > farthest` test captures that precisely, so zeros need no special case.
+
+</details>
 
 ## Pseudocode
 
@@ -131,6 +163,38 @@ For contrast, on `nums = [2,3,1,1,4]`:
 
 Return **true** at step 2 — the goal is reached before we even visit later
 indices.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `nums = [2, 0, 2, 0, 1]` (last index 4). What is returned, and at which index is it decided?
+- a) true, decided at index 2
+- b) false, stuck at index 1
+- c) false, never reaches index 4
+
+<details><summary>Show answer</summary>
+
+**(a)** -- index 0 sets farthest to 2; index 2 (reachable, since 2 <= 2) sets farthest to 4, which is >= last, so `return true` fires there.
+
+</details>
+
+**Q2 (analyze).** On a single-element input `nums = [0]`, what is returned and why?
+- a) true -- already on the last index, no jump needed
+- b) false -- `nums[0]` is 0 so you can never move
+- c) it throws an exception
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the loop's first iteration finds `farthest >= last` (both are 0) and returns true before any movement matters.
+
+</details>
+
+**Q3 (transfer).** If the problem asked for the farthest index reachable (not just yes/no), what would you change?
+
+<details><summary>Show answer</summary>
+
+Return `farthest` instead of a boolean -- the algorithm already computes it. Stop the loop when `i > farthest` and return the last value of `farthest`.
+
+</details>
 
 ## Common mistakes
 

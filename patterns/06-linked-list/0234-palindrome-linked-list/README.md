@@ -4,6 +4,12 @@
 **Pattern:** Linked List
 **LeetCode:** https://leetcode.com/problems/palindrome-linked-list/
 
+## Concepts used
+
+- **Linked list** -- a chain of nodes where each node stores a value and an arrow (pointer) to the next node; only forward traversal is possible. [glossary](../../../docs/10-glossary.md#linked-list)
+- **Two pointers** -- a slow pointer (one step) and a fast pointer (two steps) that find the middle in one pass. [glossary](../../../docs/10-glossary.md#two-pointers)
+- **In-place** -- reversing a chunk of the existing list and comparing with pointers, using O(1) extra memory instead of copying values into an array. [glossary](../../../docs/10-glossary.md#in-place)
+
 ## Problem
 
 Given the `head` of a singly linked list, return `true` if it is a palindrome (reads the same
@@ -26,20 +32,68 @@ Examples:
 
 ## Intuition
 
-A palindrome mirrors around its center. So the first half of the list must equal the *reverse*
-of the second half. We cannot walk a singly linked list backwards -- but we can reverse a
-chunk of it. The plan is three steps, each a technique we have already practiced:
+A palindrome reads the same forwards and backwards, like "racecar" or
+`1 2 2 1`. It mirrors around its center: the first half equals the *reverse* of
+the second half. For an array we would simply compare slot 0 with the last slot,
+slot 1 with the second-last, and so on. But a singly
+[linked list](../../../docs/10-glossary.md#linked-list) only points forward (each
+node's *pointer* is an arrow to the next node), so we cannot walk it backwards to
+do that mirror comparison. The trick: we can reverse a *chunk* of it.
 
-1. **Find the middle** with slow / fast pointers (same as Floyd, but we stop slow at the
-   first middle node of an even-length list).
-2. **Reverse the second half** in place with the pointer-flip from Reverse Linked List.
-3. **Compare** the first half and the reversed second half node by node.
+Smallest meaningful case, `1 -> 2 -> 2 -> 1` (a palindrome). The plan, in
+pictures:
 
-We never copy values into an array (that would be O(n) space, which the problem forbids) and
-we never build a second list. The trick is that reversing the back half *is* the
-"walk it backwards" we needed -- after reversing, a pointer starting at the new head of that
-half moves through the original tail values in reverse order, which is exactly what we compare
-against the front.
+- Front half: `1 -> 2`. Back half: `2 -> 1`.
+- Reverse the back half: `1 -> 2`.
+- Compare the two halves node by node: `1 == 1`, then `2 == 2`. All match, so it
+  is a palindrome.
+
+So the solution is three steps, each a technique we have already practiced:
+
+1. **Find the middle**, using the slow/fast trick from
+   [Linked List Cycle (LC 141)](../0141-linked-list-cycle/) -- but here we stop
+   `slow` at the middle instead of hunting for a collision.
+2. **Reverse the second half**, using the arrow-flipping dance from
+   [Reverse Linked List (LC 206)](../0206-reverse-linked-list/): for each node,
+   save its next arrow, point the node backward at the previous one, advance.
+3. **Compare**: walk one finger down the front half and one down the reversed
+   back half; if every pair of values matches, it is a palindrome.
+
+Why reverse only the back half? After reversing it, a finger starting at its new
+head moves through the original tail values in reverse order -- which is exactly
+the "walk it backwards" we needed. The front half is untouched and still
+readable from `head`. We never copy values into an array (that would be O(n)
+extra memory, which the problem forbids), so the whole thing is
+[in-place](../../../docs/10-glossary.md#in-place) apart from a handful of
+pointers. For an odd-length list the lone middle node sits on the front side and
+is simply never compared -- correct, because a palindrome's center can be
+anything.
+
+### Checkpoint A -- Three steps, one palindrome
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** In this solution, which part of the list gets reversed?
+- a) The whole list
+- b) Only the second (back) half
+- c) The first (front) half
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the front half is left untouched (still readable from `head`); only the back half is flipped so a finger can walk it backwards.
+
+</details>
+
+**Q2 (comprehend).** On an odd-length list like `[1, 2, 3, 2, 1]`, what happens to the center node (value 3) during the compare?
+- a) It is compared and must match something
+- b) It sits on the front-half side and is simply never compared
+- c) It is deleted
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the reversed back half is shorter, so the compare loop ends before reaching the center; a palindrome's middle can be anything, so ignoring it is correct.
+
+</details>
 
 ## Pseudocode
 
@@ -177,6 +231,38 @@ Odd-length check `[1, 2, 3, 2, 1]`: slow stops on the center (value 3), back hal
 reverses to `1->2`, compares `1==1, 2==2` against the front `1, 2` (the center 3 sits on the
 p side and is ignored). Return `true`. Non-palindrome `[1, 2]`: slow stops on A, back half =
 B reverses to B, compare `1 vs 2` -> mismatch -> false.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `isPalindrome` on `head = [1, 2, 3, 1]`. What is returned?
+- a) `true`
+- b) `false`, because the values 2 and 3 mismatch
+- c) `false`, because an even-length list can never be a palindrome
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `slow` stops on node 2, the back half `[3, 1]` reverses to `[1, 3]`, and comparing the fronts gives `1==1` then `2 != 3`, a mismatch.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if you find the middle with the condition `fast != null && fast.next != null` instead?
+- a) On even-length lists `slow` stops one node too late, so the two halves compare off by one
+- b) It throws a `NullPointerException`
+- c) Nothing changes
+
+<details><summary>Show answer</summary>
+
+**(a)** -- that condition lets `slow` overshoot to the second-middle on even lists, unbalancing the halves and misaligning the compare.
+
+</details>
+
+**Q3 (transfer).** LeetCode does not require restoring the list. In words, how would you restore the original list after deciding the answer?
+
+<details><summary>Show answer</summary>
+
+Reverse the `second` half a *second* time -- it flips back to its original order -- then reattach it to the tail of the front half. The answer is already safe in a boolean, so this only tidies the structure for the caller.
+
+</details>
 
 ## Common mistakes
 

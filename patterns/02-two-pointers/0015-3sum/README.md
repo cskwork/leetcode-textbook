@@ -4,6 +4,12 @@
 **Pattern:** Two Pointers
 **LeetCode:** https://leetcode.com/problems/3sum/
 
+## Concepts used
+
+- **Two pointers** -- placing two indices into an array and moving them based on a comparison; used here on the *inner* pair once one element is fixed. [glossary](../../../docs/10-glossary.md#two-pointers)
+- **Sorting** -- putting elements in non-decreasing order up front; it enables both the two-pointer move rule and the duplicate-skipping. [glossary](../../../docs/10-glossary.md#sorting)
+- **Array** -- a row of numbered slots holding values, each read in O(1) time by its index. [glossary](../../../docs/10-glossary.md#array)
+
 ## Problem
 
 Given an integer array `nums`, return all the **unique** triplets
@@ -28,16 +34,59 @@ Examples (verbatim from LeetCode):
 
 ## Intuition
 
-A naive three-nested-loop solution is O(n^3). The breakthrough is to **sort**
-first (O(n log n)) and then reduce the problem to repeated Two Sum II: fix the
-first element `nums[i]`, and use opposite-end pointers on the rest of the array
-to find pairs that sum to `-nums[i]`. That drops the inner cost to O(n), for
-O(n^2) overall.
+Picking three numbers that sum to zero is one level harder than picking two. The
+naive approach -- three nested loops trying every group of three -- is correct
+but slow: with 1000 numbers it checks roughly a billion triples. We need a
+shortcut.
 
-The only remaining trap is **duplicate triplets**. After sorting, equal values
-sit next to each other, so we skip ahead past equal neighbours whenever we fix
-`i` or find a matching pair. Without these skips, an input like
-`[-2,0,0,2,2]` would emit `[-2,0,2]` twice.
+The shortcut turns the three-number problem into many two-number problems.
+Suppose you must form triples whose ages sum to 90. Pick one person as the
+"anchor"; now the other two only need to sum to (90 - that person's age) -- a
+two-person job. Solve it, then pick the next anchor and repeat. Anchoring one
+element and using [two pointers](../../../docs/10-glossary.md#two-pointers) for
+the remaining pair turns the triple search into many two-sum searches: n anchors,
+each with an O(n) two-finger scan, for O(n^2) total instead of the O(n^3) brute
+force.
+
+Let's watch the core on the tiniest case, `nums = [-1, 0, 1]`. First we
+[sort](../../../docs/10-glossary.md#sorting) it (already sorted here). Anchor the
+first element, `-1`; the pair we still need must now sum to `-(-1) = 1`. Put
+`left` on the element right after the anchor (`0`) and `right` on the last element
+(`1`): `0 + 1 = 1` -- exactly the target, so `[-1, 0, 1]` is a triplet. This inner
+scan is the same two-finger move used in [Two Sum II](../0167-two-sum-ii/) (find
+two numbers hitting a target in a sorted array); we just rerun it for each anchor.
+
+One last trap: duplicate triplets. An input like `[-2,0,0,2,2]` would happily
+report `[-2,0,2]` twice unless we stop it. Sorting is what saves us -- equal
+values end up sitting side by side, so right after we use a value (as an anchor or
+as half of a pair) we skip past any neighbour equal to it. That way each distinct
+triplet is recorded exactly once.
+
+### Checkpoint A -- Anchor plus a pair
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** After fixing one element as the anchor `nums[i]`, what must the remaining two elements sum to?
+- a) 0
+- b) the negative of the anchor, `-nums[i]`
+- c) the anchor value itself, `nums[i]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the whole triplet must sum to 0, so the pair must sum to `0 - nums[i]`, which is `-nums[i]`. That value becomes the two-pointer target for the inner scan.
+
+</details>
+
+**Q2 (comprehend).** Why does the algorithm sort the array first?
+- a) Sorting puts equal values side by side, which makes BOTH the two-pointer move rule and the duplicate-skipping work
+- b) So the output triplets look tidy
+- c) Because a list can only hold sorted values
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the two-pointer direction logic needs sorted order (same reason as Two Sum II), and skipping equal neighbours to dedup triplets only works when equal values sit next to each other. Sorting buys both at once.
+
+</details>
 
 ## Pseudocode
 
@@ -150,6 +199,38 @@ prevents re-recording `[-1,-1,2]` and `[-1,0,1]`).
 
 Result: `[[-1,-1,2],[-1,0,1]]`. The sort plus dedup is what makes the output
 exactly the unique triplets.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `nums = [-1,0,1]`. What triplets are returned?
+- a) `[[-1,0,1]]`
+- b) `[]`
+- c) `[[-1,1,0]]`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- after sorting (already sorted), anchor `i=0` is `-1`, target `1`. Inner: `left=1` (0), `right=2` (1), pair sum `0+1 = 1 == target`, so `[-1,0,1]` is recorded. Option (c) is the same values in a non-canonical order, which sorting prevents.
+
+</details>
+
+**Q2 (analyze).** What breaks if you delete the outer-loop duplicate check `if (i > 0 && nums[i] == nums[i-1]) continue;`?
+- a) The same anchor value gets fixed more than once, so identical triplets are recorded multiple times
+- b) The array fails to sort
+- c) Nothing -- the inner dedup handles every case
+
+<details><summary>Show answer</summary>
+
+**(a)** -- on an input like `[-1,-1,0,1]`, both `-1`s would become anchors, each rediscovering the same triplets. The outer skip exists precisely so each distinct first value is anchored once.
+
+</details>
+
+**Q3 (transfer).** How would you extend this to 4Sum -- find all unique quadruplets summing to a target?
+
+<details><summary>Show answer</summary>
+
+Add a second outer loop: fix `i`, then fix `j = i+1 .. n`, then run the same two-pointer scan on the rest for `target - nums[i] - nums[j]`. That is O(n^3). Keep the sort-first discipline and the skip-equal-neighbours rule at EACH level so no quadruplet is recorded twice.
+
+</details>
 
 ## Common mistakes
 

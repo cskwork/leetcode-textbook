@@ -46,6 +46,32 @@ Base cases: you may start on step 0 or step 1 for free (no cost to
 Because the recurrence only looks back two steps, two rolling variables
 suffice.
 
+### Checkpoint A -- Cost of the step you leave
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** In the recurrence `dp[i] = min(dp[i-1] + cost[i-1], dp[i-2] + cost[i-2])`, which cost is added on the one-step branch?
+- a) cost[i], the step you land on
+- b) cost[i-1], the step you are leaving
+- c) cost[0], the starting step
+
+<details><summary>Show answer</summary>
+
+**(b)** -- you pay the cost of the step you stand on as you leave it; the top you land on is free.
+
+</details>
+
+**Q2 (comprehend).** Why are dp[0] and dp[1] both set to 0?
+- a) Because cost[0] and cost[1] are always zero
+- b) Because standing on your starting step (index 0 or 1) is free; you pay only when you leave
+- c) Because the top is located at index 0
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the rules let you BEGIN on step 0 or step 1 for free; cost is charged as you climb off a step, not when you start.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -106,6 +132,38 @@ Step-by-step on `cost = [10, 15, 20]`:
 
 After the loop, `prev1 = 15` = `dp[3]` (top). Path: start at index 1
 (free), pay 15, climb 2 steps directly to the top. Total cost 15.
+
+### Checkpoint B -- Trace the cost table
+
+**Q1 (apply).** Trace `cost = [1, 2, 3, 4]`. What total cost does `minCostClimbingStairs` return?
+- a) 3
+- b) 4
+- c) 6
+
+<details><summary>Show answer</summary>
+
+**(b)** -- dp[2]=min(0+2, 0+1)=1, dp[3]=min(1+3, 0+2)=2, dp[4]=min(2+4, 1+3)=4. Cheapest path: start at 0, pay cost[0]=1, jump two steps, pay cost[2]=3, jump two steps to the top: total 4.
+
+</details>
+
+**Q2 (analyze).** The loop bound is `i <= cost.length` (not `i < cost.length`). What goes wrong if you use `i <`?
+- a) Nothing changes
+- b) You stop at dp[n-1] and return the cost to reach the last step, not the top
+- c) You get an index-out-of-bounds error
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the top is the virtual index n (just past the array). Stopping one early computes dp[n-1], short of the top, so the answer is wrong.
+
+</details>
+
+**Q3 (transfer).** If standing on a step were FREE but you had to PAY the cost of the step you LAND on, how would the recurrence change in one sentence?
+
+<details><summary>Show answer</summary>
+
+Flip the index: dp[i] = min(dp[i-1], dp[i-2]) + cost[i], adding the cost of the destination step instead of the source, with the top handled as a free landing.
+
+</details>
 
 ## Common mistakes
 

@@ -4,6 +4,12 @@
 **Pattern:** Trees
 **LeetCode:** https://leetcode.com/problems/maximum-depth-of-binary-tree/
 
+## Concepts used
+
+- **Binary tree** -- a tree where each node has at most two children. [glossary](../../../docs/10-glossary.md#tree)
+- **Recursion** -- a function that calls itself on a smaller version of the same problem. [glossary](../../../docs/10-glossary.md#recursion)
+- **Base case** -- the simplest input a recursive function answers without recursing further. [glossary](../../../docs/10-glossary.md#base-case)
+
 ## Problem
 
 Given the `root` of a binary tree, return its *maximum depth* -- the number of nodes along the
@@ -23,10 +29,66 @@ Examples:
 
 ## Intuition
 
-"Depth / height" is the canonical postorder trigger: the depth of a node is one (itself) plus the
-greater of its two children's depths. Apply the leap of faith -- assume `maxDepth` already returns
-the correct depth of any smaller subtree -- and the whole function is three lines. The base case:
-an empty subtree has depth `0`, which is what makes the `1 +` for a leaf resolve to `1`.
+Think of a family tree drawn top-down. The **maximum depth** is "how many generations deep is
+the deepest person" -- count yourself, then keep going down through children until you reach
+someone with no children; the depth is the number of people on the *longest* such chain,
+counting both ends. In tree terms: the maximum depth is the number of
+[nodes](../../../docs/10-glossary.md#tree) on the longest path from the **root** (top) down to
+a **leaf** (a node with no children). A single node has depth 1; an empty tree has depth 0.
+
+Trace `[3,9,20,null,null,15,7]`:
+
+```
+        3
+       / \
+      9   20
+         /  \
+        15   7
+```
+
+The left branch from `3` stops at `9` -- that chain is `3 -> 9`, depth 2. The right branch
+goes `3 -> 20 -> 15` (or `-> 7`), depth 3. The longest is 3, so the answer is 3.
+
+The depth of any node is `1` (the node itself) plus the *larger* of its two children's depths.
+We compute it with [recursion](../../../docs/10-glossary.md#recursion) -- a function that calls
+itself on a smaller input. Reason it out explicitly (no leaps of faith): **assume** `maxDepth`
+already returns the correct depth of any smaller subtree handed to it. Then the depth at the
+root is `1 + max(maxDepth(left subtree), maxDepth(right subtree))`. That assumption is valid
+because the *same* `1 + max(left, right)` rule applies inside each subtree, all the way down to
+a leaf, whose children are both empty. An empty subtree is the
+[base case](../../../docs/10-glossary.md#base-case): it returns depth `0`, which is exactly
+what makes a leaf's own depth resolve to `1 + max(0, 0) = 1`. This shape -- recurse both
+children, then combine at the node -- is a postorder
+[DFS](../../../docs/10-glossary.md#dfs-depth-first-search), and it is the template for most of
+this pattern: [Invert Binary Tree](../0226-invert-binary-tree/) swaps instead of taking the
+`max`, and [Balanced Binary Tree](../0110-balanced-binary-tree/) builds directly on it.
+
+### Checkpoint A -- Spot the combine step
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** By this book's count, a tree with a single node and no children has depth...?
+- a) 0
+- b) 1
+- c) undefined
+
+<details><summary>Show answer</summary>
+
+**(b)** -- LeetCode counts *nodes* on the root-to-leaf path, so one node is depth 1. Depth 0 is reserved for the empty tree.
+
+</details>
+
+**Q2 (comprehend).** The depth at any node is `1 + max(leftDepth, rightDepth)`. What is the `1` for?
+- a) Counting the node itself
+- b) Converting edges into nodes
+- c) Handling the empty-tree base case
+- d) It is required by `Math.max`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the node itself sits on top of whichever child chain is deeper, so it adds 1 to the deeper of its two subtrees' depths. The empty-tree case is handled by the `null` branch returning 0.
+
+</details>
 
 ## Pseudocode
 
@@ -86,6 +148,48 @@ Tree `[3,9,20,null,null,15,7]`:
 | maxDepth(3)  | 1         | 2          | 3      |
 
 Output: `3`.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace this tree (root `5`; left child `4` is a leaf; right child `6` has children `3` and `7`):
+
+```
+        5
+       / \
+      4   6
+         / \
+        3   7
+```
+
+What does `maxDepth` return?
+- a) 2
+- b) 3
+- c) 4
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the right branch `5 -> 6 -> 3` (or `-> 7`) is three nodes deep; the left branch `5 -> 4` is only two. `1 + max(1, 2) = 3`.
+
+</details>
+
+**Q2 (analyze).** What does `maxDepth(null)` return, and why does that matter for a leaf?
+- a) `0` -- the base case; a leaf's children both return 0, so the leaf's own depth resolves to `1 + max(0,0) = 1`
+- b) `1` -- counting the missing root
+- c) It throws `NullPointerException`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `null` is the base case returning 0. That is exactly what makes a leaf compute to depth 1 rather than depth 0.
+
+</details>
+
+**Q3 (transfer).** How would you find the *minimum* depth (shortest root-to-leaf path) instead of the maximum? Sketch the idea in words.
+
+<details><summary>Show answer</summary>
+
+The cleanest way is BFS level-order: descend row by row, and the first leaf you reach is at the minimum depth (return its depth). Doing it with DFS needs care, because a node with one `null` child is NOT a leaf -- you must only take `min` over children that actually exist.
+
+</details>
 
 ## Common mistakes
 

@@ -52,6 +52,32 @@ already-final values of `dp[a-c]`. Swapping the loops would change the
 semantics (it would solve "number of combinations" instead — see
 related problems).
 
+### Checkpoint A -- The last coin
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** Coin Change's recurrence is `dp[a] = 1 + min over coins c of dp[a-c]`. In plain English, what is `dp[a]`?
+- a) The value of coin a
+- b) The fewest coins needed to make exactly amount a
+- c) The number of distinct combinations summing to a
+
+<details><summary>Show answer</summary>
+
+**(b)** -- dp[a] is the minimum coin count to reach exactly amount a; adding one coin c to the best way to make a-c gives the recurrence.
+
+</details>
+
+**Q2 (comprehend).** Why is the sentinel `amount + 1` used instead of `Integer.MAX_VALUE`?
+- a) It is faster to compare
+- b) Adding 1 to MAX_VALUE overflows to a huge negative, which would then wrongly win every `min`
+- c) amount+1 is always zero
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the recurrence does `dp[a-c] + 1`; if that value were MAX_VALUE it overflows negative and silently becomes the "minimum", corrupting the result. amount+1 is safely larger than any real answer and never overflows.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -137,6 +163,38 @@ For each amount `a`, we try each coin and keep the min:
 first beats the 1-coin branch (1 < 3); at `a = 10`, the 5-coin branch
 again wins (`dp[5] + 1 = 2`). Each entry only depends on smaller
 entries, so the increasing-amount loop is correct.
+
+### Checkpoint B -- Trace the amount table
+
+**Q1 (apply).** Trace `coins = [1, 3, 4]`, `amount = 6`. (A greedy "biggest first" picks 4+1+1.) What does `coinChange` return?
+- a) 2
+- b) 3
+- c) -1
+
+<details><summary>Show answer</summary>
+
+**(a)** -- dp[3]=1 (coin 3), dp[4]=1 (coin 4), dp[6]=dp[3]+1=2 (two 3-coins). The optimal 3+3 beats the greedy 4+1+1; this is exactly why greedy fails on non-canonical coins.
+
+</details>
+
+**Q2 (analyze).** Why must the AMOUNT be the outer loop and the COINS the inner loop?
+- a) So the code runs faster
+- b) So each dp[a] is finalized once, reading only already-final smaller entries dp[a-c]; swapping would count combinations instead
+- c) It is purely stylistic
+
+<details><summary>Show answer</summary>
+
+**(b)** -- outer-amount ensures dp[a-c] (a smaller amount) is already computed; swapping to outer-coin changes the meaning to "number of combinations" (a different problem).
+
+</details>
+
+**Q3 (transfer).** If you needed to return the actual coins used (not just the count), what extra table would you add, in one sentence?
+
+<details><summary>Show answer</summary>
+
+Add a `choice[a]` array recording which coin c won the `min` at each amount, then walk backwards from the full amount subtracting choice[amount] until you reach 0 to reconstruct the list.
+
+</details>
 
 ## Common mistakes
 

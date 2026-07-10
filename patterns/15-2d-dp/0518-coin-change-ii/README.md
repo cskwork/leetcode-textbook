@@ -45,6 +45,32 @@ loop. This forces every combination to be built in a fixed coin order, so
 `{1, 2}` and `{2, 1}` collapse into a single count. Swap the loops and you
 instead count every **permutation** -- a different problem (LC 377).
 
+### Checkpoint A -- Counting combinations
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** After some coin types have been processed, what does `dp[a]` hold?
+- a) The fewest coins needed to make amount `a`
+- b) The number of combinations that form amount `a` using the coin types seen so far
+- c) Whether amount `a` is reachable at all
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `dp[a]` is a running count of combinations; (a) is Coin Change I and (c) is a boolean reachability question.
+
+</details>
+
+**Q2 (comprehend).** Why is `dp[0]` set to `1`?
+- a) Because amount `0` is the goal
+- b) Because there is exactly one way to make amount `0` -- choose no coins -- and every "use one more coin" chain reduces to it
+- c) Because the smallest coin is worth `1`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the empty selection is the single way to reach 0, and it is the seed every `dp[a - coin]` chain eventually reads; without it everything collapses to 0.
+
+</details>
+
 ## Pseudocode
 
     function change(amount, coins):
@@ -124,6 +150,38 @@ becomes `[1, 1, 2, 2, 3, 4]`.
 lists: `{5}`, `{2,2,1}`, `{2,1,1,1}`, `{1,1,1,1,1}`. Because the coin loop is
 outer, each combination is recorded once, in its sorted order -- never as both
 `{1,2,2}` and `{2,2,1}`.
+
+### Checkpoint B -- Loop order matters
+
+**Q1 (apply).** Trace `amount = 4`, `coins = [1, 2]`. After coin `1` the row is `[1,1,1,1,1]`. After coin `2`, what is `dp[4]`?
+- a) 2
+- b) 3
+- c) 4
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `dp[2] += dp[0]` -> `2`; `dp[3] += dp[1]` -> `2`; `dp[4] += dp[2]` -> `1 + 2 = 3`. The three combos are `{2,2}`, `{2,1,1}`, `{1,1,1,1}`.
+
+</details>
+
+**Q2 (analyze).** What happens if you swap the loops -- amount on the outside, coins on the inside?
+- a) Same answer; loop order is irrelevant
+- b) You count permutations instead of combinations (`{1,2}` and `{2,1}` counted separately), overcounting
+- c) The code throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- amount-outer lets each amount be built from any coin order, so different orderings of the same set register as distinct; that is LC 377 (permutations), a different problem.
+
+</details>
+
+**Q3 (transfer).** You now need the fewest NUMBER of coins to make an amount (Coin Change I), not the count of combinations. In one sentence, how does the DP change?
+
+<details><summary>Show answer</summary>
+
+Store a minimum instead of a sum: `dp[a] = min(dp[a], dp[a - coin] + 1)` over all coins, with `dp[0] = 0` and the rest initialised to infinity. The "coins outer, amount inner ascending" restriction can be dropped because you want the best coin at each amount.
+
+</details>
 
 ## Common mistakes
 

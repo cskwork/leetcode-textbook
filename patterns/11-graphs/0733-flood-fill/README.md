@@ -4,6 +4,17 @@
 **Pattern:** Graphs
 **LeetCode:** https://leetcode.com/problems/flood-fill/
 
+## Concepts used
+
+- **Graph** -- a set of nodes connected by edges. The image grid is an implicit graph: each pixel is
+  a node, its up/down/left/right neighbors are its edges.
+  [glossary](../../../docs/10-glossary.md#graph)
+- **Connected component** -- the largest group of nodes reachable from one another; the pixels the
+  paint-bucket fills form one connected component.
+  [glossary](../../../docs/10-glossary.md#connected-component)
+- **DFS (depth-first search)** -- a traversal that goes as deep as possible before backing up.
+  [glossary](../../../docs/10-glossary.md#dfs-depth-first-search)
+
 ## Problem
 
 Given an `m x n` integer `image` of pixel colors, plus a starting pixel `(sr, sc)` and a
@@ -26,15 +37,62 @@ Examples:
 
 ## Intuition
 
-The phrase "every pixel reachable through same-colored neighbors" is a connectivity question, and
-connectivity on a grid is DFS by definition. The trigger signals -- "grid", "connected",
-"4-directional" -- all point here.
+This is the "paint bucket" tool from any drawing program. You click a pixel, and the fill spreads to
+every pixel reachable from it through same-colored neighbors -- never crossing into a different
+color -- and repaints them all. The problem is to implement exactly that.
 
-The leap of faith: assume `floodFill` already correctly repaints any *smaller* same-color region.
-Then for the current pixel, we (1) repaint it, (2) hand each of its four neighbors the same job. Two
-edge cases matter: if the start pixel is already `newColor`, do nothing and return (otherwise the
-"same color as original" check would loop forever, since after repainting the original color equals
-`newColor`), and never step outside the grid.
+Treat the image as an implicit [graph](../../../docs/10-glossary.md#graph): each pixel is a **node**
+(a single item), and an invisible **edge** (a link) joins a pixel to each of its up/down/left/right
+**neighbors** -- the cells directly beside it; diagonals do not count. The pixels reachable from the
+start through same-colored neighbors form one
+[connected component](../../../docs/10-glossary.md#connected-component), and flood fill repaints
+exactly that component and nothing else.
+
+Spread with [DFS](../../../docs/10-glossary.md#dfs-depth-first-search): from the start pixel, repaint
+it, then hand each same-colored neighbor the same job. Repainting *is* the **visited** mark -- once a
+pixel's color changes, it no longer equals the original color, so the "is this a same-colored
+neighbor?" test naturally turns it away and we never revisit it. No separate `visited` array needed.
+
+Smallest trace, `image = [[1,1,1],[1,1,0],[1,0,1]]`, click (1,1), newColor 2 (originalColor 1):
+
+```
+start:        result:
+1 1 1         2 2 2
+1 1 0   -->   2 2 0
+1 0 1         2 0 1
+```
+
+From (1,1) the fill spreads to every `1` connected to it -- the whole top block and the left column
+-- turning them to 2. The lone `1` at (2,2) is *not* 4-connected to the start (its only neighbor
+toward the start is the `0` at (2,1)), so it stays 1. One edge case matters: if the start pixel is
+already `newColor`, do nothing and return -- otherwise repainted pixels would still match "same color
+as the original" and the fill would loop forever.
+
+### Checkpoint A -- Paint bucket
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** Besides changing a pixel's color, what else does repainting it to `newColor` achieve?
+- a) It counts how many pixels were filled
+- b) It is the visited mark -- once repainted, the pixel no longer equals `originalColor`, so it is never re-entered
+- c) It acts as a bounds check
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the `!= originalColor` guard naturally turns away repainted pixels, so no separate `visited` array is needed.
+
+</details>
+
+**Q2 (comprehend).** Why must we return early when `originalColor == newColor`?
+- a) To save memory
+- b) If they are equal, repainted pixels still match "same color as original", so the guard can never become true and the fill recurses forever
+- c) It is only a style choice
+
+<details><summary>Show answer</summary>
+
+**(b)** -- with the two colors equal, the repaint cannot change whether a cell matches `originalColor`, so visited-detection breaks and the recursion never stops.
+
+</details>
 
 ## Pseudocode
 
@@ -139,6 +197,38 @@ Call sequence (the `(r,c)` value at each step, with the cell repainted the insta
 
 The lone `1` at `(2,2)` is not 4-connected to the start region, so it stays `1`. Final image is
 `[[2,2,2],[2,2,0],[2,0,1]]`.
+
+### Checkpoint B -- Fill a new image
+
+**Q1 (apply).** Trace `image = [[1,1,0],[0,1,1]]`, `sr=0, sc=0`, `newColor=9`. Which cells become `9`?
+- a) Only `(0,0)` and `(0,1)`
+- b) `(0,0)`, `(0,1)`, `(1,1)`, and `(1,2)` -- the whole connected region of `1`s reachable from `(0,0)`
+- c) All five cells
+
+<details><summary>Show answer</summary>
+
+**(b)** -- from (0,0) the fill reaches (0,1) (right), then (1,1) (down from (0,1)), then (1,2) (right). The `0` at (1,0) blocks the path, so (1,0) stays `0`.
+
+</details>
+
+**Q2 (analyze).** What happens if you index `image[r][c]` BEFORE checking bounds on a corner pixel?
+- a) Nothing -- Java handles it
+- b) When the recursion steps off the edge, `image[r][c]` throws `ArrayIndexOutOfBoundsException` before the guard can fire
+- c) It silently fills the wrong region
+
+<details><summary>Show answer</summary>
+
+**(b)** -- bounds must be tested first; indexing an out-of-range cell crashes before the guard gets a chance to return.
+
+</details>
+
+**Q3 (transfer).** How would you change the fill to spread through 8-directional neighbors (diagonals included)?
+
+<details><summary>Show answer</summary>
+
+Add the four diagonal offsets to the `DR/DC` direction arrays (4 offsets become 8); the repaint-as-visited and same-color guards are unchanged.
+
+</details>
 
 ## Common mistakes
 

@@ -33,6 +33,32 @@ and the recurrence reads the same two neighbours: the cell above and the cell to
 the left. The only difference from Unique Paths is the combine step -- `min`
 instead of `+`, and each cell **adds its own** grid value on top.
 
+### Checkpoint A -- Cost to reach a cell
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** What does `dp[i][j]` represent?
+- a) The value stored at `grid[i][j]`
+- b) The minimum total cost to reach cell `(i, j)` from the top-left
+- c) The number of paths to cell `(i, j)`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `dp[i][j]` is the cheapest running total along any right/down path to that cell, cell value included; (a) is the raw input and (c) is Unique Paths.
+
+</details>
+
+**Q2 (comprehend).** On the top row (`i = 0`), why is `dp[0][j]` computed as `dp[0][j-1] + grid[0][j]` rather than a `min` over two neighbours?
+- a) Because top-row cells are reachable only from the left, so there is no "above" neighbour to choose
+- b) Because the top row always has the smallest costs
+- c) Because `grid[0][j]` is always zero
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the top row has no cell above it, so every top-row cell inherits one forced running sum from its left neighbour; the `min` only appears once both neighbours exist.
+
+</details>
+
 ## Pseudocode
 
     function minPathSum(grid):
@@ -134,6 +160,38 @@ Bottom-right `dp[2][2] = 7`, the answer. Reconstructing the path: from `(2,2)`
 walk back to whichever neighbour was cheaper -- `(1,2)` (6) beats `(2,1)` (8),
 then `(0,2)` (5) beats `(1,1)` (7), then left along row 0 to the start:
 `(0,0) -> (0,1) -> (0,2) -> (1,2) -> (2,2)`, cells `1,3,1,1,1` summing to `7`.
+
+### Checkpoint B -- Trace a fresh grid
+
+**Q1 (apply).** Trace the fresh grid `[[2,1],[1,3]]`. What is `dp[1][1]` (the answer)?
+- a) 4
+- b) 5
+- c) 6
+
+<details><summary>Show answer</summary>
+
+**(c)** -- `dp[0][0]=2`; `dp[0][1]=2+1=3`; `dp[1][0]=2+1=3`; then `dp[1][1] = grid[1][1] + min(dp[0][1], dp[1][0]) = 3 + min(3,3) = 6`.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if you set the base row to `dp[0][j] = grid[0][j]` (single cell value) instead of the running sum `dp[0][j-1] + grid[0][j]`?
+- a) Nothing; the answer is unchanged
+- b) The top row ignores the cost of every cell to its left, so paths that run along the top row are undercounted
+- c) The code throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a top-row cell is reached by passing through all cells to its left; dropping the running sum pretends the journey is free, so any best path using the top row comes back too cheap.
+
+</details>
+
+**Q3 (transfer).** Suppose moves were allowed down, right, AND up. Would this same row-by-row DP still work? Why or why not?
+
+<details><summary>Show answer</summary>
+
+No -- an "up" move lets the path revisit cells, creating cycles, so a single top-to-bottom fill can no longer capture every path. You would need a shortest-path method (for example Dijkstra on the grid) instead of a one-pass DP.
+
+</details>
 
 ## Common mistakes
 

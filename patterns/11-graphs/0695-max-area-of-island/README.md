@@ -4,6 +4,16 @@
 **Pattern:** Graphs
 **LeetCode:** https://leetcode.com/problems/max-area-of-island/
 
+## Concepts used
+
+- **Graph** -- a set of nodes connected by edges. A grid is an implicit graph: each cell is a node,
+  its up/down/left/right neighbors are its edges.
+  [glossary](../../../docs/10-glossary.md#graph)
+- **Connected component** -- the largest group of nodes reachable from one another; one island is one
+  connected component. [glossary](../../../docs/10-glossary.md#connected-component)
+- **DFS (depth-first search)** -- a traversal that goes as deep as possible before backing up.
+  [glossary](../../../docs/10-glossary.md#dfs-depth-first-search)
+
 ## Problem
 
 Given a non-empty `m x n` binary `grid` (`0` water, `1` land, this time as `int` not `char`), find
@@ -33,12 +43,66 @@ Examples:
 
 ## Intuition
 
-Identical setup to Number of Islands -- scan, find a `'1'`, discover its whole component -- but
-instead of incrementing a counter we want the component's *size*. The natural shape is a DFS that
-**returns the area** of the region it explores: `1` (for the current cell) plus the area of each
-not-yet-visited land neighbor. The leap of faith: trust that `dfs(neighbor)` returns the correct
-area of that neighbor's region; just sum them up. Sinking cells to `'0'` as we go is still the
-in-place visited-set.
+This is Number of Islands' twin, with one twist: instead of *how many* land-puddles, we want the
+*size of the biggest* one. Same puddle picture -- after rain each puddle is a connected patch of
+water; here each island is a connected patch of land -- but now we measure the largest puddle rather
+than count them.
+
+Smallest case:
+
+```
+0 1 1 0
+1 0 0 0
+1 1 1 0
+```
+
+Two patches of land. The top one has 2 cells; the bottom-left one has 5 cells. The answer is 5.
+
+How do we measure one patch? When we find an unvisited land cell, we don't just mark it and move on
+-- we want to *count* every cell in its island. The natural shape is a
+[DFS](../../../docs/10-glossary.md#dfs-depth-first-search) that **returns** the size of the region it
+explores: `1` (for the current cell itself) plus whatever each of its four land neighbors adds.
+Treat the grid as an implicit [graph](../../../docs/10-glossary.md#graph) (each cell a node, its
+up/down/left/right cells its neighbors/edges); one island is one
+[connected component](../../../docs/10-glossary.md#connected-component). The recursion dives into
+each land neighbor, sinking cells to `0` as it goes -- and sinking is the **visited** mark: once a
+cell is `0` it is never counted again.
+
+Now the reasoning (no "trust the recursion" handwave). When `area(r, c)` sinks cell (r, c) and then
+calls `area` on each neighbor, *every land cell of this island will be reached by exactly one of
+those calls*, because 4-directional reachability defines the island in the first place. Sinking
+*before* recursing guarantees no cell is entered twice, so no cell is counted twice. The total the
+recursion adds up is therefore exactly the island's cell count -- no more, no less.
+
+General rule: scan every cell; on each unvisited `1`, run the area-DFS and keep the largest result it
+returns. If the grid is all water, the scan never finds a `1`, the best stays at its initial value,
+and the answer is 0.
+
+### Checkpoint A -- Measure the biggest puddle
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** `area` returns an int. What does the `1` in `return 1 + area(up) + area(down) + ...` count?
+- a) The recursion depth
+- b) The current cell itself -- one cell of area
+- c) The number of neighbors explored
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the `1` is the cell just sunk; the four recursive calls each contribute the area of the sub-region beyond that neighbor.
+
+</details>
+
+**Q2 (comprehend).** Why does sinking the cell to `0` BEFORE the recursive calls prevent double-counting?
+- a) It sorts the grid
+- b) Once a cell is `0`, no neighbor's recursion can re-enter it, so every cell is counted exactly once
+- c) It frees memory
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the `!= 1` guard turns away any later call that reaches an already-sunk cell, so the recursion adds each cell's `1` exactly once.
+
+</details>
 
 ## Pseudocode
 
@@ -145,6 +209,43 @@ Walking back up: `area(2,1) = 1 + 1 = 2`, `area(2,0) = 1 + 2 = 3`, `area(1,0) = 
 `best = max(2, 4) = 4`.
 
 The remaining cells are all `0` now. Output: `4`.
+
+### Checkpoint B -- Measure a new grid
+
+**Q1 (apply).** Trace this new grid:
+
+    1 1
+    1 1
+
+What is the maximum area returned?
+- a) `1`
+- b) `2`
+- c) `4` -- it is one connected 2x2 island, so four cells
+
+<details><summary>Show answer</summary>
+
+**(c)** -- all four cells are 4-connected into a single island; `area` returns `4` and `best` becomes `4`.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if `area` does `return 1;` and forgets to add the recursive neighbor areas?
+- a) Infinite recursion
+- b) You sink the whole island correctly but report area `1` for every island, so `best` is wrong
+- c) `StackOverflowError`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the cells are still sunk (visited marking works), but the size never accumulates up the recursion, so each island reports `1`.
+
+</details>
+
+**Q3 (transfer).** How would you adapt this to find the area of the SMALLEST island (treating no-island as no answer)?
+
+<details><summary>Show answer</summary>
+
+Swap the max for a min that starts large; call `area` on each unvisited `1`; whenever it returns a positive value, update `min = min(min, area)`. Leave `min` at its large start if the grid is all water.
+
+</details>
 
 ## Common mistakes
 

@@ -4,6 +4,12 @@
 **Pattern:** Trees
 **LeetCode:** https://leetcode.com/problems/same-tree/
 
+## Concepts used
+
+- **Binary tree** -- a tree where each node has at most two children. [glossary](../../../docs/10-glossary.md#tree)
+- **Recursion** -- a function that calls itself on a smaller version of the same problem. [glossary](../../../docs/10-glossary.md#recursion)
+- **Base case** -- the simplest input a recursive function answers without recursing further. [glossary](../../../docs/10-glossary.md#base-case)
+
 ## Problem
 
 Given the roots of two binary trees `p` and `q`, return `true` if they are *structurally
@@ -23,11 +29,64 @@ Examples:
 
 ## Intuition
 
-This is a *twin* DFS -- walk both trees in lockstep and ask one question at every matched pair.
-The trigger is "same / identical / mirror two trees". The reasoning is three ordered checks that
-fully cover every pairing of the two nodes: both empty (structurally equal so far), exactly one
-empty (shape mismatch), or both present (values must match, then recurse into both child pairs).
-`&&` short-circuits, so the moment any subtree pair differs the whole call unwinds to `false`.
+To check whether two printed family trees are identical, you would put a finger on each root
+and walk both at the same time: at every pair of people you meet, they must have the same
+name, the same number of children, and the children must match pairwise. Two
+[binary trees](../../../docs/10-glossary.md#tree) are *the same* when this holds at every
+corresponding pair of **nodes** -- structurally identical, with equal values.
+
+Trace `p = [1,2,3]`, `q = [1,2,3]`:
+
+```
+      p              q
+      1              1
+     / \            / \
+    2   3          2   3
+```
+
+Both roots are `1`. Compare the left pair `(2, 2)` -- both are leaves, match. Compare the
+right pair `(3, 3)` -- both leaves, match. Every pair matched, so the answer is `true`. Now a
+mismatch: `p = [1,2]`, `q = [1,null,2]`. At the root both are `1`, but the left pair is
+`(2, null)` -- one exists, one does not -- a shape mismatch, so the answer is `false`.
+
+We compare pair by pair using [recursion](../../../docs/10-glossary.md#recursion) -- a
+function that calls itself on a smaller input. Reason it out explicitly (no leaps of faith):
+**assume** `isSameTree` already correctly decides whether any smaller pair of subtrees is the
+same. At the current pair, three ordered checks cover every possible situation: (1) **both
+empty** -- equal so far, return `true`; (2) **exactly one empty** -- shapes differ, return
+`false`; (3) **both present** -- the values must be equal, *and* the left subtrees must be the
+same, *and* the right subtrees must be the same. That assumption is valid because those same
+three checks apply to each child pair all the way down, until a pair is `(null, null)` -- the
+[base case](../../../docs/10-glossary.md#base-case), which returns `true`. Walking both trees
+in lockstep this way is a twin [DFS](../../../docs/10-glossary.md#dfs-depth-first-search)
+(depth-first: go as deep as possible before backtracking); `&&` short-circuits, so the first
+mismatch anywhere unwinds the whole answer to `false`.
+
+### Checkpoint A -- Spot the three-case check
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** When both `p` and `q` are `null`, what should `isSameTree` return?
+- a) `false`
+- b) `true`
+- c) throw an error
+
+<details><summary>Show answer</summary>
+
+**(b)** -- two empty subtrees are structurally identical, so the pair matches and we return `true`. This is the base case.
+
+</details>
+
+**Q2 (comprehend).** Why must the value comparison (`p.val != q.val`) come *after* the two null checks?
+- a) It runs faster that way
+- b) Reading `.val` on a `null` reference throws `NullPointerException`
+- c) Order does not matter; both orders give the same result
+
+<details><summary>Show answer</summary>
+
+**(b)** -- once we know neither pointer is `null`, dereferencing `.val` is safe. Doing it before the guards would crash on any one-sided pair.
+
+</details>
 
 ## Pseudocode
 
@@ -97,6 +156,37 @@ Output: `true`.
 For the mismatch case `p=[1,2]`, `q=[1,null,2]`: at the root both are `1`, but
 `isSameTree(p.left=2, q.left=null)` hits the "exactly one null" branch and returns `false`, which
 short-circuits the whole answer.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Let `p = [1,2,3]` (root `1`, children `2`,`3`) and `q = [1,3,2]` (root `1`, children `3`,`2`). What does `isSameTree` return?
+- a) `true` -- both have the same values
+- b) `false` -- the left children differ (`2` vs `3`)
+
+<details><summary>Show answer</summary>
+
+**(b)** -- at the root both are `1`, but `isSameTree(p.left=2, q.left=3)` sees `2 != 3` and returns `false`, which short-circuits the whole answer. Order matters, not just the set of values.
+
+</details>
+
+**Q2 (analyze).** Suppose you wrote only ONE null check: `if (p == null || q == null) return false;`. Which previously-valid case now wrongly fails?
+- a) Two identical non-empty trees
+- b) Two empty subtrees (`p == null && q == null`), which should return `true`
+- c) A value mismatch at the root
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the single `||` check can't tell "both empty" from "only one empty", so it returns `false` for two `null` subtrees, breaking every leaf's children.
+
+</details>
+
+**Q3 (transfer).** How would you adapt this to check whether tree `s` *contains* tree `t` as an exact subtree (some node of `s` roots a subtree identical to `t`)? In words.
+
+<details><summary>Show answer</summary>
+
+Walk `s`; at each node run the same `isSameTree` twin DFS comparing that node's subtree against `t`. If any check returns `true`, the answer is `true`. The only new idea is applying the existing pair-check at every node of `s` rather than just once at the roots.
+
+</details>
 
 ## Common mistakes
 

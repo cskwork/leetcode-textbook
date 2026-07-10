@@ -4,6 +4,13 @@
 **Pattern:** Binary Search
 **LeetCode:** https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/
 
+## Concepts used
+
+- **Binary search** -- narrowing a range by halves; here we hunt the single "drop" in a rotated array. [glossary](../../../docs/10-glossary.md#binary-search)
+- **Array** -- a row of numbered slots holding values, read instantly by position. [glossary](../../../docs/10-glossary.md#array)
+- **Sorting** -- putting values in order so each value tells you about its neighbours. [glossary](../../../docs/10-glossary.md#sorting)
+- **Invariant** -- a condition that is always true at the start of every loop iteration. [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 Given the array `nums` of **unique** elements sorted in ascending order and then
@@ -29,37 +36,67 @@ Examples (verbatim from LeetCode):
 
 ## Intuition
 
-The trigger signals are "rotated sorted array" and "find the minimum in
-O(log n)". The challenge is that a rotated sorted array is *not* globally sorted,
-so a single midpoint comparison with the target does not tell you which half to
-keep. But the array still has structure: **at every step, at least one of the
-two halves is sorted**, and that sorted half is enough to decide where the
-minimum lives.
+First, what does "rotated" mean? Take a sorted array
+`[0, 1, 2, 3, 4, 5, 6, 7]` and imagine it written around a clock face. A
+*rotation* pops the last element off and sticks it on the front; repeating this
+rotates the array. Rotate four times and you get `[4, 5, 6, 7, 0, 1, 2, 3]`. The
+numbers are still "almost sorted": they are two sorted chunks (`[4,5,6,7]` then
+`[0,1,2,3]`) glued at a single *drop* (the only spot where a bigger number is
+followed by a smaller one). Given such an array with no duplicates, find its
+smallest element in O(log n) time.
 
-The key invariant to keep in your head: compare `nums[mid]` against `nums[hi]`
-(the *right* end of the current range). Two cases:
+Trace `nums = [4, 5, 6, 7, 0, 1, 2]`, whose answer is `0`. The first sorted
+chunk is `[4,5,6,7]`, the second is `[0,1,2]`, and the drop sits between `7` and
+`0`; the minimum is the number just after the drop.
 
-- `nums[mid] < nums[hi]`. Then the entire sub-range `nums[mid..hi]` is sorted
-  ascending (a smaller left followed by a larger right). So the minimum of the
-  *current* range is at or to the left of `mid` -- it might *be* `nums[mid]`.
-  Pull the upper bound down: `hi = mid` (keep `mid` in the range).
-- `nums[mid] > nums[hi]`. Then somewhere between `mid` and `hi` the array
-  drops, so the minimum must be strictly to the right of `mid`. Push the lower
-  bound past `mid`: `lo = mid + 1`.
+The key insight: **no matter where you slice a rotated array in half, at least
+one of the two halves is normally sorted** (the drop is in the other half). That
+sorted half is the clue, and we read it by comparing the middle value
+`nums[mid]` against the *right* end `nums[hi]`:
 
-Because the problem has no duplicates, the `nums[mid] == nums[hi]` case never
-arises when `mid != hi`, so the two-way branch is exhaustive.
+1. `lo = 0, hi = 6`, `mid = 3`, `nums[mid] = 7`, `nums[hi] = 2`. Here `7 > 2` --
+   a bigger number to the left of a smaller one means the drop (and the
+   minimum) is in the right half. Discard the left: `lo = 4`.
+2. `lo = 4, hi = 6`, `mid = 5`, `nums[mid] = 1`, `nums[hi] = 2`. Now `1 < 2` --
+   the right half `[1, 2]` is sorted, so the minimum is at `mid` or to its
+   left. Pull the top down (keeping `mid`): `hi = 5`.
+3. `lo = 4, hi = 5`, `mid = 4`, `nums[mid] = 0`, `nums[hi] = 1`. `0 < 1` --
+   right half sorted again, so `hi = 4`.
+4. `lo = 4, hi = 4` -- they meet at index 4, whose value is `0`. That's the
+   minimum.
 
-This is Template B in shape (`while (lo < hi)`, `hi = mid`), but its
-"predicate" is the comparison between two array elements rather than an
-external yes/no function. The loop ends with `lo == hi`, which is the index of
-the minimum.
+The **invariant** is *the minimum is always inside `[lo, hi]`.* When the right
+half is sorted (`nums[mid] < nums[hi]`), the minimum cannot be to the right of
+`mid`, so we pull `hi` down to `mid` -- keeping `mid`, because `mid` might *be*
+the minimum. When `nums[mid] > nums[hi]`, the drop is definitely between `mid`
+and `hi`, so the minimum is strictly right of `mid` and we push `lo` past it.
+The range shrinks every step, and when `lo == hi` that index holds the minimum.
 
-Why compare with `nums[hi]` instead of `nums[lo]`? The `nums[mid] vs nums[hi]`
-test is robust against the un-rotated case: if the array was never rotated,
-`nums[mid] < nums[hi]` holds forever and `hi` simply walks all the way down to
-`lo = 0`, correctly identifying the first element. A `nums[mid] vs nums[lo]`
-test would need extra bookkeeping for that case.
+### Checkpoint A -- Read the right end
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** This solution decides which half to keep by comparing `nums[mid]` against which other element?
+- a) `nums[hi]` (the right end)
+- b) `nums[lo]` (the left end)
+- c) `target`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- comparing `nums[mid]` to `nums[hi]` tells whether the right portion is sorted (min is at or left of `mid`) or contains the drop (min is right of `mid`).
+
+</details>
+
+**Q2 (comprehend).** On `nums = [4,5,6,7,0,1,2]`, the first probe has `nums[mid] = 7` and `nums[hi] = 2`. Since `7 > 2`, what does that prove, and which half is discarded?
+- a) A "drop" (big followed by small) exists to the right of `mid`, so the minimum is right of `mid`; discard the left half (`lo = mid + 1`)
+- b) The array is fully sorted, so the minimum is at `lo`
+- c) The minimum is exactly at `mid`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- a value larger than the right end can only exist left of the drop, so the drop (and the min just after it) must be to the right.
+
+</details>
 
 ## Pseudocode
 
@@ -143,6 +180,38 @@ Dry-run on the un-rotated case `nums = [11, 13, 15, 17]` (expected `11`):
 No special case for "the array was never rotated": the `nums[mid] < nums[hi]`
 condition is always true, so `hi` simply descends to `0` and the first element
 is returned.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `nums = [5, 1, 2, 3, 4]` (expected min `1`). What is the final returned value?
+- a) `1`
+- b) `5`
+- c) `2`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `mid=2 (2 < 4)` -> `hi=2`; `mid=1 (1 < 2)` -> `hi=1`; `mid=0 (5 > 1)` -> `lo=1`; loop ends, returns `nums[1] = 1`.
+
+</details>
+
+**Q2 (analyze).** This code uses `while (lo < hi)` with `hi = mid`. Why would switching to `while (lo <= hi)` with `hi = mid - 1` give a wrong answer?
+- a) `mid` might BE the minimum, so excluding it with `mid - 1` can discard the answer
+- b) It would cause integer overflow
+- c) It would still be correct, just one iteration slower
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the whole point of `hi = mid` (not `mid - 1`) is to keep `mid` in the range because it could be the minimum; `mid - 1` throws that candidate away.
+
+</details>
+
+**Q3 (transfer).** Why does this exact code fail on a rotated array WITH duplicates? Which case becomes ambiguous?
+
+<details><summary>Show answer</summary>
+
+With duplicates, `nums[mid] == nums[hi]` is reachable and ambiguous -- you cannot tell from a tie which half holds the drop. The strict two-way branch has no home for the tie; it needs a third, cautious move (`hi = hi - 1`), which is LC 154.
+
+</details>
 
 ## Common mistakes
 

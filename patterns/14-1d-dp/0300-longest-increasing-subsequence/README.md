@@ -54,6 +54,32 @@ This is O(n^2) — for each `i` we scan all `j < i`. An O(n log n)
 variant exists (patience sorting with binary search over tails);
 see the note at the end.
 
+### Checkpoint A -- LIS ending at i
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** In LIS, `dp[i]` is defined as what?
+- a) The length of the longest increasing subsequence of the whole array
+- b) The length of the longest strictly increasing subsequence that ENDS at index i
+- c) The number of increasing subarrays ending at i
+
+<details><summary>Show answer</summary>
+
+**(b)** -- dp[i] is the best length among subsequences whose last element is nums[i]; the overall answer is the max over all these entries.
+
+</details>
+
+**Q2 (comprehend).** Why is every entry initialised to 1, not 0?
+- a) Because 1 is the smallest valid index
+- b) Because each element alone is a valid length-1 increasing subsequence
+- c) Because the array is 1-indexed
+
+<details><summary>Show answer</summary>
+
+**(b)** -- even an element with no smaller predecessor forms a subsequence of length 1 (itself); 0 would wrongly shrink isolated elements.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -141,6 +167,38 @@ Initial `dp = [1, 1, 1, 1, 1, 1, 1, 1]`.
 Final `best = 4`. One LIS of length 4 is `[2, 3, 7, 101]` (or
 `[2, 5, 7, 101]`, or `[2, 3, 7, 18]`). Note that `dp[6]` and `dp[7]`
 both equal 4 — the LIS need not end at the last index.
+
+### Checkpoint B -- Trace the dp table
+
+**Q1 (apply).** Trace `nums = [3, 1, 4, 1, 5]`. What LIS length is returned?
+- a) 2
+- b) 3
+- c) 4
+
+<details><summary>Show answer</summary>
+
+**(b)** -- dp = [1,1,2,1,3]; dp[2]=2 (extend from 1 or 3), dp[4]=3 (extends dp[2], giving [1,4,5] or [3,4,5]). The max is 3.
+
+</details>
+
+**Q2 (analyze).** Why is the answer `max(dp)` and not `dp[n-1]`?
+- a) Because dp[n-1] would overflow
+- b) Because the longest increasing subsequence need not END at the last element; it can end anywhere
+- c) Because the array may be unsorted
+
+<details><summary>Show answer</summary>
+
+**(b)** -- dp[i] only counts subsequences ending exactly at i; the global longest may finish early, so you must take the maximum over all entries.
+
+</details>
+
+**Q3 (transfer).** If the problem asked for the longest NON-DECREASING subsequence (equals allowed), what one symbol in the code changes?
+
+<details><summary>Show answer</summary>
+
+Change the inner condition `nums[j] < nums[i]` to `nums[j] <= nums[i]`, so equal values count as a valid extension.
+
+</details>
 
 ## Common mistakes
 

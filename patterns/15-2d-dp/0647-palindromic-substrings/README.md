@@ -40,6 +40,32 @@ The shortcut for length 1 and 2: a single character is trivially a palindrome,
 and two equal characters are too -- so the "inside palindrome" check is skipped
 when `j - i < 2`.
 
+### Checkpoint A -- The interval DP state
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** What does `dp[i][j]` represent?
+- a) Whether the substring from index `i` to `j` (inclusive) is a palindrome
+- b) The length of the longest palindrome starting at index `i`
+- c) The number of palindromes lying between `i` and `j`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `dp[i][j]` is a true/false flag for that one substring; the running `count` totals how many flags are true, which is the final answer.
+
+</details>
+
+**Q2 (comprehend).** Why must the outer loop over `i` run DESCENDING (from `n-1` down to `0`)?
+- a) So the longest palindromes are found first
+- b) So that `dp[i+1][j-1]` (the inner substring, one row below) is already computed when we evaluate `dp[i][j]`
+- c) To avoid counting single characters twice
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the recurrence reads the row below (`i+1`), so that row must be filled first; descending `i` guarantees the inner substring is ready before it is needed.
+
+</details>
+
 ## Pseudocode
 
     function countSubstrings(s):
@@ -120,6 +146,38 @@ i=2   [  .  ,  .  ,  T  ]
 ```
 
 The upper triangle holds six `T` cells; `count = 6` is the answer.
+
+### Checkpoint B -- Trace and edge it
+
+**Q1 (apply).** Trace `s = "aba"`. What is the final count?
+- a) 3
+- b) 4
+- c) 5
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the four palindromes are `"a"`, `"b"`, `"a"`, and `"aba"`: cells `(2,2)`, `(1,1)`, `(0,0)` (length 1), and `(0,2)` (ends match and `dp[1][1]` is true). `(0,1)` and `(1,2)` fail because their ends differ.
+
+</details>
+
+**Q2 (analyze).** What would go wrong if you filled `i` ASCENDING (from `0` up to `n-1`)?
+- a) Single characters would be missed
+- b) When evaluating `dp[i][j]` for length-3+ substrings, `dp[i+1][j-1]` (a row below) would still be uncomputed, so longer palindromes like `"aba"` are missed
+- c) Nothing; the fill order does not matter
+
+<details><summary>Show answer</summary>
+
+**(b)** -- ascending `i` computes the current row before the row it depends on, so the inside check reads stale data and drops every palindrome of length 3 or more.
+
+</details>
+
+**Q3 (transfer).** How would you adapt this DP to return the LONGEST palindromic substring (not just the count)?
+
+<details><summary>Show answer</summary>
+
+Keep the same table and fill order, but track the best start and length instead of a count: whenever `dp[i][j]` becomes true and `(j - i + 1)` beats the current max, record `i` and the new length. Return `s.substring(bestStart, bestStart + maxLen)`.
+
+</details>
 
 ## Common mistakes
 

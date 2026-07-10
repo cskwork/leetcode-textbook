@@ -4,6 +4,15 @@
 **Pattern:** Arrays & Hashing
 **LeetCode:** https://leetcode.com/problems/valid-anagram/
 
+## Concepts used
+
+- **Array** -- a row of numbered slots, each holding one value, reached instantly by position.
+  We use one slot per letter of the alphabet. [glossary](../../../docs/10-glossary.md#array)
+- **Linear scan** -- walking a string one character at a time, from start to end.
+  [glossary](../../../docs/10-glossary.md#linear-scan)
+- **Sorting** -- putting items in order. Sorting both strings and comparing also solves this, but
+  in O(n log n) instead of O(n). [glossary](../../../docs/10-glossary.md#sorting)
+
 ## Problem
 
 Given two strings `s` and `t`, return `true` if `t` is an anagram of `s`, and `false` otherwise.
@@ -24,12 +33,53 @@ Examples:
 
 ## Intuition
 
-An anagram is a statement about *character counts*: the two strings match if and only if every
-letter appears the same number of times in each. That is exactly the "counting / frequency"
-trigger signal. The cleanest trick is to count the alphabet in a fixed 26-slot array: add one for
-every letter of `s`, subtract one for every letter of `t`. If the two strings are anagrams the
-net counts all cancel to zero; if any slot is non-zero they differ. Sorting both strings and
-comparing also works but costs O(n log n); the count array is O(n).
+Two friends each get the same bag of Scrabble tiles, jumble them, and lay out a word. Are they
+showing the same word? Reading left-to-right won't tell you, because the tiles are in different
+orders. But tip both friends' tiles onto the table and sort each pile alphabetically: the two
+sorted piles will look identical if and only if they started with the same letters. Two strings
+work the same way -- they are anagrams exactly when sorting their characters gives the same
+result.
+
+Walk the smallest mismatch, `s = "rat"`, `t = "car"`. Count letters: `s` has one `r`, one `a`, one
+`t`; `t` has one `c`, one `a`, one `r`. The `t` in `s` has no partner in `t`, and the `c` in `t`
+has no partner in `s`, so they are not anagrams -- answer `false`.
+
+The general rule: the real question is "do both strings contain the same letters in the same
+amounts?" So count letters. Instead of sorting (which costs O(n log n)), use 26 tally marks -- one
+per letter of the alphabet, stored as an [array](../../../docs/10-glossary.md#array) of 26 slots.
+For each letter of `s`, add one to its tally; for each letter of `t`, subtract one. If the strings
+truly are rearrangements, every tally lands back at zero; if even one tally is off, they differ.
+
+Why does add-for-`s`, subtract-for-`t` work? Because a rearrangement means each letter appears the
+same number of times in both strings. Adding and subtracting the same amount nets to zero, so a
+matching pair cancels out. Any letter that appears a different number of times leaves a non-zero
+tally, which is exactly the signal of "not anagrams".
+
+### Checkpoint A -- The counting idea
+
+Pause before expanding.
+
+**Q1 (recall).** Why add 1 for each letter of `s` and subtract 1 for each letter of `t` into the same array?
+- a) To sort both strings
+- b) So matching letter-counts cancel to zero, exposing any mismatch
+- c) To count the total number of letters
+
+<details><summary>Show answer</summary>
+
+**(b)** -- if both strings share the same letters in the same amounts, every increment is matched by a decrement and all slots end at 0. A non-zero slot means a mismatch.
+
+</details>
+
+**Q2 (comprehend).** Why does the code check `s.length() != t.length()` first and return `false`?
+- a) It makes sorting faster afterward
+- b) Different lengths can never be anagrams, and equality lets one combined loop index both strings safely
+- c) To avoid a null-pointer exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- anagrams must have equal length, so a mismatch is an instant `false`. The equality also guarantees both strings can be indexed at the same `i` in one loop.
+
+</details>
 
 ## Pseudocode
 
@@ -96,6 +146,38 @@ Walking i = 0..6, here are the net `counts` after each step (only non-zero slots
 | 6 | m    | m    | m+1, m-1           | (no change)                                     |
 
 Final scan: every slot is 0. Output: `true`.
+
+### Checkpoint B -- Trace and stretch
+
+**Q1 (apply).** Using the count-array method, what are the final counts for `s = "aab"`, `t = "abb"`?
+- a) All zeros
+- b) `a:-1, b:+1`
+- c) `a:+1, b:-1`
+
+<details><summary>Show answer</summary>
+
+**(c)** -- `s` adds a,a,b; `t` subtracts a,b,b. Net: a = +2-1 = +1, b = +1-2 = -1. Non-zero, so the answer is `false`.
+
+</details>
+
+**Q2 (analyze).** The `- 'a'` trick maps 'a'->0, 'b'->1, etc. What breaks if the input can contain uppercase letters or digits?
+- a) Nothing, it still works
+- b) `'A' - 'a'` is negative and a digit maps out of range, causing a bad index
+- c) It just becomes slower
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the 26-slot array assumes lowercase a-z only. Uppercase or digits index outside 0..25. For general input, fall back to a `HashMap<Character,Integer>`.
+
+</details>
+
+**Q3 (transfer).** How would you solve "group anagrams" (LC 49) using this counting idea as a building block?
+
+<details><summary>Show answer</summary>
+
+Turn each word's 26 counts (or its sorted letters) into a signature key, then drop every word sharing a signature into the same bucket. The count array becomes a key instead of a yes/no check.
+
+</details>
 
 ## Common mistakes
 

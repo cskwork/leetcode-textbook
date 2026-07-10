@@ -4,6 +4,11 @@
 **Pattern:** Stack (bridge to Backtracking)
 **LeetCode:** https://leetcode.com/problems/generate-parentheses/
 
+## Concepts used
+
+- **Recursion** — a function that calls itself on a smaller version of the same problem. [glossary](../../../docs/10-glossary.md#recursion)
+- **Backtracking** — a recursive search that makes a choice, explores, then undoes the choice to try the next one. [glossary](../../../docs/10-glossary.md#backtracking)
+
 ## Problem
 
 Given `n` pairs of parentheses, write a function to generate **all combinations
@@ -24,23 +29,66 @@ Example (verbatim from LeetCode):
 
 ## Intuition
 
-A well-formed string of `n` pairs is built one character at a time under two
-rules, and those rules are the *logical* equivalent of a stack of unmatched
-openers:
+This problem *generates* strings instead of checking them. The validity rule is
+the same one from [0020 Valid Parentheses](../0020-valid-parentheses/) (where a
+stack checks that each closer matches the most recent opener), but here we never
+break the rule while building — so every string we produce is already valid.
 
-- You may add `'('` as long as you haven't used all `n` of them.
-- You may add `')'` only when there is an **unmatched** `'('` to close — i.e. when
-  the number of `')'` used so far is less than the number of `'('` used so far.
+Picture filling a row of `2n` blank slots with `(` or `)`, one slot at a time,
+never letting the partial string become invalid. Two rules govern what you may
+write next:
 
-The difference `(open - close)` is exactly "how many openers are currently
-unmatched" — a virtual stack depth. When that depth is positive you may close one;
-when it is zero you may not. This turns "generate all valid strings" into a
-decision tree we explore with **backtracking**: try `'('`, recurse, undo; then try
-`')'` if allowed, recurse, undo.
+- You may write `(` as long as you haven't used all `n` of them.
+- You may write `)` only if there is an unmatched `(` to pair it with — that is,
+  only when more `(` than `)` have been written so far.
 
-This problem is the deliberate **bridge to Pattern 10 (Backtracking)** — same
-"make a choice, recurse, undo the choice" shape — but its validity rule is the
-stack discipline from this pattern.
+Think of `open - close` as "how many openers are currently waiting for a
+partner" — a virtual stack depth. When it is zero you've closed everything and
+cannot add `)` (there's nothing to match); when it is positive you may close one.
+
+Trace the smallest case, `n = 1`: one pair. Start at `""` with open=0, close=0.
+
+- open < 1, so write `(` → `"("`, open=1, close=0.
+- now close < open (0 < 1), so write `)` → `"()"`, open=1, close=1.
+- length is 2 = 2n → record `"()"`.
+
+That is the only valid string, so the answer is `["()"]`.
+
+To build every valid string we explore every legal choice with
+[backtracking](../../../docs/10-glossary.md#backtracking) — a
+[recursive](../../../docs/10-glossary.md#recursion) search that, at each slot,
+tries writing `(` (if allowed), explores everything that can follow, then
+**erases** it and tries writing `)` (if allowed) instead. The erase is what lets
+one builder explore many strings. When the string reaches length `2n`, the two
+rules have kept it valid all along, so we save a copy. (This "make a choice,
+recurse, undo the choice" skeleton is the same one you'll meet again in Pattern
+10, Backtracking — Subsets, Permutations — later in the book.)
+
+### Checkpoint A -- When may you close?
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** In the backtracking rules, when are you allowed to write a `)`?
+- a) Whenever you have not yet written all `n` closers
+- b) Only when `close < open` (some opener is still waiting for a partner)
+- c) Only as the very last character
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a `)` is legal only while more `(` than `)` have been placed, i.e. an opener is unmatched. This single guard keeps every partial string valid.
+
+</details>
+
+**Q2 (comprehend).** Start at `""` with `open=0`, `close=0`. Why is writing `)` as the first character forbidden?
+- a) Because `close < open` is `0 < 0`, which is false -- no opener exists to match it
+- b) Because the string would exceed length `2n`
+- c) Because the recursion cannot start from `""`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- with nothing on the "virtual stack" of openers, a leading `)` has no partner; the guard correctly blocks it.
+
+</details>
 
 ## Pseudocode
 
@@ -133,6 +181,38 @@ root:  "" | 0,0
 Only two complete strings of length 4 are produced: `"(())"` and `"()()"`. Every
 leaf is automatically valid because the rules never allowed an extra `')'` with
 no opener to close.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** For `n = 3`, the leftmost branch of the recursion (trying `(` before `)` at every node) produces which complete string first?
+- a) `"()()()"`
+- b) `"((()))"`
+- c) `"(()())"`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the `open < n` branch runs first at each node, so three `(` are placed in a row, then three `)` close them: `((()))`.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if you delete both `deleteCharAt` lines (the undo steps)?
+- a) Nothing -- the output is identical
+- b) The shared `StringBuilder` keeps growing across sibling branches, so later strings contain leftovers of earlier ones
+- c) It throws immediately
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the undo is what lets one builder explore many strings; without it, characters from one branch leak into its siblings and corrupt the result.
+
+</details>
+
+**Q3 (transfer).** How would you change the approach to COUNT the valid strings instead of listing them?
+
+<details><summary>Show answer</summary>
+
+Replace `results.add(...)` at the base case with a counter increment, and return the counter at the end. You never build a string; the same `open`/`close` guards guarantee only valid paths reach the base case. (The count is the nth Catalan number.)
+
+</details>
 
 ## Common mistakes
 

@@ -47,6 +47,32 @@ next meeting starts *strictly before* the previous one ends. This is the
 opposite of Merge Intervals, where touching ranges merge. Read the
 problem's overlap definition before picking `<` versus `<=`.
 
+### Checkpoint A -- Neighbours only
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** After sorting the meetings by start, which pairs do we need to compare to detect any overlap?
+- a) Every pair (all combinations)
+- b) Only consecutive (adjacent) pairs
+- c) Only the first and the last
+
+<details><summary>Show answer</summary>
+
+**(b)** -- once sorted, an interval that overlaps anything must overlap the one immediately before it, so checking neighbours is enough. This is what turns O(n^2) into O(n log n).
+
+</details>
+
+**Q2 (comprehend).** The overlap test is strict: `intervals[i][0] < intervals[i-1][1]`. Why strict `<` instead of `<=`?
+- a) Because a meeting ending exactly when the next starts (back-to-back) is attendable; `<=` would wrongly flag it as a conflict
+- b) Because strict comparison runs faster
+- c) Because `<=` would miss real overlaps
+
+<details><summary>Show answer</summary>
+
+**(a)** -- touching meetings like `[1,2]` then `[2,3]` are legal, so the next start must be STRICTLY before the previous end to count as a clash. This single operator is the problem-defining detail.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -127,6 +153,38 @@ Touching case `[[1,2],[2,3]]`:
 
 Loop completes, return `true` — the back-to-back meetings are attendable.
 A non-strict `<=` here would wrongly flag an overlap.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `intervals = [[1,5],[3,4],[6,7]]` after sorting by start. What is returned?
+- a) `true`
+- b) `false`
+- c) Throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- already start-sorted. At `i = 1`, `[3,4]` has `start 3 < [1,5].end 5`, a clear overlap, so we `return false` immediately. We never even look at `[6,7]`.
+
+</details>
+
+**Q2 (analyze).** What does `canAttendMeetings([])` (empty input) return, and why does the code handle it with no special case?
+- a) `true` -- the loop never runs, so control falls through to `return true`; with zero meetings nothing can conflict
+- b) `false` -- the empty input is special
+- c) It throws an exception
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the loop starts at `i = 1` and runs while `i < length`, so for length 0 (and 1) the body never executes, and the trailing `return true` fires. The default is "attendable".
+
+</details>
+
+**Q3 (transfer).** Suppose the question changed to "what is the MINIMUM number of meetings you must cancel so the rest do not overlap?" How does the approach change?
+
+<details><summary>Show answer</summary>
+
+Switch to the Non-overlapping Intervals algorithm: sort by END (not start), greedily keep the earliest-ending compatible meeting, and count how many are removed. The "detect any overlap" walk is replaced by a greedy count that tracks the end of the last KEPT interval.
+
+</details>
 
 ## Common mistakes
 

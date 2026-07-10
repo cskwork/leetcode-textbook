@@ -4,6 +4,12 @@
 **Pattern:** Binary Search
 **LeetCode:** https://leetcode.com/problems/koko-eating-bananas/
 
+## Concepts used
+
+- **Binary search** -- narrowing a range by halves; here the range is a range of *answers*, not array indices. [glossary](../../../docs/10-glossary.md#binary-search)
+- **Predicate** -- a yes/no question used as the decision in a search. [glossary](../../../docs/10-glossary.md#predicate)
+- **Invariant** -- a condition that is always true at the start of every loop iteration. [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 Koko loves bananas. There are `n` piles of bananas; the `i`-th pile has
@@ -29,31 +35,68 @@ Example (verbatim from LeetCode):
 
 ## Intuition
 
-This is the canonical **binary-search-on-the-answer-space** problem, and the
-payoff of Template B from the pattern README. The trigger phrase is the giveaway:
-*"minimum speed such that ... works"*. Notice the search target is not an index
-into `piles` -- it is a *speed*, a number living in a range. That is the
-meta-pattern beginners miss.
+You've played "guess a number between 1 and 100": each time you guess, I reply
+*higher* or *lower*, and you pick the middle of the remaining range -- about 7
+guesses instead of 100. Notice you are *not* searching a list; you are searching
+a *range of numbers* (1 to 100), and each reply tells you which half of the
+range to keep. Koko is that game in disguise.
 
-Two questions turn this into a binary search:
+Here the hidden number is the **eating speed** `k` (bananas per hour), and we
+want the *slowest* speed that still finishes all piles within `h` hours. The
+smallest speed worth trying is `1`; the largest worth trying is `max(piles)`
+(at that speed every pile is gone in one hour). So the "range of numbers" is
+`1, 2, 3, ..., max(piles)` -- for `piles = [3, 6, 7, 11]`, `h = 8`, the range
+is `1..11`. Each guess is a speed `mid`, and "too slow / fast enough" is decided
+by a helper that asks: *can Koko finish all piles within `h` hours at this
+speed?*
 
-1. **What is the answer space?** The smallest meaningful speed is `1` (one
-   banana per hour). The largest speed worth considering is `max(piles)`,
-   because at that speed every pile takes exactly one hour, and Koko cannot do
-   better than `n` hours anyway (one pile per hour). So the candidate speed `k`
-   lives in the closed range `[1, max(piles)]`.
+The crucial insight beginners miss is *why a range of speeds is searchable at
+all*. It works because the helper's answer is **monotonic** -- it flips at most
+once and never flips back. If speed `4` finishes in time, then speeds `5, 6, 7,
+...` also finish in time (eating faster can never cost you *more* hours). So the
+answers for speeds `1, 2, 3, 4, 5, ...` read `no, no, no, YES, YES, ...`, one
+clean flip, and that flip point is the minimum speed we want. A yes/no question
+that flips at most once like this is called a **predicate**, and a single-flip
+predicate over a range is exactly what binary search is built to find.
 
-2. **Can I check a candidate in one pass, and is the check monotonic?** Yes and
-   yes. Given a candidate speed `k`, pile `p` takes `ceil(p / k)` hours, so the
-   total hours is `sum of ceil(p / k)` over all piles -- an O(n) check. And the
-   check is monotonic: a *faster* speed never takes *more* hours, so once some
-   `k` is fast enough, every larger `k` is also fast enough. The answer sequence
-   over `k = 1, 2, 3, ...` looks like `false false ... false true true ... true`,
-   and we want the first `true`.
+Let's confirm `speed = 4` is that flip for `piles = [3, 6, 7, 11]`, `h = 8`.
+Each pile takes `ceil(pile / 4)` hours (round *up*, because even one leftover
+banana costs a whole hour): `ceil(3/4)=1`, `ceil(6/4)=2`, `ceil(7/4)=2`,
+`ceil(11/4)=3`, total `1+2+2+3 = 8 <= 8` -- just fits. Speed `3` gives
+`1+2+3+4 = 10 > 8` -- too slow. So `4` is the first speed that works, i.e. the
+minimum.
 
-That is exactly the shape Template B handles: a monotonic predicate over a
-range, looking for the first true. So we binary-search `k`, and each probe calls
-the O(n) `canFinish` helper. Total cost: O(n log max).
+We now binary-search the range `1..11` holding the **invariant** *the minimum
+feasible speed is always in `[lo, hi]`*: guess the middle speed; if it can
+finish, the answer is that speed or slower (`hi = mid`); if it can't, the
+answer is strictly faster (`lo = mid + 1`). When `lo == hi`, that speed is the
+answer.
+
+### Checkpoint A -- Search a range of answers
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** In this problem the binary search is NOT over array indices. What is the search space?
+- a) A range of candidate speeds `[1, max(piles)]`
+- b) The pile indices `0..n-1`
+- c) The number of hours `1..h`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the hidden number is a speed (bananas per hour), so the search space is the range of speeds from 1 up to the largest pile.
+
+</details>
+
+**Q2 (comprehend).** Why is the `canFinish(speed)` answer monotonic -- why does "true at speed s" guarantee "true at every speed `> s`"?
+- a) Eating faster can never cost MORE hours, so a fast-enough speed stays fast enough
+- b) Because the speeds are sorted in the array
+- c) Because `h` is always large
+
+<details><summary>Show answer</summary>
+
+**(a)** -- raising the speed only shrinks each `ceil(pile / speed)`, so total hours never increase. That single-flip shape is what binary search needs.
+
+</details>
 
 ## Pseudocode
 
@@ -162,6 +205,38 @@ The first true is at `k = 4`. Now the binary search:
 Five probes of an 11-wide range found the boundary. A linear scan from speed 1
 would have done four full `canFinish` calls (27, 15, 10, 8) plus the array
 summations -- and on a `max(piles) = 10^9` range it would be a billion calls.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** `piles = [3, 6, 7, 11]`, `h = 8`. What is the total hours at speed `3`, and is speed `3` feasible?
+- a) Total `10`, not feasible (`10 > 8`)
+- b) Total `8`, feasible
+- c) Total `6`, feasible
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `ceil(3/3)=1`, `ceil(6/3)=2`, `ceil(7/3)=3`, `ceil(11/3)=4`, sum `10 > 8`. So speed `3` is too slow, which is why the answer is `4`.
+
+</details>
+
+**Q2 (analyze).** Why does `canFinish` accumulate hours in a `long` rather than an `int`?
+- a) At speed 1 the sum of piles can reach ~`10^13`, which overflows `int`
+- b) `long` arithmetic is faster in Java
+- c) To match LeetCode's return type
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `int` tops out near `2.1 * 10^9`, but the worst-case hour sum is `10^4` piles each of size `10^9`, i.e. `10^13`, so `long` is mandatory.
+
+</details>
+
+**Q3 (transfer).** What goes wrong if you set `hi = piles.length` instead of `hi = max(piles)`? One sentence.
+
+<details><summary>Show answer</summary>
+
+The answer space would be capped at the number of piles, but the minimum feasible speed can be far larger than `piles.length`; you would search a range that may not contain the answer and return too small a value.
+
+</details>
 
 ## Common mistakes
 

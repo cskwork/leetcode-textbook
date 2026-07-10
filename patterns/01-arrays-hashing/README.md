@@ -130,4 +130,59 @@ Hashing is powerful but has sharp edges. Beginners hit these repeatedly:
   different sources are usually different object references, so `==` returns `false`. This ruins
   anagram keying.
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what is the core trade this pattern makes?
+
+<details><summary>Show answer</summary>
+
+Trade memory for time: spend O(n) extra space on a hash structure so each "have I seen / how many / where" question is answered in O(1) instead of O(n).
+
+</details>
+
+**Q2 (pattern recognition).** A new problem: "given a list of words, find all words that appear more than once." Which tool fits best?
+- a) A hash set of the words
+- b) A hash map word -> count, then scan for counts > 1
+- c) Sorting then binary search
+
+<details><summary>Show answer</summary>
+
+**(b)** -- you need the COUNT, not just existence, so a map word -> count is the right shape. (a) can only say "seen / not seen", losing the count.
+
+</details>
+
+**Q3 (pattern recognition).** Problem: "is every value in this array distinct?" Which is the most direct tool?
+- a) A hash set; if any `add` returns false, there's a duplicate
+- b) Nested loops comparing all pairs
+- c) A heap
+
+<details><summary>Show answer</summary>
+
+**(a)** -- a set answers existence in O(1); the boolean return of `add` detects the first repeat. This is literally Contains Duplicate.
+
+</details>
+
+**Q4 (apply).** You're solving Top K Frequent with the bucket method on `nums = [5,5,5,5,6,7]`, `k = 1`. Which slot holds the answer value, and what is returned?
+- a) Slot 4 holds 5; returns `[5]`
+- b) Slot 1 holds 5; returns `[5]`
+- c) Slot 2 holds 5; returns `[5]`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- 5 appears 4 times so it lands in `bucket[4]`; the top-down scan hits slot 4 first and returns `[5]`.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) how to solve "first non-repeating character in a string" using ideas from this pattern.
+
+<details><summary>Show answer</summary>
+
+Two passes: pass 1 builds a char -> count map; pass 2 walks the string again and returns the first character whose count is 1. The map is the hashing habit; the second pass preserves original order to find the FIRST unique.
+
+</details>
+
+---
+
 With those in mind, open [0217-contains-duplicate](./0217-contains-duplicate/) and start.

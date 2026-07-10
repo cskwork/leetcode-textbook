@@ -156,4 +156,59 @@ Java crash course, section 4).
 
 ---
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what single rule makes a stack the right tool for so many different problems?
+
+<details><summary>Show answer</summary>
+
+Last-In, First-Out (LIFO) -- the most recently added item is always the next one removed, which models "deal with the most recent thing first."
+
+</details>
+
+**Q2 (pattern recognition).** A new problem: "given a string, repeatedly delete pairs of adjacent equal letters until none remain" (e.g. `abbaca` -> `ca`). Which stack flavor fits?
+- a) A monotonic decreasing stack
+- b) A plain builder stack -- push each letter; if the next letter equals the top, pop instead of push
+- c) An operand stack
+
+<details><summary>Show answer</summary>
+
+**(b)** -- this is the classic builder/undo pattern: the top is the most recent survivor, so comparing each new letter to the top detects adjacent duplicates as they form.
+
+</details>
+
+**Q3 (pattern recognition).** A new problem: "for each element, find the distance to the NEXT SMALLER element." Which stack do you use?
+- a) A monotonic increasing stack, popping while the current element is smaller than the top
+- b) A monotonic decreasing stack
+- c) A plain LIFO stack
+
+<details><summary>Show answer</summary>
+
+**(a)** -- "next smaller" needs the opposite monotonicity from "next greater": keep an increasing stack, so the first element that breaks the order is the smaller partner each stacked index waits for.
+
+</details>
+
+**Q4 (apply).** You evaluate the RPN expression `tokens = ["2", "3", "*", "1", "+"]`. What is the result?
+- a) 7
+- b) 9
+- c) 11
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `2 * 3 = 6`, then `6 + 1 = 7`.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) a stack-based approach to a "baseball game score" problem: ops are an integer (record that score), `D` (double the previous score), `C` (invalidate the previous score), and `+` (record the sum of the previous two scores). The final answer is the sum of all recorded scores.
+
+<details><summary>Show answer</summary>
+
+Keep one stack of recorded scores. Integer -> push it. `D` -> peek the top and push double it. `C` -> pop. `+` -> pop the top into `b`, peek the new top into `a`, push `b` back, then push `a + b`. Every op is O(1) because all the information it needs lives at the top of the stack; at the end, sum whatever remains.
+
+</details>
+
+---
+
 Next: [0020 - Valid Parentheses](./0020-valid-parentheses/) — start here.
