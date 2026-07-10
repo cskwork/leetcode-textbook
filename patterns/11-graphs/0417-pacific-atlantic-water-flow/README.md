@@ -4,6 +4,17 @@
 **Pattern:** Graphs
 **LeetCode:** https://leetcode.com/problems/pacific-atlantic-water-flow/
 
+## Concepts used
+
+- **Graph** -- a set of nodes connected by edges. The height grid is an implicit graph: each cell is
+  a node, its up/down/left/right cells are its neighbors (the edges).
+  [glossary](../../../docs/10-glossary.md#graph)
+- **Connected component** -- a group of nodes reachable from one another; here we compute a
+  reachability set from the ocean's edge using the same idea.
+  [glossary](../../../docs/10-glossary.md#connected-component)
+- **DFS (depth-first search)** -- a traversal that goes as deep as possible before backing up.
+  [glossary](../../../docs/10-glossary.md#dfs-depth-first-search)
+
 ## Problem
 
 Given an `m x n` rectangular matrix `heights` where `heights[r][c]` is the elevation of the cell at
@@ -29,16 +40,66 @@ Example:
 
 ## Intuition
 
-The naive approach -- "for each cell, can it reach both oceans?" -- is an `O((m*n)^2)` reachability
-check per cell, far too slow. Flip the question the same way as Surrounded Regions: instead of
-asking *which cells can reach the ocean*, ask *which cells the ocean can reach* by running DFS
-**inward from the shore, against the flow direction**. A cell can flow to the Pacific iff the
-Pacific can reach it walking *uphill or level* (`neighbor.height >= current.height`); same for the
-Atlantic. Run two such DFS passes (one from each ocean's border), mark every reachable cell, and
-intersect the two reachable sets -- those cells flow to both oceans.
+Picture a ridgeline of hills in the rain. A drop falling on a cell runs to whichever neighbor is at
+the same height or lower. We want every hilltop from which a drop can reach *both* oceans -- the
+Pacific along the top/left edges, the Atlantic along the bottom/right.
 
-Trigger signals: "grid", "reachable from ocean", "flow". The keyword "flow" plus "from edges
-inward" is exactly the border-source DFS pattern.
+Treat the grid as an implicit [graph](../../../docs/10-glossary.md#graph): each cell is a **node**,
+its up/down/left/right cells are its **neighbors** (nodes joined to it by an edge). The naive plan --
+for every cell, simulate the drop and check whether it reaches both oceans -- is far too slow (we
+would re-trace the same paths thousands of times). Flip the question: instead of "which cells can
+reach the ocean?", ask "which cells can the ocean reach?". Start from the shore and walk *inward,
+uphill or level* (a neighbor counts as reachable only if its height is `>=` the current cell's). A
+cell the ocean can reach this way is exactly a cell whose water can flow down to that ocean -- the
+same relation, walked backwards. This is [DFS](../../../docs/10-glossary.md#dfs-depth-first-search)
+seeded from the border, and the set of cells it touches is a reachability set -- the same idea as a
+[connected component](../../../docs/10-glossary.md#connected-component), just with an uphill rule for
+who counts as a neighbor.
+
+Run that DFS twice -- once from the Pacific's edges (top + left), once from the Atlantic's (bottom +
+right) -- into two separate "reachable" grids (each grid doubles as its own **visited** record).
+A cell marked reachable in *both* grids can flow to both oceans; that is our answer.
+
+Smallest trace, a 3x3 of heights:
+
+```
+1 2 3
+8 9 4
+7 6 5
+```
+
+From the Pacific (top row + left column) we may climb up or stay level, so we reach essentially every
+cell -- the centre 9 is the peak, climbable from several borders, and everything lower sits below it.
+Pacific grid: all true. From the Atlantic (bottom row + right column) the same climb reaches every
+cell *except* the top-left valley (0,0)=1 and (0,1)=2 -- their only neighbors are lower or are cells
+the Atlantic never reached. Atlantic grid misses those two. The cells true in *both* are everyone
+except (0,0) and (0,1). That matches the expected answer.
+
+### Checkpoint A -- Walk from the shore
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** The DFS walks INWARD from the ocean. Which neighbor comparison is correct?
+- a) `heights[nr][nc] <= heights[r][c]` (move downhill)
+- b) `heights[nr][nc] >= heights[r][c]` (move uphill or level)
+- c) `heights[nr][nc] == heights[r][c]` (only equal heights)
+
+<details><summary>Show answer</summary>
+
+**(b)** -- walking inland uphill-or-level is exactly the reverse of water flowing downhill to the shore, so a cell the ocean can climb to is a cell whose water reaches that ocean.
+
+</details>
+
+**Q2 (comprehend).** Why run the DFS from the ocean inward, instead of from each cell outward?
+- a) The problem requires it
+- b) One DFS from the border reaches every cell that can reach that ocean; doing it per cell would re-trace the same paths thousands of times
+- c) To avoid recursion
+
+<details><summary>Show answer</summary>
+
+**(b)** -- reversing the search turns `O((m*n)^2)` per-cell simulations into two `O(m*n)` border-seeded passes.
+
+</details>
 
 ## Pseudocode
 
@@ -182,6 +243,38 @@ T T T
 **Intersection** (both grids true) -- every cell except `(0,0)` and `(0,1)`:
 
 Output: `[[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]]`.
+
+### Checkpoint B -- Two oceans, one answer
+
+**Q1 (apply).** For `heights = [[9,8,9],[8,1,8],[9,8,9]]`, is the center cell `(1,1)` (height 1) reachable from the Pacific DFS?
+- a) Yes -- every cell is reachable
+- b) No -- the inland DFS may only move up or level, but the center (1) is strictly lower than all its neighbors (8), so no ocean can step into it
+- c) Only the Pacific reaches it, not the Atlantic
+
+<details><summary>Show answer</summary>
+
+**(b)** -- to enter the center a neighbor of height 8 would have to step DOWN to 1, but the rule allows only `>=`. So neither ocean can reach it.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if you write `heights[nr][nc] <= heights[r][c]` (downhill) instead of `>=`?
+- a) Nothing -- it is symmetric
+- b) You simulate water flowing the wrong way (inland-uphill), so the reachable sets no longer mean "can flow to this ocean"
+- c) It throws on equal heights
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the flipped comparison walks downhill from the ocean, which is the opposite of the relation we need; the resulting sets are meaningless for the problem.
+
+</details>
+
+**Q3 (transfer).** Why does running ONE merged DFS from all four edges and returning every reached cell give the WRONG answer?
+
+<details><summary>Show answer</summary>
+
+A single merged set forgets WHICH ocean reached each cell. You need two independent reachable grids and return only the cells true in BOTH -- the intersection, not the union.
+
+</details>
 
 ## Common mistakes
 

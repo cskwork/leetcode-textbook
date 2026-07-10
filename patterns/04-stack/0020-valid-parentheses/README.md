@@ -4,6 +4,11 @@
 **Pattern:** Stack
 **LeetCode:** https://leetcode.com/problems/valid-parentheses/
 
+## Concepts used
+
+- **Stack** — a last-in-first-out (LIFO) container: the last item you put in is the first one you take out, like a stack of plates. [glossary](../../../docs/10-glossary.md#stack)
+- **Linear scan** — reading the string one character at a time, left to right, doing a small fixed amount of work per character. [glossary](../../../docs/10-glossary.md#linear-scan)
+
 ## Problem
 
 Given a string `s` containing just the characters `'('`, `')'`, `'{'`, `'}'`,
@@ -33,14 +38,53 @@ Examples (verbatim from LeetCode):
 
 ## Intuition
 
-This is the *hello world* of the Stack pattern. The defining rule — *"the most
-recent unclosed opener must close first"* — is exactly LIFO order. So every
-opener is pushed onto a stack while it waits for its partner; on a closer, the
-opener it must match is the one on top of the stack.
+Think of nested Russian dolls, or a stack of boxes you tape shut before opening
+the next: the box you opened **last** must be the first one you close. Brackets
+behave the same way — if you write `(` then `[`, the matching `]` must come
+before the `)`. This "last-in, first-out" rule is called **LIFO**, and a
+[stack](../../../docs/10-glossary.md#stack) is the data structure built for it:
+you add and remove only at the top, like a stack of plates.
 
-If a closer's top doesn't match (wrong type) or the stack is empty (nothing to
-close), the string is invalid. After scanning the whole string the stack must be
-empty — any leftover opener never got closed.
+Trace the smallest case that actually shows this, `s = "([])"`:
+
+- Read `(` — opener, put it on the stack. Stack (bottom to top): `(`.
+- Read `[` — opener, put it on top. Stack: `( [`.
+- Read `]` — closer. It must match the most recent opener, the top `[`. They
+  match, so remove the `[`. Stack: `(`.
+- Read `)` — closer, must match the top `(`. Match, remove it. Stack: empty.
+
+It worked because each closer grabbed the opener right beneath it. That is the
+whole idea: **openers wait on the stack; a closer always pairs with the top
+opener.** If the top is the wrong type, or the stack is empty when a closer
+arrives (nothing to match), the string is invalid. And after reading every
+character the stack must be empty — a leftover opener like the lone `(` in `"("`
+never got closed, so that is invalid too.
+
+### Checkpoint A -- Match the top
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** When a closer (`)`, `]`, `}`) arrives, which opener does it try to match against?
+- a) The bottom of the stack (the oldest opener)
+- b) The top of the stack (the most recent opener)
+- c) Every opener on the stack, one at a time
+
+<details><summary>Show answer</summary>
+
+**(b)** -- LIFO order means a closer always pairs with the most recent unmatched opener, which is exactly the stack top.
+
+</details>
+
+**Q2 (comprehend).** Trace `s = "()"`. After both characters are read, what is on the stack and what is returned?
+- a) Stack holds `(`; returns false
+- b) Stack is empty; returns true
+- c) Stack is empty; returns false
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `(` is pushed; `)` pops it (the pair matches); the loop ends with an empty stack, so `return stack.isEmpty()` gives true.
+
+</details>
 
 ## Pseudocode
 
@@ -128,6 +172,38 @@ Dry-run on `s = "{[]}"` (expected `true`) for contrast:
 | 4 | `}` | pop `{`, matches -> ok | (empty) |
 
 End: stack empty -> return **true**.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `s = ")"` (a single closing bracket). What happens and what is returned?
+- a) Returns false at the first character -- the stack is empty when the closer arrives
+- b) Pushes `(` then returns true at the end
+- c) Throws an exception
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `)` is a closer; the `stack.isEmpty()` guard fires before any pop, so we return false without ever touching the stack.
+
+</details>
+
+**Q2 (analyze).** What does `isValid("")` (the empty string) return, and why?
+- a) false -- an empty string has no brackets, so it is invalid
+- b) true -- the loop runs zero times, then control falls through to `return stack.isEmpty()`, which is true
+- c) It throws
+
+<details><summary>Show answer</summary>
+
+**(b)** -- zero iterations leave an empty stack, and `stack.isEmpty()` is true. By convention an empty string is valid.
+
+</details>
+
+**Q3 (transfer).** Suppose a fourth bracket pair `<` and `>` were added to the language. What is the smallest change to the solution?
+
+<details><summary>Show answer</summary>
+
+Add one line to the `matches` helper (`open == '<' && close == '>'`) and add `|| c == '<'` to the opener check. The LIFO structure is unchanged -- it only needs to recognise one more legal pair.
+
+</details>
 
 ## Common mistakes
 

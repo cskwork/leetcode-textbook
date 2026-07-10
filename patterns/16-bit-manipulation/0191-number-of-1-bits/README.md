@@ -52,6 +52,32 @@ Each iteration of `n = n & (n - 1)` removes one set bit; after `k`
 iterations `n` becomes 0, where `k` is exactly the number of set bits. A
 number with 3 set bits takes 3 iterations, not 32.
 
+### Checkpoint A -- Clearing the lowest set bit
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** What does the expression `n & (n - 1)` do to `n`?
+- a) Flips every bit of `n`
+- b) Clears (turns off) the lowest set bit of `n`
+- c) Doubles `n`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- subtracting 1 flips the bits from the lowest set bit downward, and AND-ing with the original leaves all higher bits intact but zeroes that rightmost 1-bit.
+
+</details>
+
+**Q2 (comprehend).** For `n = 12` (binary `1100`), what is `n & (n - 1)`?
+- a) `8`  (binary `1000`)
+- b) `4`  (binary `0100`)
+- c) `0`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `n - 1 = 11` (binary `1011`); `1100 & 1011 = 1000`, which is `8`. The lowest set bit (bit 2) was cleared.
+
+</details>
+
 ## Pseudocode
 
     function hammingWeight(n):
@@ -120,6 +146,38 @@ Sanity check on the unsigned edge case `n = -3` =
 `11111111 11111111 11111111 11111101` (31 set bits): the loop runs 31
 times, clearing one set bit each time, and correctly returns 31 -- even
 though `n` is negative throughout most of the run.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `hammingWeight(14)` (binary `1110`). What does it return, and how many loop iterations run?
+- a) `3`, in 3 iterations
+- b) `4`, in 4 iterations
+- c) `3`, in 32 iterations
+
+<details><summary>Show answer</summary>
+
+**(a)** -- `14 & 13 = 12` (count 1); `12 & 11 = 8` (count 2); `8 & 7 = 0` (count 3). Three set bits, three iterations -- the loop runs once per set bit, not per bit position.
+
+</details>
+
+**Q2 (analyze).** Why does `n & (n - 1)` work correctly on a NEGATIVE `n`, while a shift loop using `>>` would loop forever?
+- a) `n & (n - 1)` always removes exactly one set bit and reaches 0 regardless of sign; `>>` copies the sign bit in, so a negative never becomes 0
+- b) Negative numbers have no set bits, so the loop is skipped
+- c) `n & (n - 1)` flips the sign bit to 0 on the first step
+
+<details><summary>Show answer</summary>
+
+**(a)** -- each iteration clears exactly one 1-bit from the 32-bit pattern, so it must terminate; `>>` is arithmetic (sign-extending), so a negative keeps its leading 1s and never reaches 0.
+
+</details>
+
+**Q3 (transfer).** Using one identity from this chapter, how would you test whether a positive integer `n` is a power of two (like 1, 2, 4, 8, ...)?
+
+<details><summary>Show answer</summary>
+
+A power of two has exactly one set bit, so `n & (n - 1)` clears that bit and yields 0. The check is `n > 0 && (n & (n - 1)) == 0`.
+
+</details>
 
 ## Common mistakes
 

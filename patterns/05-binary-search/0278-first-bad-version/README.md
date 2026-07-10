@@ -4,6 +4,12 @@
 **Pattern:** Binary Search
 **LeetCode:** https://leetcode.com/problems/first-bad-version/
 
+## Concepts used
+
+- **Binary search** -- narrowing a range by halves; here we hunt the point where a yes/no answer flips. [glossary](../../../docs/10-glossary.md#binary-search)
+- **Predicate** -- a yes/no question used as the decision in a search. [glossary](../../../docs/10-glossary.md#predicate)
+- **Invariant** -- a condition that is always true at the start of every loop iteration. [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 You are a product manager leading a team to develop a new product. Suppose all
@@ -28,34 +34,61 @@ Example (verbatim from LeetCode), with `n = 5` and `bad = 4`:
 
 ## Intuition
 
-This is your first **boundary** search, and the gateway to Template B from the
-pattern README. The trigger signals are "first version that is bad" and "first
-[thing] in a range" -- classic wording for *find the boundary where a predicate
-flips*.
+Picture a long line of products coming off a conveyor belt, labelled 1, 2, 3,
+.... Everything is fine until some product, and from that point on *every*
+product is defective -- a bad part got into the machine and stayed. Given a
+tester that tells you whether product `k` is defective, find the first defective
+one. You could test 1, then 2, then 3..., but that is slow. The line goes *good
+good good ... good | bad bad bad ... bad* -- one clean flip from good to bad --
+and that single flip is exactly what binary search is built to find.
 
-The crucial observation is that the predicate `isBadVersion(k)` is
-**monotonic**: once a version is bad, every later version is also bad (the bug
-shipped and stayed). So the sequence of answers from `1` to `n` looks like
+Trace `n = 5` with the first bad version at `4`; the tester answers `1:good,
+2:good, 3:good, 4:bad, 5:bad`. We keep markers `lo, hi` on the range that still
+contains the first bad version (`lo = 1, hi = 5`) and halve it:
 
-    false  false  false  ...  false  true  true  ...  true
+1. Middle is `3`, tester says **good**. So `1, 2, 3` are all good -- the first
+   bad version is strictly later. Jump `lo = 4`.
+2. Middle is `4`, tester says **bad**. So `4` is bad, and the first bad version
+   is `4` *or earlier*. We can't throw `4` away (it might *be* the first), so
+   pull the top down: `hi = 4`.
+3. `lo = 4, hi = 4` -- they meet. The first bad version is `4`.
 
-and we are hunting the single index where `false` flips to `true`. That
-monotonic shape is exactly what binary search needs.
+The shape that makes this searchable is a **predicate** -- a yes/no question
+(`is version k bad?`) whose answer flips at most once as `k` grows, and once it
+flips to "yes" it stays "yes". A single-flip predicate over a range is precisely
+what binary search needs.
 
-Now reason about the midpoint of any candidate range `[lo, hi]`:
+The **invariant** is: *the first bad version is always inside `[lo, hi]`.* The
+"good" branch moves `lo` past everything proven good; the "bad" branch pulls
+`hi` down to `mid` while keeping `mid` (since `mid` could be the answer). The
+range shrinks every step and the answer never escapes it, so when `lo == hi`
+that single value is the first bad version.
 
-- If `isBadVersion(mid)` is **true**, the first bad version is `mid` *or
-  earlier* -- so we can safely pull the upper bound down: `hi = mid`.
-- If `isBadVersion(mid)` is **false**, the first bad version is *strictly later*
-  than `mid` -- so we push the lower bound up past `mid`: `lo = mid + 1`.
+### Checkpoint A -- Hunt the boundary, not a match
 
-Every iteration keeps the answer inside `[lo, hi]`, and the range strictly
-shrinks, so the loop ends with `lo == hi` -- and that single point is the first
-bad version. This is Template B verbatim.
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
 
-Why not Template A (`lo <= hi`) here? Because we are not looking for an *exact
-match*; we are looking for a *flip point* that no single comparison hands us.
-The reducing form `lo < hi` with `hi = mid` is built precisely for that.
+**Q1 (recall).** This solution uses `hi = mid` (not `mid - 1`) on the "bad" branch. Why keep `mid` in the range?
+- a) Because `mid` might itself be the first bad version
+- b) To make the loop run faster
+- c) Because `mid - 1` causes overflow
+
+<details><summary>Show answer</summary>
+
+**(a)** -- a bad `mid` could be the very first bad version, so excluding it with `mid - 1` might discard the answer.
+
+</details>
+
+**Q2 (comprehend).** On `n = 5`, first bad `= 4`, the first probe is `mid = 3` and the tester says "good". Why does the algorithm set `lo = mid + 1 = 4` rather than `lo = mid`?
+- a) `mid` is proven good, so the first bad version is strictly after it; keeping `mid` would re-check a known-good version forever
+- b) To avoid integer overflow
+- c) Because `mid + 1` is the ceiling midpoint
+
+<details><summary>Show answer</summary>
+
+**(a)** -- a good `mid` is ruled out, so the search must move strictly past it. Only the "bad" branch keeps `mid`.
+
+</details>
 
 ## Pseudocode
 
@@ -139,6 +172,38 @@ bad -- expected `1`):
 
 The `hi = mid` branch keeps pulling the upper bound left until it pins the
 answer at 1.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `n = 6`, first bad version `= 1` (every version is bad). What is returned?
+- a) `1` -- the `hi = mid` branch pulls the upper bound down until it pins 1
+- b) `3` -- the first midpoint
+- c) It loops forever
+
+<details><summary>Show answer</summary>
+
+**(a)** -- every probe is bad, so `hi` walks left (`3, 2, 1`) while `lo` stays `1`; the loop ends at `lo == hi == 1`.
+
+</details>
+
+**Q2 (analyze).** Why MUST the midpoint be the floor `lo + (hi - lo) / 2` and not the ceiling? Think about a two-element range where `mid` is bad.
+- a) With the ceiling, `mid == hi`, so `hi = mid` makes no progress and the loop never ends
+- b) The ceiling gives the wrong numeric answer
+- c) The ceiling overflows
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the floor guarantees `mid < hi` whenever `lo < hi`, so `hi = mid` strictly shrinks the range. The ceiling breaks that guarantee on a two-element range.
+
+</details>
+
+**Q3 (transfer).** In one sentence, what single property of `isBadVersion` makes this problem binary-searchable rather than requiring a linear scan?
+
+<details><summary>Show answer</summary>
+
+It is a monotonic predicate -- once it returns true it stays true for every larger version, so there is exactly one good-to-bad flip to hunt.
+
+</details>
 
 ## Common mistakes
 

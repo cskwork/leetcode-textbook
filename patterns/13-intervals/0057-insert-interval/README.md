@@ -52,6 +52,32 @@ The trick is to defer inserting `newInterval` until the first "after"
 interval appears (or until the loop ends). That way the merged range is
 emitted exactly once, in the correct position.
 
+### Checkpoint A -- Three phases
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** The problem guarantees the input list is already:
+- a) Unsorted, possibly overlapping
+- b) Sorted by start and non-overlapping
+- c) Sorted by end
+
+<details><summary>Show answer</summary>
+
+**(b)** -- that gift is what lets the solution be one O(n) walk with no sort, classifying each existing interval into before / overlap / after.
+
+</details>
+
+**Q2 (comprehend).** In the three-phase walk, an existing interval is absorbed into `newInterval` (the overlap branch) when:
+- a) `cur.end < newInterval.start` (it sits entirely to the left)
+- b) `cur.start > newInterval.end` (it sits entirely to the right)
+- c) Neither of the above -- it touches or intersects `newInterval`
+
+<details><summary>Show answer</summary>
+
+**(c)** -- the "before" and "after" branches peel off the disjoint cases, so whatever falls through to the `else` is exactly an overlap (including touching). No extra overlap test is needed.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -160,6 +186,38 @@ For contrast, a no-overlap case `intervals = [[5,6]]`, `newInterval = [1,2]`
 
 Result `[[1,2],[5,6]]` — the new interval is emitted before any existing
 one because every existing interval is in the "after" phase.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `intervals = [[1,5]]`, `newInterval = [6,8]` (so `start = 6`, `end = 8`). What is returned?
+- a) `[[1,8]]`
+- b) `[[1,5],[6,8]]`
+- c) `[[6,8],[1,5]]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `[1,5]` has `end 5 < start 6`, so it is in the "before" branch and is appended. The loop then ends with `placed = false`, so the trailing `if (!placed)` emits `[6,8]` at the tail, giving `[[1,5],[6,8]]`.
+
+</details>
+
+**Q2 (analyze).** Consider `intervals = [[1,2],[3,4]]`, `newInterval = [1,4]`, which overlaps every existing interval. What is the job of the `placed` flag plus the post-loop emit here?
+- a) Without the trailing emit, the merged range `[1,4]` would never be emitted, because no "after" interval ever appears to trigger it
+- b) Without it, the function would return early with the wrong answer
+- c) It is only cosmetic and could be removed
+
+<details><summary>Show answer</summary>
+
+**(a)** -- every existing interval falls in the overlap branch, so the "after" branch never fires and `placed` stays false. The trailing `if (!placed)` is the only thing that emits the final merged range. Together the flag and the trailing emit guarantee exactly-once emission.
+
+</details>
+
+**Q3 (transfer).** Suppose the input list were NOT guaranteed non-overlapping -- it might already contain overlaps among its own intervals. How would you change the approach?
+
+<details><summary>Show answer</summary>
+
+Drop the three-phase walk (it relies on the non-overlapping guarantee). Instead, append `newInterval` to the list and run the full Merge Intervals algorithm: sort everything by start, then do the one-pass merge with `max` on the end. O(n log n) instead of O(n).
+
+</details>
 
 ## Common mistakes
 

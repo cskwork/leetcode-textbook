@@ -169,6 +169,59 @@ then interval DP, then the two knapsack variants.
   before it is read in the next column. Carry a `prev` variable that snapshots
   the old `dp[j-1]` before the update.
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what makes a problem 2-D DP rather than 1-D DP?
+
+<details><summary>Show answer</summary>
+
+The state needs two independent indices to describe a sub-problem -- e.g. a position in string A AND a position in string B, or a grid row AND column -- so the table is `dp[i][j]` instead of a single `dp[i]`.
+
+</details>
+
+**Q2 (pattern recognition).** A new problem: "a robot walks a grid of coins moving only right/down and wants to MAXIMISE the coins collected." Which sub-pattern fits?
+- a) Grid-path DP (like Minimum Path Sum, but `max` instead of `min`)
+- b) Interval DP
+- c) Edit distance
+
+<details><summary>Show answer</summary>
+
+**(a)** -- same restricted moves (right/down) mean each cell depends only on the cell above and to the left; swapping `min` for `max` turns it into a maximum-cost grid path.
+
+</details>
+
+**Q3 (pattern recognition).** A new problem: "choose items, each usable at most once, so their weights sum exactly to W." Which sub-pattern and, in 1-D form, which inner-loop direction?
+- a) 0/1 knapsack, inner loop DESCENDING (Partition Equal Subset Sum style)
+- b) Unbounded knapsack, inner loop ASCENDING
+- c) LCS-style, diagonal dependency
+
+<details><summary>Show answer</summary>
+
+**(a)** -- "at most once" is 0/1 knapsack; descending prevents an item from being reused within the same pass. (b) is the unbounded (Coin Change II) flavour.
+
+</details>
+
+**Q4 (apply).** For Edit Distance with `word1 = "ab"`, `word2 = "ab"`, what is `dp[2][2]`?
+- a) 0
+- b) 1
+- c) 2
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the strings are identical: both `a` and `b` are matches, so the cost carries the diagonal for free all the way through; `dp[2][2] = dp[1][1] = dp[0][0] = 0`.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) a 2-D DP for "count the number of subsequences of string `s` that equal string `t`" -- how would you define `dp[i][j]` and the recurrence?
+
+<details><summary>Show answer</summary>
+
+Let `dp[i][j]` = number of ways the first `j` chars of `t` appear as a subsequence within the first `i` chars of `s`. If `s[i-1] == t[j-1]`, then `dp[i][j] = dp[i-1][j-1]` (match these two) `+ dp[i-1][j]` (skip `s`'s char); otherwise `dp[i][j] = dp[i-1][j]` (must skip). Base: `dp[i][0] = 1` (empty `t` matches once), `dp[0][j>0] = 0`.
+
+</details>
+
 ---
 
 Next problem: [0062 - Unique Paths](./0062-unique-paths/).

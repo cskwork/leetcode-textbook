@@ -4,6 +4,15 @@
 **Pattern:** Heap / Priority Queue
 **LeetCode:** https://leetcode.com/problems/k-closest-points-to-origin/
 
+## Concepts used
+
+- **Heap** -- a structure that always gives back the smallest or largest item it holds in O(1),
+  with O(log n) cost to add or remove one. [glossary](../../../docs/10-glossary.md#heap--priority-queue)
+- **Min-heap / max-heap** -- a heap whose top is the *smallest* (min-heap) or *largest* (max-heap)
+  item inside it. Java's `PriorityQueue` is a min-heap by default.
+- **Array** -- a row of numbered slots holding values, accessed by position in O(1).
+  [glossary](../../../docs/10-glossary.md#array)
+
 ## Problem
 
 Given an array of `points` where `points[i] = [xi, yi]` represents a point on the X-Y plane, and an
@@ -25,15 +34,75 @@ Examples:
 
 ## Intuition
 
-"K closest" means "k smallest distances", which is the mirror image of "k largest". Recall the size-K
-heap rule: the root must be the survivor you want to **evict**. For the k smallest distances, the
-element to throw away when the heap overflows is the **farthest** of the k closest -- so we need a
-**max-heap of size k keyed on distance**. Each incoming point is pushed; if the heap then holds more
-than k, we poll the largest distance, which removes the farthest survivor. After the scan, the heap
-contains exactly the k closest points.
+Imagine a dart-throwing contest where you must report the **K closest** darts to the bullseye, out
+of many thrown. You keep a board that fits exactly K darts. Once the board is full, every new dart
+only stays if it is **closer** than the *farthest* dart currently on the board -- and if it is, you
+remove that farthest one to make room. When all darts are in, the K on the board are your answer.
 
-We compare **squared** distances (`x*x + y*y`) to avoid the floating-point `sqrt`; squaring
-preserves order for non-negative numbers.
+This is the mirror image of [0215 - Kth Largest Element in an Array](../0215-kth-largest-element-in-an-array/).
+There we wanted the **K largest** values, so we kept the *smallest* of the survivors on top ready to
+evict -- a [**min-heap**](../../../docs/10-glossary.md#heap--priority-queue) (top = smallest). Here
+we want the **K smallest** distances, so the survivor we want to throw away is the *farthest* of the
+K we kept -- the **largest** distance. That means we need the *largest* on top ready to pop, which
+is a [**max-heap**](../../../docs/10-glossary.md#heap--priority-queue) (top = largest). Everything
+else is the **size-K heap trick**: keep only K items, evict the worst when full; each step is
+O(log k).
+
+This "which one is on top" decision is the conceptual hurdle, so let's walk through it slowly.
+"K closest" = "K smallest distances". The heap holds the K smallest distances seen so far. When a
+new point arrives and the heap is full, we have to drop one -- and the right one to drop is the
+farthest of the K we kept, because it is the least "closest". For that to be cheap, that farthest
+one has to be sitting on top. A max-heap puts the **largest** distance on top, which is exactly the
+farthest survivor -- so a max-heap is correct. A min-heap here would put the *closest* of the
+survivors on top and polling it would discard the very points we want to keep.
+
+We compare **squared** distances (`x*x + y*y`) instead of the real Euclidean distance. Squaring is
+fine because for non-negative numbers, larger distance always means larger squared distance -- the
+ordering is preserved -- and we avoid floating-point `sqrt` entirely.
+
+**Smallest trace.** Take `points = [[3,3],[5,-1],[-2,4]]`, `k = 2`. Squared distances:
+`[3,3] -> 18`, `[5,-1] -> 26`, `[-2,4] -> 20`. Walk the array, keeping a size-2 max-heap ordered by
+distance. The **farthest** survivor is on top (that is the one we evict):
+
+| Step | point  | dist^2 | heap after push (farthest on top) | size > 2? | heap after poll | why               |
+|-----:|--------|-------:|-----------------------------------|----------:|-----------------|-------------------|
+| 1    | [3,3]  | 18     | {18}                              | no        | {18}            | not full yet      |
+| 2    | [5,-1] | 26     | {26, 18}                          | no        | {26, 18}        | size = 2 = K      |
+| 3    | [-2,4] | 20     | {26, 18, 20}                      | yes       | {20, 18}        | evict 26 = [5,-1] |
+
+Survivors: `[[3,3], [-2,4]]`. The point `[5,-1]` (distance 26) entered, but the heap overflowed, so
+the farthest survivor -- 26 -- was evicted, and that was `[5,-1]` itself. Output
+**`[[3,3], [-2,4]]`** in any order.
+
+This is the same size-K heap trick as 0215 and [0347 - Top K Frequent](../0347-top-k-frequent-heap/)
+-- only the heap order is flipped because we want the smallest distances instead of the largest
+values.
+
+### Checkpoint A -- Why a max-heap this time
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** For "k closest" (= k smallest distances), which heap of size k do you use?
+- a) A min-heap
+- b) A max-heap, so the farthest survivor is on top to evict
+- c) Either works
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the root must be the survivor you discard, and for "k closest" that is the farthest of the k kept (the largest distance). A max-heap puts the largest distance on top, ready to poll.
+
+</details>
+
+**Q2 (comprehend).** Why compare squared distance (`x*x + y*y`) instead of the real Euclidean distance?
+- a) Because squaring preserves order for non-negative numbers and avoids sqrt and floating-point error
+- b) Because squaring is more accurate
+- c) Because the heap only accepts integers
+
+<details><summary>Show answer</summary>
+
+**(a)** -- distances are non-negative, and squaring is strictly increasing there, so the closest points stay closest. Dropping the sqrt keeps everything in integers and skips a slow, lossy operation.
+
+</details>
 
 ## Pseudocode
 
@@ -105,6 +174,38 @@ root that gets evicted):
 | 3    | [-2,4]   | 20     | {26, 18, 20}                 | yes       | {20,18}         | [[3,3],[-2,4]]     |  (evict dist 26 = [5,-1])
 
 Final survivors: `[[3,3], [-2,4]]`. Return (in any order) **`[[3,3],[-2,4]]`**.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `points = [[0,1],[1,0],[2,2]]`, `k = 2`. Which two points are returned (any order)?
+- a) [[0,1],[1,0]] (both squared distance 1)
+- b) [[2,2],[0,1]]
+- c) [[2,2]]
+
+<details><summary>Show answer</summary>
+
+**(a)** -- squared distances are 1, 1, and 8. The size-2 max-heap keeps the two smallest (both 1); when 8 enters the heap overflows and evicts the farthest survivor, which is the 8 itself.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if you used a min-heap here instead of a max-heap?
+- a) The closest points get evicted as they arrive, leaving the farthest k -- the opposite of "closest"
+- b) Nothing changes, the result is the same
+- c) It throws an exception
+
+<details><summary>Show answer</summary>
+
+**(a)** -- a min-heap puts the smallest distance on top, so every overflow polls a close point. After the whole pass the heap holds the k farthest points, the mirror of what was asked.
+
+</details>
+
+**Q3 (transfer).** Suppose ties in distance had to be broken by smaller x-coordinate first, then smaller y. What is the only change needed?
+
+<details><summary>Show answer</summary>
+
+Extend the comparator: compare distance first (max-heap direction), and on equal distance compare x ascending, then y ascending. The heap mechanics (push, size-k trim, drain) are unchanged -- only the ordering gains tiebreakers.
+
+</details>
 
 ## Common mistakes
 

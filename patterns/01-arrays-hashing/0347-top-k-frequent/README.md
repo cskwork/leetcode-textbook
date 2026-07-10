@@ -4,6 +4,15 @@
 **Pattern:** Arrays & Hashing
 **LeetCode:** https://leetcode.com/problems/top-k-frequent-elements/
 
+## Concepts used
+
+- **Hash map** -- a key->value lookup table; here the key is a number and the value is how many
+  times it appears. [glossary](../../../docs/10-glossary.md#hash-map-aka-hash-table-dictionary)
+- **Array** -- numbered slots reached by index; here we use the index itself as data (the
+  frequency). [glossary](../../../docs/10-glossary.md#array)
+- **Sorting** -- ordering items; sorting values by frequency would solve this in O(n log n), but
+  we do better. [glossary](../../../docs/10-glossary.md#sorting)
+
 ## Problem
 
 Given an integer array `nums` and an integer `k`, return the `k` most frequent elements. The
@@ -23,13 +32,54 @@ Examples:
 
 ## Intuition
 
-Two-step pipeline: first **count** frequencies (a HashMap, the classic counting trigger), then
-**select** the top `k`. The selection step is where the choice matters. Sorting all distinct
-values by frequency is O(n log n). A heap of size `k` is O(n log k) -- that solution lives in the
-Heap chapter. Here we use **bucket sort**: because a frequency is an integer between 1 and `n`,
-we can index an array of length `n+1` by frequency, dropping each value into the slot matching its
-count. Then we walk the array from the high end downward, collecting values until we have `k`.
-That walk touches each slot once, so the whole selection is O(n) -- beating both sort and heap.
+A teacher wants the 3 most-read books in her class. She could line up every student's book and
+sort the whole pile by title -- wasteful, since she only needs the top 3. Instead she first counts
+how many students read each book (a tally), then asks "which books were read exactly N times?"
+starting from the highest possible N and working down. The first few answers fill her top 3.
+
+Walk the smallest case, `nums = [1, 1, 1, 2, 2, 3]`, `k = 2`. Count first: `1` appears three
+times, `2` appears twice, `3` appears once. The most frequent is `1` (three times), the next is
+`2` (twice). So the top 2 are `[1, 2]`.
+
+The general rule has two stages. First, count how many times each value appears -- a
+[hash map](../../../docs/10-glossary.md#hash-map-aka-hash-table-dictionary) does this in one pass
+(key = value, value = count). Second, pick the `k` most frequent. The clever part is stage two. A
+value's frequency is always a whole number between 1 and `n` (where `n` is the array length, since
+nothing can appear more than `n` times). So build an [array](../../../docs/10-glossary.md#array)
+of size `n + 1` whose index IS the frequency -- slot `3` holds every value that appeared exactly
+three times. Then walk that array from the top index downward, scooping values into the answer
+until you have `k`.
+
+Why does walking from the top collect the most frequent? Because a higher array index means a
+higher frequency, so the first non-empty slots we hit are the most-frequent values. Each value
+lives in exactly one slot and we touch each slot once, so the whole selection is O(n) -- faster
+than sorting the values by frequency, which is O(n log n).
+
+### Checkpoint A -- Why bucket sort
+
+Pause before expanding.
+
+**Q1 (recall).** In the bucket array, what does the INDEX of a slot represent?
+- a) A value from `nums`
+- b) A frequency (how many times some value appeared)
+- c) A position in the original array
+
+<details><summary>Show answer</summary>
+
+**(b)** -- slot `f` holds every value that appeared exactly `f` times. So scanning from the top index collects the most frequent values first.
+
+</details>
+
+**Q2 (comprehend).** Why is this O(n) while "sort values by frequency" is O(n log n)?
+- a) Hash maps are always faster than sorting
+- b) Frequencies are whole numbers in 1..n, so an array indexed by frequency buckets everything in one linear pass -- no comparisons, no log factor
+- c) Because k is small
+
+<details><summary>Show answer</summary>
+
+**(b)** -- bucket sort exploits that frequency is a small integer range (1..n), so we place each value in O(1) and read off the top in O(n). Comparison sorting can't avoid the log factor.
+
+</details>
 
 ## Pseudocode
 
@@ -120,6 +170,38 @@ Top-down scan collecting 2 values:
 | 2            | [2]          | 2            | [1, 2]        |  # pos == k, stop
 
 Output: `[1, 2]`.
+
+### Checkpoint B -- Trace and tune
+
+**Q1 (apply).** For `nums = [1,1,2,2,2,3]`, `k = 1`: which slot is `2` placed into, and what is returned?
+- a) Slot 2, returns `[1]`
+- b) Slot 3 (frequency 3), returns `[2]`
+- c) Slot 1, returns `[3]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `2` appears three times, so it goes in `bucket[3]`. The top-down scan hits slot 3 first and returns `[2]`.
+
+</details>
+
+**Q2 (analyze).** Why must the bucket array be size `n + 1`, not `n`?
+- a) Java requires odd sizes
+- b) A single value repeated n times has frequency n, which must index `bucket[n]`; size n would throw out-of-bounds
+- c) To leave a slot for frequency 0
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the maximum frequency is n (all elements equal), so the valid indices are 0..n, requiring n+1 slots.
+
+</details>
+
+**Q3 (transfer).** The Heap chapter solves this same problem with a min-heap of size k. When would the heap be preferable to the bucket approach?
+
+<details><summary>Show answer</summary>
+
+When you only need the top k and k is tiny relative to n, a size-k heap uses O(k) space and O(n log k) time -- less memory than the O(n) bucket array, and it streams well if `nums` arrives element-by-element.
+
+</details>
 
 ## Common mistakes
 

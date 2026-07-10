@@ -4,6 +4,20 @@
 **Pattern:** Tries
 **LeetCode:** https://leetcode.com/problems/word-search-ii/
 
+## Concepts used
+
+- **Trie (prefix tree)** -- a tree whose edges are letters; built from the word list so dead
+  prefixes can be pruned during the search.
+  [glossary](../../../docs/10-glossary.md#trie-prefix-tree)
+- **Backtracking** -- a search that tries a choice, recurses, then undoes the choice before trying
+  the next; here, stepping onto a board cell and restoring it on the way out.
+  [glossary](../../../docs/10-glossary.md#backtracking)
+- **DFS (Depth-First Search)** -- going as deep as possible down one branch of a structure before
+  backing up. [glossary](../../../docs/10-glossary.md#dfs-depth-first-search)
+- **Graph** -- a set of nodes joined by edges; the board is a graph where each cell is connected
+  to its up/down/left/right neighbors.
+  [glossary](../../../docs/10-glossary.md#graph)
+
 ## Problem
 
 Given an `m x n` grid of characters `board` and a list of strings `words`, return every word from
@@ -35,27 +49,78 @@ Example 2:
 
 ## Intuition
 
-Two naive approaches both fail:
+You have played Boggle: lettered dice in a grid, and you score by connecting neighboring dice
+(up, down, left, right -- no diagonals, no reusing a die in one word) to spell a word from a list.
+The board here is exactly a Boggle grid, and the question is "which words from the list can you
+spell?" The trap is that the list may have hundreds of words and the grid dozens of cells, so
+checking each word one by one, or exploring every string the board can form, both blow up.
 
-1. **For each word, DFS the board.** With W words and a board of mn cells, that is W separate
-   DFS searches costing O(W * mn * 4^L) -- redoing the same board work W times.
-2. **For each cell, DFS every possible string and check it against a HashSet of words.** Branching
-   factor 4 and depth L gives 4^L strings per starting cell; almost all of them are useless
-   prefixes no dictionary word begins with.
+The key idea is to let the **dictionary guide the exploration**. Build a
+[trie](../../../docs/10-glossary.md#trie-prefix-tree) (a [tree](../../../docs/10-glossary.md#tree)
+whose edges are letters) holding every word in the list. Then start a
+[DFS](../../../docs/10-glossary.md#dfs-depth-first-search) (depth-first search -- go as deep as
+possible down one branch before backing up) from each grid cell. As you walk from cell to cell
+spelling out a path, you walk the *same* path down the trie. The moment the next cell's letter is
+not a child of your current trie node, you stop: no dictionary word continues this way, so there
+is nothing to find down this branch. That prune is the entire reason this is fast. Whenever you
+step onto a trie node flagged end-of-word, you record the word.
 
-The right move is the second approach, but **pruned by the dictionary**. We build a trie of all
-`words`, then DFS from each cell. As we walk, we follow edges in the trie: the moment the current
-path is no longer a prefix of any dictionary word, we abandon it -- no wasted exploration. Every
-time we land on a trie node marked end-of-word, we record the word. This is the canonical
-"Trie + Backtracking" pattern: the trie prunes the search, backtracking explores the board.
+Trace a tiny board and list. Board:
 
-Two refinements that matter:
+    o a
+    e t
 
-- **Store the word at its end-of-word node** so when we hit a `isEnd` node we know *which* word we
-  found, without rebuilding it from the path.
-- **Unmark `isEnd` after collecting.** A word can be reached from many board paths (or the
-  dictionary may contain duplicates); clearing the flag on collection guarantees each word is
-  reported exactly once, and also prunes the search a little.
+List: `["oat", "eat"]`. The trie has two paths: `o -> a -> t` and `e -> a -> t`. Start DFS at the
+top-left cell `o`. From the root, is `o` a child? Yes -- descend, and mark this cell used. (The
+mark is the [backtracking](../../../docs/10-glossary.md#backtracking) trick: temporarily overwrite
+the cell so you can't step on it again, then restore it when you leave. Backtracking is a search
+that tries a choice, recurses, and undoes the choice before trying the next.) Move to a neighbor:
+right to `a`. Is `a` a child of the `o` node? Yes -- descend; `a` is not end-of-word, keep going.
+From `a` the only unused neighbor whose letter is a trie child is down to `t`; `t` is end-of-word,
+so record `"oat"`. No children remain under `t`, so backtrack, restoring each cell on the way out.
+Now try the other start cells: starting at `e` traces `e -> a -> t` and records `"eat"`; starting
+at `a` dies immediately because no word begins with `a`. Result: `["oat", "eat"]`.
+
+Two refinements matter. First, store the full word *on* its end-of-word node, so when you hit one
+you know exactly which word you found without rebuilding it from the path. Second, after collecting
+a word, clear its end-of-word marker: a word can be reachable along several board paths (or the
+list may contain it twice), and clearing guarantees you report it once while also trimming future
+search.
+
+Why a trie and not a `HashSet` of words? A hash set answers only "is this exact string a word?" --
+it cannot tell you "is this string the *start* of any word?", so it cannot prune. With a hash set
+you would explore the full 4-way board to depth L and only then look up each formed string; the
+trie kills dead prefixes after one or two letters. The board is naturally a
+[graph](../../../docs/10-glossary.md#graph) (each cell is a node joined to its up/down/left/right
+neighbors by edges), which is why DFS with a visited marker -- i.e. backtracking -- is the right
+traversal. This is the same "every child is a branch" idea as LC 211's `.` wildcard, but here the
+board supplies the branches and the trie supplies the prune.
+
+### Checkpoint A -- Why the trie guides the search
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** Why build a trie of the word list instead of a HashSet of words?
+- a) A HashSet cannot store strings
+- b) The trie lets the DFS stop the moment the current path is not the start of any word
+- c) A trie always uses less memory than a set
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a HashSet answers only "is this exact string a word?" and cannot prune a half-built path. The trie prunes dead prefixes after one or two letters, which is the whole reason this is fast.
+
+</details>
+
+**Q2 (comprehend).** Why is the visited cell restored (backtracked) before trying the next direction?
+- a) To keep memory usage low
+- b) So sibling paths and later starting cells can use that cell again
+- c) To sort the results alphabetically
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the `'#'` marker only blocks reuse within the current word. Restoring the original letter leaves the board clean for every other path that passes through the cell.
+
+</details>
 
 ## Pseudocode
 
@@ -221,6 +286,38 @@ Final output: `["oath", "eat"]` (order may vary).
 For Example 2 ("abcb" on a 2x2 board): the DFS finds 'a','b','c','b' but the second 'b' requires
 revisiting a cell already on the path -- the `'#'` sentinel blocks it, so "abcb" is never recorded.
 Output: `[]`.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Board `[["a","b"],["c","a"]]`, words `["aba"]`. What does `findWords` return?
+- a) `["aba"]`
+- b) `[]`
+- c) `["aba", "aba"]` (duplicated)
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the path `(0,0) a -> (0,1) b -> (1,1) a` spells "aba" without reusing a cell. The marker is restored on the way out, but no second path reaches the word, so it is reported once.
+
+</details>
+
+**Q2 (analyze).** After recording a found word, the code sets `next.word = null`. Why?
+- a) To free memory
+- b) So the same word is never reported twice, even if a second board path reaches it
+- c) To mark the node as a leaf with no children
+
+<details><summary>Show answer</summary>
+
+**(b)** -- clearing the marker both de-duplicates the output and prunes future search; a later path that arrives at this node finds nothing left to record.
+
+</details>
+
+**Q3 (transfer).** If a word could appear twice in `words` and you had to report it once per occurrence, how would you change the approach?
+
+<details><summary>Show answer</summary>
+
+Stop clearing `word` after collecting it, and instead count how many times each word appears in the input list; emit it up to that count when its node is reached. The trie skeleton is unchanged -- only the bookkeeping of multiplicities differs.
+
+</details>
 
 ## Common mistakes
 

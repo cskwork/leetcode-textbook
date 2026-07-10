@@ -46,6 +46,32 @@ exponential time. We cache each `ways(i)` once, left to right, in O(n)
 time. Because the recurrence only looks back two steps, two variables
 are enough instead of a whole array.
 
+### Checkpoint A -- The Fibonacci recurrence
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** What is the recurrence for `ways(n)`, the number of distinct ways to reach step `n`?
+- a) ways(n) = ways(n-1) * ways(n-2)
+- b) ways(n) = ways(n-1) + ways(n-2)
+- c) ways(n) = ways(n-1) + 1
+
+<details><summary>Show answer</summary>
+
+**(b)** -- your last move onto step n came from n-1 (one step) or n-2 (two steps), so the two counts add.
+
+</details>
+
+**Q2 (comprehend).** What base cases does the code rely on?
+- a) ways(0) = 0 and ways(1) = 1
+- b) ways(1) = 1 and ways(2) = 2
+- c) ways(1) = 0 and ways(2) = 1
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the line `if (n <= 2) return n` folds ways(1)=1 and ways(2)=2; these are the smallest cases you can count directly.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -113,6 +139,38 @@ Step-by-step on `n = 5`:
 After the loop, `prev1 = 8` = `ways(5)`. Verification by enumeration:
 the 8 ways to climb 5 stairs are 11111, 1112, 1121, 1211, 2111, 122,
 212, 221.
+
+### Checkpoint B -- Trace the staircase
+
+**Q1 (apply).** Trace `n = 4`. (Recall ways(1)=1, ways(2)=2, ways(3)=3.) What does `climbStairs(4)` return?
+- a) 3
+- b) 4
+- c) 5
+
+<details><summary>Show answer</summary>
+
+**(c)** -- ways(4) = ways(3) + ways(2) = 3 + 2 = 5. The loop sets current=3 at i=3, then current=5 at i=4, leaving prev1=5.
+
+</details>
+
+**Q2 (analyze).** What breaks if you swap the two update lines (`prev1 = current` before `prev2 = prev1`)?
+- a) Nothing; the order is irrelevant
+- b) prev2 captures the NEW prev1 instead of the old one, corrupting every later step
+- c) It always returns 0
+
+<details><summary>Show answer</summary>
+
+**(b)** -- prev2 must grab the OLD prev1 before prev1 is overwritten; reversing the order makes prev2 equal current, losing ways(i-2).
+
+</details>
+
+**Q3 (transfer).** Suppose you may climb 1, 2, or 3 steps at a time. In one sentence, how would the recurrence change?
+
+<details><summary>Show answer</summary>
+
+It becomes ways(n) = ways(n-1) + ways(n-2) + ways(n-3): sum the counts from the three possible last moves, keeping three rolling variables and adding a base case ways(3).
+
+</details>
 
 ## Common mistakes
 

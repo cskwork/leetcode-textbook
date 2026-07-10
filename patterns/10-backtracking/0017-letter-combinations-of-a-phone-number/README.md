@@ -4,6 +4,12 @@
 **Pattern:** Backtracking
 **LeetCode:** https://leetcode.com/problems/letter-combinations-of-a-phone-number/
 
+## Concepts used
+
+- **Recursion** -- a function that calls itself on a smaller version of the problem; here "smaller" means "one fewer digit left to fill". [glossary](../../../docs/10-glossary.md#recursion)
+- **Backtracking** -- try a choice (pick a letter), recurse, then UNDO it before trying the next letter. [glossary](../../../docs/10-glossary.md#backtracking)
+- **Decision tree** -- a branching picture of all the choices, one level per digit. [glossary](../../../docs/10-glossary.md#decision-tree)
+
 ## Problem
 
 Given a string `digits` containing only digits `2-9` inclusive, return *all
@@ -53,6 +59,32 @@ in constant time.
 
 The base case fires when the prefix length equals the number of digits -- at
 that point we have placed one letter per digit, exactly as required.
+
+### Checkpoint A -- One letter per digit
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** At each recursion level, what is the "choice" the loop branches on?
+- a) Which digit to place next
+- b) Which letter (mapped to the current digit) to append
+- c) Which digit to skip
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `index` walks forward through the digits automatically (one per level); the loop inside iterates over the letters of `digits[index]`, appending one and recursing.
+
+</details>
+
+**Q2 (comprehend).** Why is there no `used[]` mask and no start index here (unlike Permutations and Subsets)?
+- a) Because the output must be sorted
+- b) Because each digit is an independent slot -- a cartesian product -- and no letter constrains the choices for another digit
+- c) Because the input has no duplicates
+
+<details><summary>Show answer</summary>
+
+**(b)** -- every digit contributes exactly one independent slot, and the letters for one digit do not depend on what was picked for another. So there is nothing to "mark used" or "look forward" past; the skeleton is choose/explore/un-choose in its barest form.
+
+</details>
 
 ## Pseudocode
 
@@ -170,6 +202,38 @@ Recordings in order: `ad, ae, af, bd, be, bf, cd, ce, cf` -- nine strings
 (`3 * 3`), exactly the cartesian product of `"abc"` and `"def"`. Notice that
 each frame's `prefix` is back to its pre-choice value by the time its sibling
 begins; that is the un-choose doing its job.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `digits = "34"`. How many combinations are produced, and which is first?
+- a) 6, starting with `"dg"`
+- b) 9, starting with `"dg"`
+- c) 9, starting with `"ad"`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `'3'` maps to `"def"` (3 letters) and `'4'` to `"ghi"` (3 letters), so `3 * 3 = 9` combinations. The first picks `'d'` then `'g'`, giving `"dg"`.
+
+</details>
+
+**Q2 (analyze).** What does the code return for `digits = ""` (empty), and why is the early guard needed?
+- a) `[""]` -- one empty combination
+- b) `[]` -- zero combinations; without the guard the base case fires at once and records one empty string
+- c) It throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- empty input should yield zero combinations. Without the `if (digits.isEmpty()) return results` guard, the base case `index == digits.length()` (0 == 0) fires immediately and records one empty string `""`, which is wrong.
+
+</details>
+
+**Q3 (transfer).** Suppose a digit could map to a variable number of letters and you wanted only combinations whose total length equals a given `L`. What would change?
+
+<details><summary>Show answer</summary>
+
+Only the DONE check: record (and return) when `prefix.length() == L` instead of `index == digits.length()`. The loop over the current digit's letters and the append/deleteCharAt un-choose stay the same; you simply stop at the target length.
+
+</details>
 
 ## Common mistakes
 

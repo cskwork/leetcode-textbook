@@ -4,6 +4,12 @@
 **Pattern:** Backtracking
 **LeetCode:** https://leetcode.com/problems/subsets-ii/
 
+## Concepts used
+
+- **Array** -- a row of numbered slots holding values; here it may contain duplicates. [glossary](../../../docs/10-glossary.md#array)
+- **Recursion** -- a function that calls itself on a smaller version of the same problem. [glossary](../../../docs/10-glossary.md#recursion)
+- **Backtracking** -- try a choice, recurse, then UNDO the choice before trying the next. [glossary](../../../docs/10-glossary.md#backtracking)
+
 ## Problem
 
 Given an integer array `nums` that **may contain duplicates**, return all
@@ -53,6 +59,32 @@ contain `[1a, 1b, 2]`: at the recursion frame that has already picked `1a`
 level (`i == start`), so the duplicate guard does not fire and both `1`s
 appear in the same path. The guard only kills *sibling* duplicates, not
 *duplicate-in-path* duplicates.
+
+### Checkpoint A -- Kill the duplicate subsets
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** Two steps are required to avoid duplicate subsets on an input with repeated values. Which pair?
+- a) Sort the input, then skip an element equal to its predecessor
+- b) Use a hash set of subsets, then sort at the end
+- c) Reverse the input, then dedupe with a map
+
+<details><summary>Show answer</summary>
+
+**(a)** -- sorting puts equal values side by side so one neighbour check can spot them; the skip then drops the duplicate sibling. Both steps are needed.
+
+</details>
+
+**Q2 (comprehend).** The skip guard is `i > start and nums[i] == nums[i-1]`. Why `i > start` and not `i > 0`?
+- a) To skip the very first element of the whole array
+- b) So the first candidate at each recursion level is always taken, letting both `1`s coexist in the same path like `[1,1,2]`
+- c) To make the loop run faster
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `i == start` means "first candidate at this level", which always represents a fresh inclusion of that value and is always taken. Only for `i > start` does an equal predecessor mean "we just explored this subtree", so we skip it. `i > 0` would wrongly kill the second `1` inside `[1,1,2]`.
+
+</details>
 
 ## Pseudocode
 
@@ -168,6 +200,38 @@ Recordings in order: `[], [1], [1,2], [1,2,2], [2], [2,2]` -- six subsets, the
 expected output. The only line that does any work the LC 78 solution would not
 is the final `SKIP`: that is what kills the duplicate `[2b]` that would
 otherwise appear alongside `[2a]`.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `nums = [1, 1]` (sorted). How many subsets are recorded, and which?
+- a) 2: `[], [1]`
+- b) 3: `[], [1], [1,1]`
+- c) 4: `[], [1], [1], [1,1]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- record `[]`; pick the first `1` -> record `[1]`; at the next level the second `1` is `i == start` so it is taken -> record `[1,1]`. Back at the top, the second `1` is `i > start` and equals its predecessor, so it is skipped (would duplicate `[1]`). Three distinct subsets.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if you keep the skip guard but forget to sort first?
+- a) Nothing -- the guard works on any array
+- b) Equal values may not be adjacent, so the neighbour check misses duplicates and they slip through
+- c) The code throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `nums[i] == nums[i-1]` only detects duplicates when equal values sit next to each other, which only a sorted array guarantees. On unsorted input the guard is meaningless.
+
+</details>
+
+**Q3 (transfer).** How would you adapt this dedup trick to Permutations II (permutations of an array with duplicates)?
+
+<details><summary>Show answer</summary>
+
+Sort the input and keep the skip-equal-neighbour idea, but the loop runs over all indices gated by `used[]` (no start index, since order matters). The guard skips a duplicate whose equal predecessor was not picked at this level.
+
+</details>
 
 ## Common mistakes
 

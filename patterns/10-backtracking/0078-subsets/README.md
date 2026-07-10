@@ -4,6 +4,13 @@
 **Pattern:** Backtracking
 **LeetCode:** https://leetcode.com/problems/subsets/
 
+## Concepts used
+
+- **Array** -- a row of numbered slots holding values, accessed by position. [glossary](../../../docs/10-glossary.md#array)
+- **Recursion** -- a function that calls itself on a smaller version of the same problem. [glossary](../../../docs/10-glossary.md#recursion)
+- **Backtracking** -- a recursive search that tries a choice, recurses, then UNDOES the choice before trying the next; the undo is the step beginners forget. [glossary](../../../docs/10-glossary.md#backtracking)
+- **Decision tree** -- a branching picture of all the choices, one level per decision. [glossary](../../../docs/10-glossary.md#decision-tree)
+
 ## Problem
 
 Given an integer array `nums` of **unique** elements, return *all possible
@@ -24,23 +31,78 @@ Example (verbatim from LeetCode):
 
 ## Intuition
 
-A subset is just "for each element, decide in or out". That yields `2^n`
-answers, which is exactly the size of the power set. The natural way to walk
-that decision tree is **backtracking**: maintain a `path` of the elements we
-have said "in" to so far, and at each step decide which element to include
-*next*.
+Imagine a restaurant menu with three dishes, and the waiter asks about each
+dish in turn. For each one you say either "yes please" or "no thanks". Every
+possible sequence of yes/no answers is one possible meal -- and listing all of
+them is exactly this problem. A subset is just "the dishes you said yes to".
+Start with the smallest interesting example, `nums = [1, 2]`. Walking the menu
+gives exactly four subsets:
 
-The crucial constraint that makes this Subsets rather than Permutations is that
-**order does not matter**. `[1, 2]` and `[2, 1]` are the same subset. To avoid
-generating both, we never let the recursion reach *backwards*: each frame only
-considers elements at indices **strictly after** the last one it picked. We
-enforce that with a `start` index that is passed down and increases on every
-recursive call.
+    []       said no to 1,  no to 2
+    [1]      said yes to 1, no to 2
+    [2]      said no to 1,  yes to 2
+    [1, 2]   said yes to 1, yes to 2
 
-The other key decision is *when to record*. Unlike permutations, where only
-full-length paths count, **every node in the decision tree is a valid subset**.
-The empty path is the empty subset; a path of length 1 is a singleton subset;
-and so on. So we snapshot the path at the *top* of every call, before the loop.
+Four subsets = 2 x 2 = 2^2. In general an array of `n` elements has `2^n`
+subsets, because each element either is or is not in any given subset.
+
+To generate all of them we use **recursion** -- a function that calls itself
+on a smaller piece of the problem -- in the **backtracking** style. We keep one
+shared list called `path` ("the elements we have said yes to so far") and walk
+the elements in order. At each element we do three steps: (1) **choose** -- add
+the element to `path`; (2) **explore** -- recurse to make the yes/no decisions
+for the remaining elements; (3) **un-choose** -- remove the element from `path`
+so it is clean before we try saying "no" to this element and moving on. One
+extra rule keeps the subsets distinct: when we recurse we only ever look at
+elements *after* the one we just picked (passing a `start` index that grows).
+Because `[1, 2]` and `[2, 1]` are the same subset, never reaching backward is
+what stops us printing both.
+
+The **un-choose** step is the one beginners forget, so let us make it visceral
+with a trace. Suppose `path = []` and we are deciding about element `1`. We
+add `1`, so `path = [1]`, then recurse to decide about `2` -- that recursion
+records `[1]` and `[1, 2]`. When it returns, `path` is still `[1]`. But we are
+now done with the whole "yes to 1" branch and want to start the "no to 1, yes
+to 2" branch, which must begin from `path = []`. If we had forgotten to remove
+the `1`, the next branch would wrongly start from `[1]` and produce a bogus
+`[1, 2]` instead of the correct `[2]`. The single line `path.remove(last)`
+rewinds `path` to `[]` so each sibling branch starts from a clean slate.
+Picture the whole process as a decision tree: each level is one element, going
+"down" means "yes", and climbing back up means "undo that yes".
+
+The last question is when to record an answer. In Subsets, *every node of the
+decision tree is itself a valid subset* -- the empty path is the empty subset,
+a one-element path is a singleton, and so on. So we snapshot `path` at the very
+top of every call, before the loop. There is no separate **base case** (the
+simplest input, answered without recursing) to write: when the loop runs out of
+elements to iterate, the call simply returns, which is the correct "do nothing"
+behaviour at the bottom of every branch.
+
+### Checkpoint A -- Choose, explore, and undo
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** At each element the solution does three steps: choose (add), explore (recurse), and a third one beginners forget. What is it?
+- a) Sort the element
+- b) Un-choose (remove the element from `path`)
+- c) Copy the `path` before recursing
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the un-choose (`path.remove(last)`) restores `path` to its pre-choice state so the next sibling branch starts clean. Without it the path leaks into siblings.
+
+</details>
+
+**Q2 (comprehend).** Why does the recursive call pass `i + 1` (not `0`) as the child's start?
+- a) So the same element can be reused
+- b) So we only look forward and never emit both `[1,2]` and `[2,1]`
+- c) To make the recursion run faster
+
+<details><summary>Show answer</summary>
+
+**(b)** -- "look forward only" builds each subset in non-decreasing index order, so `[1,2]` is produced once and `[2,1]` never. Passing `0` would generate every ordering of every subset.
+
+</details>
 
 ## Pseudocode
 
@@ -149,6 +211,38 @@ backtrack([], 0)         -> record []
 
 Recordings in order: `[], [1], [1,2], [1,2,3], [1,3], [2], [2,3], [3]` -- eight
 subsets, exactly `2^3`, and no permutation is duplicated.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `nums = [5, 6]`. How many subsets are recorded, and which ones?
+- a) 3: `[5], [6], [5,6]`
+- b) 4: `[], [5], [5,6], [6]`
+- c) 4: `[], [5], [6], [5,6,5]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- record `[]` at the top, then `[5]`, then `[5,6]`, then after un-choosing back to `[]` the second loop iteration records `[6]`. Four subsets = `2^2`, matching any 2-element input.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if you delete the un-choose line (`path.remove(...)`)?
+- a) Nothing -- it is optional
+- b) Sibling branches inherit earlier choices, so paths grow too long and answers repeat
+- c) The code throws immediately
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the shared `path` never shrinks, so after exploring the "yes to 5" branch the "yes to 6" branch wrongly starts from `[5]` and produces bogus long subsets. The un-choose is the correctness condition.
+
+</details>
+
+**Q3 (transfer).** Suppose you wanted only subsets of size exactly `k` (not all subsets). What is the smallest change to the approach?
+
+<details><summary>Show answer</summary>
+
+Keep the skeleton; change the DONE check so you record (and return) only when `path.size() == k`, instead of recording every node. The choose/explore/un-choose loop is unchanged.
+
+</details>
 
 ## Common mistakes
 

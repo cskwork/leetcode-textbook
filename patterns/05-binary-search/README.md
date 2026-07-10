@@ -245,6 +245,59 @@ beginners in this section:
   sign bit). It works, but `lo + (hi - lo) / 2` is clearer to a beginner and is
   what every solution in this section uses. Pick one and be consistent.
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what single property must the search space have for binary search to be valid at all?
+
+<details><summary>Show answer</summary>
+
+It must be monotonic -- the property you test must change at most once as you move through the space (from false to true, or smaller to larger). One clean flip is what halving can hunt.
+
+</details>
+
+**Q2 (pattern recognition).** A new problem: "you have n jobs of given sizes and h hours; find the smallest machine speed such that every job finishes in time." Which flavor of this pattern fits?
+- a) Binary search on the answer space (Template B), with an O(n) feasibility check per candidate speed
+- b) Classic exact-match search (Template A) on the job array
+- c) A hash map of job sizes
+
+<details><summary>Show answer</summary>
+
+**(a)** -- "smallest speed such that ..." is the answer-space signal; the speed is the hidden number, and "can all jobs finish at this speed?" is the monotonic predicate. This is Koko in another costume.
+
+</details>
+
+**Q3 (pattern recognition).** A new problem: "given a sorted array of distinct numbers, count how many elements are strictly less than x." Which approach uses this pattern most directly?
+- a) Run Template A for `x`; the value of `lo` at exit IS that count (the insert position of `x`)
+- b) Binary search the answer space `[0, n]`
+- c) A linear scan is the only option
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the LC 35 invariant says `lo` after the loop is the first index whose value is `>= x`, which is exactly the count of elements `< x`. One search, no counting loop.
+
+</details>
+
+**Q4 (apply).** On `nums = [2, 4, 6, 8, 10]`, a Template A search for `target = 5` exits. What are `lo` and `hi`, and what does `lo` represent?
+- a) `lo = 2, hi = 1`; `lo` is the insert position (first index with value `>= 5`)
+- b) `lo = 1, hi = 2`
+- c) `lo = 0, hi = 4`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the loop narrows to `lo=2, hi=1` and exits; index 2 holds 6, the first value `>= 5`, so that is both the insert position and the "strictly-less" count.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) how to solve "minimum size subarray sum `>= target`" using binary search on the answer space. What is the search space, and what is the feasibility check?
+
+<details><summary>Show answer</summary>
+
+Search space is subarray length `[1, n]`. For a candidate length `mid`, check (via a sliding window of size `mid`, or prefix sums) whether any subarray of that length sums to `>= target`. The predicate "a subarray of length `mid` reaches target" is monotonic -- longer lengths only make larger sums reachable -- so Template B finds the minimum length that works.
+
+</details>
+
 ---
 
 Next: [0704 - Binary Search](./0704-binary-search/) -- start here.

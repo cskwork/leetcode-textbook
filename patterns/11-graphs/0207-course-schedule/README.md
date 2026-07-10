@@ -4,6 +4,16 @@
 **Pattern:** Graphs
 **LeetCode:** https://leetcode.com/problems/course-schedule/
 
+## Concepts used
+
+- **Graph** -- a set of nodes connected by edges; here each course is a node and each prerequisite
+  rule is an edge. [glossary](../../../docs/10-glossary.md#graph)
+- **Cycle** -- a path that returns to its starting node; in a course list a cycle is a deadlock where
+  no course in the loop can ever be taken. [glossary](../../../docs/10-glossary.md#cycle)
+- **Topological sort** -- an ordering of a directed graph's nodes so every edge points forward; it
+  exists only when the graph has no cycle.
+  [glossary](../../../docs/10-glossary.md#topological-sort)
+
 ## Problem
 
 There are `numCourses` courses labeled `0` to `numCourses - 1`. You are given `prerequisites` where
@@ -25,25 +35,61 @@ Examples:
 
 ## Intuition
 
-Model the courses as nodes and each prerequisite pair `[a, b]` as a directed edge `b -> a` ("b is a
-prerequisite of a", so you can only walk forward once b is done). The question "can every course be
-finished?" reduces to "does this directed graph have a cycle?" -- if it does, the courses in the
-cycle can never be started, so finishing is impossible.
+You are planning which courses to take over many semesters. Some courses require a prerequisite:
+"you may take course *a* only after course *b*". Now ask: *can every course eventually be taken?*
+The answer is yes -- unless the rules contain a deadlock. A deadlock is when course A needs B, B
+needs C, and C needs A: each waits on another, so none can ever be taken first. That loop is the
+whole obstacle; everything else can be sequenced.
 
-Cycle detection in a directed graph is the textbook 3-color DFS. Each node is in one of three
-states:
+Model this as a [graph](../../../docs/10-glossary.md#graph): each course is a **node** (a single
+item), and each rule "b before a" is a one-way **edge** drawn from b to a. Because the edges point
+one way only (b unlocks a, not vice-versa), this is a *directed* graph -- an edge has a direction. A
+[cycle](../../../docs/10-glossary.md#cycle) in that graph (a path that loops back to its start) is
+exactly a prerequisite deadlock. So "can I finish all courses?" becomes "does this directed graph
+have a cycle?". If it does, the courses on the loop can never be started, so finishing is impossible;
+if it does not, a valid order exists (that order is called a
+[topological sort](../../../docs/10-glossary.md#topological-sort) -- an arrangement where every edge
+points forward, which is only possible when there is no cycle).
 
-- `0` -- **unvisited**: never reached.
-- `1` -- **visiting**: on the current recursion stack (we entered it but have not finished all its
-  descendants yet).
-- `2` -- **done**: fully processed, all paths out explored.
+How do we detect a cycle? Walk the graph with [DFS](../../../docs/10-glossary.md#dfs-depth-first-search)
+(depth-first search: follow edges as deep as you can, then back up). The trick is to colour each node
+with one of three states: *unvisited* (never reached), *visiting* (we are currently inside its chain
+of follow-the-edges -- it is on the active path), and *done* (we finished exploring everything
+reachable from it). The decisive moment: if, while following edges, we ever step onto a node that is
+already *visiting*, we have walked in a loop back to a node we are currently inside -- that is a
+cycle. When we finish a node and back out, we mark it *done* so it is never mistaken for a cycle
+later.
 
-The crucial observation: a **cycle exists iff DFS reaches a node that is currently `visiting`** (a
-"back edge"). When DFS finishes a node and unwinds, flip it from `1` to `2` so it is never mistaken
-for a cycle partner again.
+Trace `numCourses = 4` with rules `[[1,0],[2,1],[3,2],[1,3]]` -- edges `0 -> 1`, `1 -> 2`, `2 -> 3`,
+`3 -> 1`. Start at 0 (visiting) -> 1 (visiting) -> 2 (visiting) -> 3 (visiting) -> 1. But 1 is
+already *visiting* (it is on our active path 0 -> 1 -> 2 -> 3). That back-step onto an in-progress
+node is the cycle: `1 -> 2 -> 3 -> 1`. Return false -- the schedule is impossible.
 
-Trigger signals: "prerequisites", "course schedule", "build order" -- all point to topological
-sort / cycle detection.
+### Checkpoint A -- Spot the deadlock
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** In the 3-color DFS, what does state `1` ("visiting") mean?
+- a) The node is fully processed and cleared
+- b) The node is currently on the active recursion path -- entered but not yet finished
+- c) The node has never been visited
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `1` marks nodes on the current DFS stack; reaching a node that is already `1` means you walked in a loop back to an ancestor, i.e. a cycle.
+
+</details>
+
+**Q2 (comprehend).** Why is a two-state `boolean[] visited` not enough here?
+- a) Booleans use more memory
+- b) With only seen/not-seen you cannot tell "currently on the stack" from "fully done", so an edge to a finished node gets misreported as a cycle
+- c) Booleans are slower than ints
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the third state lets a cross-edge to an already-finished node be recognized as harmless, not as a cycle. Two states cannot make that distinction.
+
+</details>
 
 ## Pseudocode
 
@@ -156,6 +202,38 @@ is impossible.
 For a cycle-free input like `[[1,0],[2,1],[3,2]]` (chain `0 -> 1 -> 2 -> 3`), no back edge is ever
 hit: every node reaches state `2`, `hasCycle` always returns `false`, and `canFinish` returns
 `true`.
+
+### Checkpoint B -- Trace a new schedule
+
+**Q1 (apply).** Trace `numCourses = 3`, `prerequisites = [[0,1],[1,2]]` (edges `1 -> 0`, `2 -> 1`, a chain). What is returned?
+- a) `false` -- a cycle
+- b) `true` -- the chain `2 -> 1 -> 0` has no back edge, so the schedule is valid (take 2, then 1, then 0)
+- c) an error
+
+<details><summary>Show answer</summary>
+
+**(b)** -- DFS walks `0 -> 1 -> 2` with no node ever revisiting a `visiting` ancestor, so every node reaches state `2` and no cycle is reported.
+
+</details>
+
+**Q2 (analyze).** What breaks if you forget to set `state[node] = 2` after the neighbor loop?
+- a) Nothing changes
+- b) Nodes never reach "done", so later calls re-explore them and may misreport cycles; it also wastes work
+- c) It always returns `true`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- without the flip to `2`, a node stays `1` and any later edge into it looks like a back edge, producing false cycle reports.
+
+</details>
+
+**Q3 (transfer).** How would you also RETURN a valid order to take the courses (Course Schedule II)?
+
+<details><summary>Show answer</summary>
+
+Append each node to a list at the moment its state flips to `2` (postorder), then reverse that list -- the reversal is a valid topological order.
+
+</details>
 
 ## Common mistakes
 

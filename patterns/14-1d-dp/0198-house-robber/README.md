@@ -48,6 +48,32 @@ Base cases: `dp[0] = 0` (no houses, no money), `dp[1] = nums[0]`
 (one house, rob it). The answer is `dp[n]`. The recurrence window is
 size 2, so two rolling variables suffice.
 
+### Checkpoint A -- Rob or skip
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** House Robber's recurrence is `dp[i] = max(dp[i-1], dp[i-2] + nums[i-1])`. What do the two terms represent?
+- a) Rob house i, or rob house i-1
+- b) Skip house i (keep best of first i-1), or rob house i (add it to best of first i-2)
+- c) Rob the first house, or rob the last house
+
+<details><summary>Show answer</summary>
+
+**(b)** -- dp[i-1] is "skip this house"; dp[i-2]+nums[i-1] is "rob it, so the previous must be skipped".
+
+</details>
+
+**Q2 (comprehend).** Why is `dp[i-2]` (not `dp[i-1]`) used on the "rob it" branch?
+- a) Because robbing house i forbids robbing the adjacent house i-1, so you build on the best up to i-2
+- b) Because dp[i-1] is always zero
+- c) Because nums[i-1] is negative
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the no-adjacent rule means robbing house i forces a skip of i-1, so the legal prior optimum is dp[i-2].
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -116,6 +142,38 @@ Step-by-step on `nums = [2, 7, 9, 3, 1]`:
 After the loop, `prev1 = 12` = `dp[5]`. The chosen houses are indices
 0, 2, 4 (`2 + 9 + 1 = 12`). Note step 4: skipping house 3 (`prev1=11`)
 beats robbing it (`10`), so we keep the previous best.
+
+### Checkpoint B -- Trace the robbery table
+
+**Q1 (apply).** Trace `nums = [2, 1, 1, 2]`. What does `rob` return?
+- a) 3
+- b) 4
+- c) 2
+
+<details><summary>Show answer</summary>
+
+**(b)** -- dp[1]=2; i=2: max(2, 0+1)=2; i=3: max(2, 2+1)=3; i=4: max(3, 2+2)=4. Rob houses 0 and 3 (2+2=4).
+
+</details>
+
+**Q2 (analyze).** Suppose someone defines dp[i] as "money from robbing house i" instead of "best of first i houses". What breaks?
+- a) Nothing; both definitions are equivalent
+- b) The skip option disappears, so you can never express "best up to i without house i", losing valid plans
+- c) The answer becomes always nums[n-1]
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a single-element state has no place to carry forward the best of earlier houses, so the recurrence cannot represent skipping, and adjacent houses may both be taken.
+
+</details>
+
+**Q3 (transfer).** If the rule were "cannot rob THREE consecutive houses" (two in a row is fine), how would the state need to grow in one sentence?
+
+<details><summary>Show answer</summary>
+
+The state must track how many of the last two houses were robbed (0, 1, or 2), so dp becomes dp[i][streak]; the recurrence checks the streak before allowing another consecutive robbery.
+
+</details>
 
 ## Common mistakes
 

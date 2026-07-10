@@ -4,6 +4,12 @@
 **Pattern:** Two Pointers
 **LeetCode:** https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/
 
+## Concepts used
+
+- **Two pointers** -- placing two indices into an array and moving them based on a comparison, to avoid a nested loop; here one at each end, moving inward. [glossary](../../../docs/10-glossary.md#two-pointers)
+- **Sorting** -- putting elements in non-decreasing order; the problem *gives* us a sorted array, and that ordering is exactly what tells us which finger to move. [glossary](../../../docs/10-glossary.md#sorting)
+- **Array** -- a row of numbered slots holding values, each read in O(1) time by its index. [glossary](../../../docs/10-glossary.md#array)
+
 ## Problem
 
 Given a **1-indexed** integer array `numbers` already sorted in non-decreasing
@@ -29,16 +35,59 @@ Examples (verbatim from LeetCode):
 
 ## Intuition
 
-This is the canonical opposite-ends Two-Pointer problem, and the trigger is the
-word "sorted". The hash-map trick from LC 1 (Two Sum) would also work, but it
-ignores the sorting — and ignoring a given guarantee is always a hint that a
-better tool exists. With sorted data we can avoid the O(n) hash map entirely and
-use O(1) space.
+Imagine a row of price tags sorted from cheapest to most expensive, and you have
+exactly $9 to spend on two items. Put one finger on the cheapest tag and one on
+the most expensive. If the two prices add to more than $9, the expensive item is
+clearly too pricey -- slide the right finger to a cheaper one. If they add to less
+than $9, the cheap item is too cheap -- slide the left finger to a pricier one.
+Close in until the pair hits $9. This finger dance is [two pointers](../../../docs/10-glossary.md#two-pointers):
+one index (`left`) at the start, one (`right`) at the end, moving inward.
 
-Put one pointer at each end and look at their sum. Because the array is sorted,
-advancing `left` can only increase the sum and retreating `right` can only
-decrease it. So at each step we know *exactly* which pointer to move to head
-toward `target`. Each element is considered once, giving O(n) time.
+Let's watch it on the smallest example, `numbers = [2,7,11,15]`, `target = 9`:
+
+- `left=0` (value 2), `right=3` (value 15): sum = 17. Bigger than 9, so 15 is too
+  big -- move `right` inward to index 2.
+- `left=0` (2), `right=2` (11): sum = 13, still too big -- move `right` to 1.
+- `left=0` (2), `right=1` (7): sum = 9 -- found! Return the 1-based indices `[1, 2]`.
+
+Why is moving the correct finger *guaranteed* safe? Because the array is
+[sorted](../../../docs/10-glossary.md#sorting): any index to the right holds a
+value at least as large. So moving `left` forward can only increase the sum, and
+moving `right` backward can only decrease it. That one-way promise means exactly
+one finger can ever bring us closer to `target` -- there is never a tie where we
+would have to guess. This is why sorting is the key clue: without it, moving a
+finger would tell us nothing about whether the sum goes up or down.
+
+The older problem [Two Sum (LC 1)](https://leetcode.com/problems/two-sum/) had an
+*unsorted* array, so it needed a hash map (a key-to-value lookup table) to
+remember values already seen. Here the sort is a free gift -- we trade that hash
+map's O(n) memory for two plain index variables, dropping to O(1) space.
+
+### Checkpoint A -- Which finger moves?
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** When the current sum is LESS than the target, which pointer moves?
+- a) `left` advances (toward larger values)
+- b) `right` moves back (toward smaller values)
+- c) both move at once
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the array is sorted, so advancing `left` can only increase the sum, which is what "sum too small" calls for.
+
+</details>
+
+**Q2 (comprehend).** Why can we be sure that moving one finger never skips over the correct pair?
+- a) Because the array is sorted, so moving `left` only raises the sum and moving `right` only lowers it -- there is never ambiguity about which direction helps
+- b) Because the loop checks every possible pair anyway
+- c) Because the target is always in the middle of the array
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the sorted order gives a one-way promise: each finger moves the sum in a known direction, so exactly one finger can ever bring us closer. That is why the sort is the key clue -- without it, moving a finger tells us nothing.
+
+</details>
 
 ## Pseudocode
 
@@ -105,6 +154,38 @@ Step-by-step on `numbers = [2,7,11,15]`, `target = 9`:
 
 Three iterations; the answer is `[1, 2]`. Notice `left` never moved — the sorted
 property let us shrink only from the right until the pair was tight enough.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `numbers = [1,2,3,4,6]`, `target = 5`. What is returned?
+- a) `[1,4]`
+- b) `[0,3]`
+- c) `[1,3]`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- step 1: `left=0` (1), `right=4` (6), sum 7 > 5 -> `right--`. step 2: `left=0` (1), `right=3` (4), sum 5 == 5 -> return `[0+1, 3+1] = [1,4]`. Option (b) is the 0-based trap; (c) sums to 7.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if the loop condition is `while (left <= right)` instead of `while (left < right)`?
+- a) When the pointers meet on one element it could pair that element with itself, which the problem forbids
+- b) Nothing -- the answer is identical
+- c) The loop exits too early and never finds the pair
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the problem says you may not use the same element twice. `<` keeps the pointers on distinct elements; `<=` would let them collide and "find" a single element pairing with itself.
+
+</details>
+
+**Q3 (transfer).** How would you solve this if the input array were NOT sorted?
+
+<details><summary>Show answer</summary>
+
+You lose the guarantee that moving a finger changes the sum in a known direction, so the two-pointer move rule no longer works. Fall back to the hash-map approach from Pattern 1's Two Sum: store each value's index in a map as you scan, and for each element check whether `target - value` is already stored. Alternatively sort a copy first -- but then you must track the original indices to return them.
+
+</details>
 
 ## Common mistakes
 

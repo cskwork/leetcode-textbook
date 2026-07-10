@@ -189,4 +189,59 @@ again and again:
   digit (e.g. 5 + 5 = 10). If your loop condition is `while l1 != null || l2 != null` you
   drop the leading `1`. Add `|| carry != 0` to the condition.
 
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, almost every linked-list problem here is solved by what single activity?
+
+<details><summary>Show answer</summary>
+
+Rewriting `.next` pointers as you walk the list -- two or three pointers moving at the right speed and the right time, with no new data structures.
+
+</details>
+
+**Q2 (pattern recognition).** New problem: "swap every two adjacent nodes" (1->2->3->4 becomes 2->1->4->3). Which technique is the core tool?
+- a) Slow/fast pointers
+- b) Pointer rewriting with a dummy head to handle the first swap cleanly
+- c) Finding the middle first
+
+<details><summary>Show answer</summary>
+
+**(b)** -- it is pure link-rewiring, and a dummy head removes the special case for the very first pair, exactly like Merge Two Sorted Lists.
+
+</details>
+
+**Q3 (pattern recognition).** New problem: "find the node where a cycle begins, not just whether one exists." Which starting point fits?
+- a) The slow/fast collision from Linked List Cycle, then a second phase to locate the entry
+- b) Reverse the list
+- c) A dummy head
+
+<details><summary>Show answer</summary>
+
+**(a)** -- first use slow/fast to prove a cycle exists; once they meet, a fresh pointer from the head and one from the meeting spot will collide exactly at the cycle's entry.
+
+</details>
+
+**Q4 (apply).** On `head = [1, 2, 3, 4]` (even length), the find-middle loop uses `while fast.next != null && fast.next.next != null`. Which node does `slow` stop on?
+- a) Node 1 (the head)
+- b) Node 2 (the first middle)
+- c) Node 3 (the second middle)
+
+<details><summary>Show answer</summary>
+
+**(b)** -- after one tick slow is on 2 and fast is on 3; the next check sees `fast.next.next` is null and stops, leaving slow on the first-middle node 2.
+
+</details>
+
+**Q5 (design).** In words (no code), sketch how to rotate a list to the right by k places (move the last k nodes to the front) using only this pattern's ideas and O(1) space.
+
+<details><summary>Show answer</summary>
+
+Walk once to find the tail and the length; the new tail is the (length - k)th node. Rewire three links: point the old tail's `next` at the old head, set the new tail's `next` to null, and return the node after it as the new head. Pure pointer rewriting plus one clean split -- no array copy.
+
+</details>
+
+---
+
 With these in mind, open [0206-reverse-linked-list](./0206-reverse-linked-list/) and start.

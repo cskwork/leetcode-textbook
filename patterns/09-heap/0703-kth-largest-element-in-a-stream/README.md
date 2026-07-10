@@ -4,6 +4,17 @@
 **Pattern:** Heap / Priority Queue
 **LeetCode:** https://leetcode.com/problems/kth-largest-element-in-a-stream/
 
+## Concepts used
+
+- **Heap** -- a structure that always gives back the smallest or largest item it holds in O(1),
+  with O(log n) cost to add or remove one. [glossary](../../../docs/10-glossary.md#heap--priority-queue)
+- **Min-heap** -- a heap whose top item is the *smallest* of everything in it. In Java this is the
+  default behavior of `PriorityQueue`.
+- **Array** -- a row of numbered slots holding values, accessed by position in O(1).
+  [glossary](../../../docs/10-glossary.md#array)
+- **Time complexity** -- how runtime grows as the input grows; O(log k) means each step roughly
+  doubles how much it can hold. [glossary](../../../docs/10-glossary.md#time-complexity-big-o)
+
 ## Problem
 
 Design a class that receives an integer `k` and an integer array `nums` (the initial stream), and
@@ -34,13 +45,68 @@ Examples:
 
 ## Intuition
 
-This is the textbook "K-th largest" trigger. The insight is the size-K heap trick from the pattern
-intro: keep a **min-heap of exactly size k** holding the k largest values seen so far. The root of
-that min-heap is the smallest among those k -- which is, by definition, the **k-th largest** overall.
-Every `add` just pushes the new value, evicts the smallest if the heap grew to k+1, and reads the
-root. Each `add` is O(log k), independent of how big the stream has become.
+Imagine you are a hiring manager building a shortlist of the **K best** applicants out of a tall
+pile of resumes, and you read them one at a time. Once your shortlist has K people, every new
+applicant only gets in if they are better than the **worst** person currently on the list. If they
+are, you drop the worst and slot the new one in. The person you keep an eye on -- the one who would
+be dropped next -- is the **weakest of your current K**. This problem is exactly that, where "best"
+means "largest number" and new resumes arrive one `add` at a time.
 
-The constructor does the same thing once for every starting element: push, then trim to size k.
+To make "drop the worst of the current K" cheap we use a
+[**min-heap**](../../../docs/10-glossary.md#heap--priority-queue) -- a container whose top is always
+the **smallest** of the items inside it. We keep the heap at exactly size K and store the K largest
+values seen so far. Because the heap's top is the smallest of those K, the top *is* the K-th largest
+overall -- and when a new value arrives that beats it, we pop the top (the weakest survivor) and
+push the new value. This is the **size-K heap trick**: keep only K items; when full, evict the
+worst. Each add costs O(log k), no matter how big the stream has grown.
+
+The reversal here is the only thing that takes a moment: for "K-th **largest**" we use a **min**-heap
+(min on top), not a max-heap. The reason is exactly the resume analogy -- the value we want to throw
+away is the *smallest* of the K survivors, so that value has to be the one sitting on top ready to
+pop. A max-heap would put the *largest* survivor on top, and polling it would throw away the very
+value we want to keep.
+
+**Smallest trace.** Take `k = 3` and the stream `4, 5, 8, 2` as the initial values, then `add(3)`:
+
+1. Start with an empty min-heap.
+2. Push 4 -> heap `{4}`, size 1, not over 3 yet.
+3. Push 5 -> heap `{4, 5}` (top is 4).
+4. Push 8 -> heap `{4, 5, 8}` (top is 4). Size = 3 = K, full now.
+5. Push 2 -> heap `{2, 4, 5, 8}` (size 4, one too many). Pop the top (2). Heap is back to
+   `{4, 5, 8}`, top = 4. So the 3rd largest of `[4,5,8,2]` is **4**.
+6. `add(3)`: push 3 -> `{3, 4, 5, 8}` (size 4), pop top (3) -> `{4, 5, 8}`, top = 4. Return **4**.
+
+The constructor does steps 1-5 once for each starting value; `add` repeats steps 6 on every call.
+This is the same size-K heap trick used by [0215 - Kth Largest Element in an
+Array](../0215-kth-largest-element-in-an-array/) (the same question on a fixed array instead of a
+stream) and [0347 - Top K Frequent](../0347-top-k-frequent-heap/) (the heap stores value-frequency
+pairs).
+
+### Checkpoint A -- Pick the right heap
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** For "k-th largest" using a heap of size k, which heap puts the answer at the root?
+- a) A max-heap (root = largest)
+- b) A min-heap (root = smallest of the k largest)
+- c) Either works
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the root must be the survivor you would evict, which for "k-th largest" is the smallest of the k kept. That smallest survivor is exactly the k-th largest overall.
+
+</details>
+
+**Q2 (comprehend).** Why is each `add` O(log k) and not O(log N), even after the stream has grown huge?
+- a) Because the stream stays small
+- b) Because the heap is capped at k, its height is log k, not log N
+- c) Because we sort the heap after each add
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the `size > k` poll keeps the heap at k elements, so every push/poll touches a tree of height log k. The total stream size N never affects a single add.
+
+</details>
 
 ## Pseudocode
 
@@ -133,6 +199,39 @@ After construction the root = 4, which is already the 3rd largest of `[4,5,8,2]`
 | peek            | root = 5          | **5**  |
 
 The survivors after `add(10)` are the three largest values `5,8,10`; the root 5 is the 3rd largest.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Take `k = 2`, `nums = [1,2,3]`, then call `add(0)`. What does `add(0)` return?
+- a) 0
+- b) 2
+- c) 3
+- d) 1
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the constructor ends with heap {2,3} (pushing 3 evicts 1). `add(0)` pushes 0, then size 3 > 2 evicts the smallest (0), leaving {2,3}; peek returns 2, the 2nd largest.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if `add` polls the root BEFORE pushing the new value?
+- a) Nothing -- order is irrelevant
+- b) You may evict a current survivor before learning whether the new value beats it
+- c) It throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- when the heap is exactly full (size k), polling first drops a survivor blindly; if the incoming value turns out smaller, that survivor was lost for nothing. Always push first, then trim.
+
+</details>
+
+**Q3 (transfer).** If the class had to return the k-th SMALLEST instead of the k-th largest, what is the one change that does it?
+
+<details><summary>Show answer</summary>
+
+Swap the min-heap for a max-heap of size k. The root becomes the largest of the k smallest survivors, which is exactly the k-th smallest. Everything else (push, size-k trim, peek) stays identical.
+
+</details>
 
 ## Common mistakes
 

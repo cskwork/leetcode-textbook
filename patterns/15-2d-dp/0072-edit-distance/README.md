@@ -42,6 +42,32 @@ character (consumes one of `word1`, look above), or **replace** (consumes one of
 each, look diagonally). The base case: transforming into or out of the empty
 string costs its full length (all inserts, or all deletes).
 
+### Checkpoint A -- Three operations, three neighbours
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** What does `dp[i][j]` store?
+- a) The number of characters that match between the two prefixes
+- b) The minimum number of operations to turn the first `i` chars of `word1` into the first `j` chars of `word2`
+- c) The length of the longest common subsequence
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `dp[i][j]` is the cheapest edit cost (insert/delete/replace) between those two prefixes; (c) is the LCS problem and (a) is just a count.
+
+</details>
+
+**Q2 (comprehend).** When `word1[i-1] == word2[j-1]` (the two current characters already match), what is `dp[i][j]` and why?
+- a) `dp[i-1][j-1] + 1`, because a match costs one operation
+- b) `dp[i-1][j-1]`, because matching characters cost nothing -- carry the diagonal for free
+- c) `1 + min` of the three neighbours
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the characters already agree, so no operation is spent; the cost is whatever it took to align the two shorter prefixes, i.e. the diagonal `dp[i-1][j-1]`.
+
+</details>
+
 ## Pseudocode
 
     function minDistance(word1, word2):
@@ -138,6 +164,38 @@ Two cells worth tracing:
 - `dp[5][3]`: `e` vs `s` differ. `min(insert=dp[5][2]=4, del=dp[4][3]=2,
   replace=dp[4][2]=3) = 2`, plus 1 = `3`. Delete the trailing `e` and we are
   done. Final answer `dp[5][3] = 3`.
+
+### Checkpoint B -- Trace a fresh pair
+
+**Q1 (apply).** Trace `word1 = "ab"`, `word2 = "ac"`. What is `dp[2][2]` (the answer)?
+- a) 0
+- b) 1
+- c) 2
+
+<details><summary>Show answer</summary>
+
+**(b)** -- both start with `a`, so `dp[1][1] = dp[0][0] = 0`; the last chars `b` and `c` differ, so `dp[2][2] = 1 + min(insert=dp[2][1], delete=dp[1][2], replace=dp[1][1]) = 1 + min(1,1,0) = 1` (replace `b` with `c`).
+
+</details>
+
+**Q2 (analyze).** In the recurrence, which neighbour corresponds to a DELETE operation on `word1`?
+- a) `dp[i][j-1]` (the cell to the left)
+- b) `dp[i-1][j]` (the cell above)
+- c) `dp[i-1][j-1]` (the diagonal)
+
+<details><summary>Show answer</summary>
+
+**(b)** -- deleting consumes one char of `word1` but none of `word2`, so we read the row above (`dp[i-1][j]`); the left cell is insert, the diagonal is replace.
+
+</details>
+
+**Q3 (transfer).** Suppose insert cost `2` but delete and replace each cost `1`. What is the only change to the recurrence?
+
+<details><summary>Show answer</summary>
+
+Weight each operation by its cost instead of a flat `+1`: `dp[i][j] = min(2 + dp[i][j-1], 1 + dp[i-1][j], 1 + dp[i-1][j-1])`. A character match still costs `0 + dp[i-1][j-1]`.
+
+</details>
 
 ## Common mistakes
 

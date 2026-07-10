@@ -4,6 +4,12 @@
 **Pattern:** Backtracking
 **LeetCode:** https://leetcode.com/problems/permutations/
 
+## Concepts used
+
+- **Recursion** -- a function that calls itself on a smaller version of the problem; here "smaller" means "one fewer empty slot to fill". [glossary](../../../docs/10-glossary.md#recursion)
+- **Backtracking** -- try a choice, recurse, then UNDO the choice before trying the next. [glossary](../../../docs/10-glossary.md#backtracking)
+- **Base case** -- the simplest input a recursive function answers directly; here, "all slots filled". [glossary](../../../docs/10-glossary.md#base-case)
+
 ## Problem
 
 Given an array of **distinct** integers `nums`, return *all possible
@@ -47,6 +53,32 @@ is complete exactly when the path length equals `n`. So we record only when
 > but is awkward to combine with duplicate-skipping (LC 47). This book uses
 > the `used[]` form because it is the same skeleton as the rest of the pattern
 > and extends cleanly to Subsets II and Combination Sum II later.
+
+### Checkpoint A -- Order matters, so mark what's used
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** Subsets used a moving `start` index to avoid reuse. What does Permutations use instead?
+- a) A `used[]` boolean array
+- b) Sorting the input
+- c) A hash set of indices, rebuilt each call
+
+<details><summary>Show answer</summary>
+
+**(a)** -- a `used[]` mask records which elements are already in the path. It is set true on choose and false on un-choose.
+
+</details>
+
+**Q2 (comprehend).** Why does the loop run from `0` every call (no start index)?
+- a) To let the same element be reused
+- b) Because order matters, so every index is eligible for every slot; `used[]` prevents reuse, not the loop bounds
+- c) Because the array is sorted
+
+<details><summary>Show answer</summary>
+
+**(b)** -- each slot can hold any not-yet-used element, so the loop scans all indices and `if (used[i]) continue` skips the spent ones. A start index would forbid later elements appearing before earlier ones, producing subsets, not permutations.
+
+</details>
 
 ## Pseudocode
 
@@ -165,6 +197,38 @@ Two recordings: `[1, 2]` and `[2, 1]` -- the two permutations of a 2-element
 array. Note that the un-choose runs *twice per choice* (the flag and the
 list), and that `used[]` is fully reset to `[F, F]` by the time the function
 returns -- the invariant the next call relies on.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `nums = [1, 2, 3]`. How many permutations are recorded, and which one is recorded first?
+- a) 3, and `[1,2,3]` is first
+- b) 6, and `[1,2,3]` is first
+- c) 6, and `[3,2,1]` is first
+
+<details><summary>Show answer</summary>
+
+**(b)** -- there are `3! = 6` permutations. The first path always takes the lowest available index at each slot (`1, then 2, then 3`), so `[1,2,3]` is recorded first.
+
+</details>
+
+**Q2 (analyze).** The un-choose is two lines: `used[i] = false` and `path.remove(...)`. What breaks if you forget ONLY the `used[i] = false` line?
+- a) Nothing -- `path.remove` is enough
+- b) Later siblings wrongly skip element `i`, because they think it is still spent
+- c) The paths become too long
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `used[i]` stays `true`, so the next sibling (and frames above) skip element `i` forever; permutations come out missing that element. (Forgetting only `path.remove` instead would make the paths too long.)
+
+</details>
+
+**Q3 (transfer).** How would you generate all permutations of length exactly `k` (partial permutations) instead of full length `n`?
+
+<details><summary>Show answer</summary>
+
+Change the DONE check from `path.size() == nums.length` to `path.size() == k` (record and return at length `k`). The loop, the `used[]` mask, and the two-line un-choose stay identical.
+
+</details>
 
 ## Common mistakes
 

@@ -4,6 +4,17 @@
 **Pattern:** Tries
 **LeetCode:** https://leetcode.com/problems/longest-word-in-dictionary/
 
+## Concepts used
+
+- **Trie (prefix tree)** -- a tree whose edges are letters, so any path from the root spells a
+  word; we store the dictionary in it.
+  [glossary](../../../docs/10-glossary.md#trie-prefix-tree)
+- **DFS (Depth-First Search)** -- a traversal that dives deep down one branch before backing up;
+  we walk the trie this way to find the longest valid word.
+  [glossary](../../../docs/10-glossary.md#dfs-depth-first-search)
+- **Hash set** -- a container that answers "have I seen X?" in O(1); the alternative approach we
+  compare against. [glossary](../../../docs/10-glossary.md#hash-set)
+
 ## Problem
 
 Given a list of strings `words`, return the longest word that can be built one character at a time
@@ -30,17 +41,63 @@ Example 2:
 
 ## Intuition
 
-A word qualifies when **every prefix** is also a word -- and that is precisely the question a trie
-answers cheaply. We insert every word into a trie, marking end-of-word nodes; then we walk the
-trie from the root, descending only through `isEnd` nodes (because each step must extend a valid
-prefix). The longest such walk ends at our answer. This is the Tries section, so we use the trie
-approach even though a sort + HashSet would also solve it -- the trie teaches the "is every prefix
-a word?" query that comes back in autocomplete and dictionary problems. The trigger signal is
-"shared prefix" combined with "every prefix must be valid".
+Think of unlocking doors in sequence: you can only walk through doorway 4 if you have already
+passed through doorways 1, 2, and 3. This problem is the word version. A word qualifies only if
+**every shorter version of it, chopping one letter off the end at a time, is also in the list**.
+For `"world"` to be the answer, the list must also contain `"worl"`, `"wor"`, `"wo"`, and `"w"`.
+Each of those shorter strings is a **prefix** -- the first few letters of the word -- and the
+question "is this prefix itself a word?" is exactly what a
+[trie](../../../docs/10-glossary.md#trie-prefix-tree) answers cheaply.
 
-Lexicographic tie-breaking comes for free: if we visit children in alphabetical order during the
-DFS, the first word of any given length that we discover is already the lex-smallest one -- so we
-only need to overwrite our best answer when a strictly longer word is found.
+Walk the smallest case: `words = ["w", "wo", "wor", "worl", "world"]`. Build a trie (a
+[tree](../../../docs/10-glossary.md#tree) whose edges are letters) by inserting all five words;
+each inserted word marks its final node end-of-word. The result is a single chain
+`w -> o -> r -> l -> d`, and every node along it is flagged end-of-word, because every prefix is
+itself a word in the list. So you can walk the whole chain, and `"world"` is the longest reachable
+word.
+
+The general rule follows the same shape. Walk the trie from the root, but only ever step into a
+child whose node is end-of-word: a missing flag means that prefix was never inserted, so no longer
+word built on it can qualify, and you stop descending that way. Keep track of the longest word you
+land on. For the tie-break ("if two words have the same length, return the alphabetically first"),
+visit children in alphabetical order during the
+[DFS](../../../docs/10-glossary.md#dfs-depth-first-search) (depth-first search -- dive deep down
+one branch, then back up). Then the first word of any given length you meet is already the
+alphabetically-first one, so you overwrite your best only when you find a *strictly longer* word.
+
+Why a trie and not a sorted list plus a [hash set](../../../docs/10-glossary.md#hash-set)? That
+combo works (sort the words, then for each word check that every prefix is in the set), but the
+trie makes "are all prefixes valid?" structural: the moment a node lacks the end-of-word flag you
+do not descend, so the answer prunes itself as you walk. This is the "is every prefix a word?"
+query that also powers autocomplete systems. LC 208 is the underlying data structure -- its
+`search` is exactly the per-node end-of-word check used here -- and LC 211 walks the same trie
+with a `.` wildcard instead of a prefix rule.
+
+### Checkpoint A -- The prefix rule
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** For a word to be a valid answer, what must be true of every one of its prefixes?
+- a) Each prefix must be longer than the word itself
+- b) Each prefix must itself be a word in the list
+- c) Each prefix must contain only one letter
+
+<details><summary>Show answer</summary>
+
+**(b)** -- chopping one letter off the end, repeatedly, must always land on another word in the list. The answer is built one valid prefix at a time.
+
+</details>
+
+**Q2 (comprehend).** During the DFS, why does the code only step into a child whose `isEnd` is true?
+- a) To save memory
+- b) Because if a prefix is not a word, no longer word built on top of it can qualify
+- c) So that children are visited in alphabetical order
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a missing `isEnd` means that prefix was never inserted, so it breaks the "every prefix is a word" rule. Refusing to descend there prunes the whole invalid branch.
+
+</details>
 
 ## Pseudocode
 
@@ -215,6 +272,38 @@ The relevant subtrie under `a -> p -> p`:
 Both "apple" and "apply" have length 5. The DFS visits child `'e'` (index 4) before `'y'` (index
 24), so it finds "apple" first and sets `best = "apple"`. When it later reaches "apply" the
 lengths tie and `compareTo` keeps the earlier (lex-smaller) "apple". Output: `"apple"`.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** `words = ["a", "ab", "abc"]`. What does `longestWord` return?
+- a) `"a"`
+- b) `"ab"`
+- c) `"abc"`
+
+<details><summary>Show answer</summary>
+
+**(c)** -- every node in the single chain `a(*) -> b(*) -> c(*)` is end-of-word, so the DFS descends all the way and "abc" (length 3) is the longest valid word.
+
+</details>
+
+**Q2 (analyze).** `words = ["ab", "abc"]` (note: the single letter "a" is NOT in the list). What is returned, and why?
+- a) `"abc"`, because it is the longest word present
+- b) `""`, because the `a` node is not end-of-word, so the DFS never descends into it
+- c) `"ab"`, because at least it is a word
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the DFS checks `child.isEnd` before descending; the `a` node lacks the flag, so neither "ab" nor "abc" is ever reached. With no valid prefix chain, `best` stays `""`.
+
+</details>
+
+**Q3 (transfer).** If the tie-break were reversed ("on equal length, return the lexicographically LARGEST"), what is the smallest change to the DFS?
+
+<details><summary>Show answer</summary>
+
+Visit children in reverse alphabetical order -- index 25 down to 0 -- so the lex-largest word of any given length is found first and wins. (Equivalently, flip the `compareTo` direction; doing just the visit order is enough.)
+
+</details>
 
 ## Common mistakes
 

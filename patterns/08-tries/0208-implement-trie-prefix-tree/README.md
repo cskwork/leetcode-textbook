@@ -4,6 +4,17 @@
 **Pattern:** Tries
 **LeetCode:** https://leetcode.com/problems/implement-trie-prefix-tree/
 
+## Concepts used
+
+- **Trie (prefix tree)** -- a [tree](../../../docs/10-glossary.md#tree) whose edges are letters,
+  so any path from the root spells out a word or the start of one.
+  [glossary](../../../docs/10-glossary.md#trie-prefix-tree)
+- **Tree** -- a hierarchy of nodes with one root at the top and zero or more children under each
+  node. [glossary](../../../docs/10-glossary.md#tree)
+- **Hash set** -- a container that only remembers which values it has seen, answering "have I seen
+  X?" in O(1); the alternative this problem improves on.
+  [glossary](../../../docs/10-glossary.md#hash-set)
+
 ## Problem
 
 Design a data structure that stores strings and supports three operations:
@@ -34,18 +45,65 @@ Words consist only of lowercase English letters.
 
 ## Intuition
 
-This is the foundational data structure of the entire Tries pattern. The trigger signal is
-literal: the method names `startsWith` and the phrase "word dictionary". The core idea is a tree
-where each path from the root spells a word, and shared prefixes share nodes. Three operations
-reduce to one shared move -- walk character by character from the root -- and then a tiny decision
-at the end:
+Think of the autocomplete dropdown on your phone's keyboard. Type `ap` and it instantly suggests
+`apple`, `apply`, `app`. The phone is not flipping through its whole dictionary word by word --
+once you have typed `a` then `p`, the phone is sitting at one spot in memory where every word
+hanging off that spot begins with `ap`. That spot is a node in a **trie** (say "try"): a
+[tree](../../../docs/10-glossary.md#tree) whose **edges** (the links between
+[nodes](../../../docs/10-glossary.md#tree)) are each labeled with one letter, so that any path
+from the root spells out a word or the start of one. Some nodes are flagged "a complete word ends
+here". The first few letters of a word are its **prefix** -- `ap` is a prefix of `apple`.
 
-- `insert`: walk, creating missing nodes along the way; mark the final node `isEnd = true`.
-- `search`: walk without creating; success iff the walk finishes on an `isEnd` node.
-- `startsWith`: walk without creating; success iff the walk finishes at all.
+Walk the smallest case. Start with an empty trie and `insert("app")`. Create one node per letter,
+each hanging off the previous one: `root -> a -> p -> p`. Mark that last `p` as end-of-word. Now
+`insert("apple")`. The first three letters `a`, `p`, `p` already exist as a path, so you reuse
+those three nodes and only add `l -> e` underneath, then mark `e` as end-of-word too. That sharing
+is the whole reason a trie exists: words that begin the same way share the same nodes.
 
-Because every operation walks exactly `L = word.length()` edges, each is O(L) time regardless of
-how many words are stored.
+The three operations this problem asks for all reduce to the same walk -- follow one edge per
+character starting at the root -- and then a tiny decision at the end:
+
+- `insert(word)`: walk, creating any missing nodes; mark the final node end-of-word.
+- `search(word)`: walk without creating; succeed only if you land on an end-of-word node.
+- `startsWith(prefix)`: walk without creating; succeed as soon as the walk completes.
+
+Why not just dump the words into a [hash set](../../../docs/10-glossary.md#hash-set)? A hash set
+answers "is `apple` here?" in O(L) by hashing the whole string -- fine. But "does *any* word start
+with `ap`?" forces it to scan the entire dictionary, comparing prefixes one word at a time:
+O(n * L) where n is the number of words. A trie answers both questions by walking the same
+`a -> p` path once, O(L), never touching words that don't start with `a`. The trie's cost depends
+only on the length of your query, not on how many words are stored.
+
+This is the foundation of the whole Tries section. LC 211 reuses this exact data structure but
+lets the search query contain a `.` wildcard (any letter); LC 720 walks the same trie to find the
+longest word whose every prefix is also a word. Master the one-edge-per-letter walk here and the
+other three problems build on top of it.
+
+### Checkpoint A -- The flag and the walk
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** On a trie node, what does `isEnd == true` mean?
+- a) This node has children below it
+- b) A complete inserted word ends exactly at this node
+- c) This node is the root of the trie
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the flag marks the last character of a word. A node can have children (a longer word continues) and still be end-of-word, like the second `p` of "app" inside "apple".
+
+</details>
+
+**Q2 (comprehend).** After ONLY `insert("apple")`, why does `search("app")` return `false` while `startsWith("app")` returns `true`?
+- a) The walk breaks for both, so both fail
+- b) Both walks land on the same node; `startsWith` ignores `isEnd`, but `search` needs it true, and it is false
+- c) `search` and `startsWith` walk completely different paths
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the `a -> p -> p` path exists, so the walk lands on the second `p`. Only "apple" was inserted, so that node's `isEnd` is false: fine for a prefix, not enough for a full word.
+
+</details>
 
 ## Pseudocode
 
@@ -195,6 +253,38 @@ Step-by-step for each query:
 
 The key contrast is `search("ap")` vs `startsWith("ap")`: same destination node, different result,
 because only `search` requires the end-of-word flag.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Start with an empty trie. Run `insert("cat")`, then `search("ca")`. What happens?
+- a) The walk breaks and returns `null`, so `false`
+- b) The walk lands on the `a` node, which is not end-of-word, so `false`
+- c) Returns `true`, because "ca" is a prefix of "cat"
+
+<details><summary>Show answer</summary>
+
+**(b)** -- after inserting "cat" the path is `c -> a -> t(*)`. Searching "ca" walks `c -> a`, lands on `a` whose `isEnd` is false, so the answer is `false`. The walk does not break -- the path exists, it just is not a full word.
+
+</details>
+
+**Q2 (analyze).** What breaks if you index the children array with the raw character `c` instead of `c - 'a'`?
+- a) Nothing; it behaves identically
+- b) `children['a']` means index 97 on a size-26 array, so it throws an out-of-bounds error
+- c) It silently stores words in the wrong slots but never errors
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `'a'` is 97 and the array has only 26 slots, so any real letter index overflows immediately with an `ArrayIndexOutOfBoundsException`.
+
+</details>
+
+**Q3 (transfer).** Suppose you want a `countWordsWithPrefix(prefix)` method: how many inserted words start with the given prefix. What small addition to the trie would support it?
+
+<details><summary>Show answer</summary>
+
+Store at each node a count of how many inserted words pass through it; bump that count on every node along the path during `insert`. Then walk to the prefix's node and return its count -- no subtree scan needed.
+
+</details>
 
 ## Common mistakes
 

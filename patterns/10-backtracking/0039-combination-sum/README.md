@@ -4,6 +4,12 @@
 **Pattern:** Backtracking
 **LeetCode:** https://leetcode.com/problems/combination-sum/
 
+## Concepts used
+
+- **Recursion** -- a function that calls itself on a smaller version of the problem; here "smaller" means "a smaller remaining budget". [glossary](../../../docs/10-glossary.md#recursion)
+- **Backtracking** -- try a choice, recurse, then UNDO the choice before trying the next. [glossary](../../../docs/10-glossary.md#backtracking)
+- **Base case** -- the simplest input a recursive function answers directly; here, "remaining budget == 0". [glossary](../../../docs/10-glossary.md#base-case)
+
 ## Problem
 
 You are given an array of **distinct** integers `candidates` and a target
@@ -52,6 +58,32 @@ non-negative additions can reduce it, so the whole subtree is dead and we can
 return early. Sorting the candidates first lets us prune even more cheaply --
 once `candidates[i]` alone exceeds the remaining budget, every later candidate
 does too, so we `break` instead of just skipping.
+
+### Checkpoint A -- The reuse knob
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** How many times may a single candidate be used in Combination Sum?
+- a) Exactly once
+- b) At most twice
+- c) An unlimited number of times
+
+<details><summary>Show answer</summary>
+
+**(c)** -- the problem allows unlimited reuse of each candidate, which is why `[2,2,3]` is a valid answer for target 7.
+
+</details>
+
+**Q2 (comprehend).** The recursive call passes `i` as the child's start (not `i + 1`). Why?
+- a) So the same candidate can be picked again on the next level
+- b) To skip duplicate candidates
+- c) To prune the search when a candidate is too large
+
+<details><summary>Show answer</summary>
+
+**(a)** -- passing `i` lets the child reconsider the same index, enabling unlimited reuse. Passing `i + 1` would forbid reuse (the Subsets rule) and miss answers like `[2,2,3]`.
+
+</details>
 
 ## Pseudocode
 
@@ -182,6 +214,38 @@ backtrack([], 7)
 Two recordings: `[2, 2, 3]` and `[7]`. That matches the expected output
 `[[2,2,3],[7]]`. Notice how many branches the `break` killed (e.g. exploring
 `[2,2,2,2]` would have summed to 8 -- pruned the moment `2 > 1`).
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `candidates = [2, 3]`, `target = 4`. What is recorded?
+- a) `[[2,2]]`
+- b) `[[3], [2,2]]`
+- c) `[]`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- pick 2 (remaining 2), pick 2 again (remaining 0) -> record `[2,2]`. The 3-branch leaves remaining 1, and 3 > 1 prunes it. No other path sums to 4.
+
+</details>
+
+**Q2 (analyze).** What happens if you accidentally pass `i + 1` instead of `i` on the recursive call?
+- a) Same output, just faster
+- b) You forbid reuse; `[2,2]` becomes impossible, so the output becomes `[]`
+- c) You get duplicate answers
+
+<details><summary>Show answer</summary>
+
+**(b)** -- with `i + 1` each candidate is usable once. For target 4 on `[2,3]` no distinct-candidate path sums to 4 (3 alone leaves 1, pruned), so nothing is recorded.
+
+</details>
+
+**Q3 (transfer).** How would you adapt this to "each candidate may be used at most once" (Combination Sum III style)?
+
+<details><summary>Show answer</summary>
+
+Change the child start from `i` to `i + 1` to forbid reuse. Keep the same done condition (`remaining == 0`), the same sort-and-break pruning, and the defensive snapshot. That single-character change is the whole difference.
+
+</details>
 
 ## Common mistakes
 

@@ -181,3 +181,56 @@ formula) discussed alongside it.
   correctly handles an empty input (returns `0`) and an input containing
   literal zeros (they XOR away harmlessly). Do not add a special case that
   breaks this.
+
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what do the two identities `x ^ x == 0` and `x ^ 0 == x` let you do?
+
+<details><summary>Show answer</summary>
+
+Cancel out values that appear in pairs and leave behind any value that appears an odd number of times -- all using a single integer of extra space.
+
+</details>
+
+**Q2 (pattern recognition).** New problem: "Every element in a non-empty array appears twice except for one, which appears once. Find it in O(1) extra space." Which bit trick fits?
+- a) An XOR scan over the whole array
+- b) Repeatedly applying `n & (n - 1)`
+- c) A hash map counting frequencies
+
+<details><summary>Show answer</summary>
+
+**(a)** -- "every element twice except one" is the textbook trigger for the XOR scan: pairs cancel, the lone value survives. This is Single Number (LC 136). (c) works but uses O(n) space.
+
+</details>
+
+**Q3 (pattern recognition).** New problem: "Given a positive integer `n`, decide whether it is a power of two." Which single identity tests it?
+- a) `n ^ n == 0`
+- b) `n > 0 && (n & (n - 1)) == 0`
+- c) `n & (-n)`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a power of two has exactly one set bit, so clearing the lowest set bit must yield 0. The `n > 0` guard rejects `n = 0`.
+
+</details>
+
+**Q4 (apply).** You XOR the list `[6, 6, 2, 2, 9]` together starting from `0`. What value is left?
+- a) `6`
+- b) `0`
+- c) `9`
+
+<details><summary>Show answer</summary>
+
+**(c)** -- the two `6`s cancel (`6 ^ 6 == 0`), the two `2`s cancel, and `0 ^ 9 == 9`. Only the unpaired value survives.
+
+</details>
+
+**Q5 (design).** Two strings `s` and `t` are identical except `t` has one extra character inserted somewhere. Sketch (in words, not code) a bit-manipulation approach to find the inserted character.
+
+<details><summary>Show answer</summary>
+
+Treat each character as its integer code and XOR together every character of `s` and every character of `t`. Every character that appears in both cancels with its copy, leaving only the one extra character's code. This is the same XOR identity as Single Number, applied to characters.
+
+</details>

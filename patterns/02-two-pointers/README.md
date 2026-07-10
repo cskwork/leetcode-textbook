@@ -113,3 +113,60 @@ last introduces Variant B (fast/slow).
   required by the problem.
 - **Char-class confusion (LC 125).** "Alphanumeric" means letters **and**
   digits; use the standard `isLetterOrDigit` check, and compare case-insensitively.
+
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what is the core idea of the Two Pointers pattern?
+
+<details><summary>Show answer</summary>
+
+Use two cursors that each only move in one direction, so together they visit at most about 2n positions. That collapses a nested O(n^2) loop down to O(n), usually with O(1) extra space.
+
+</details>
+
+**Q2 (pattern recognition).** New problem: "given a sorted array, remove the duplicates in-place so each value appears once, returning the new length." Which variant fits?
+- a) Variant B (fast/slow): `read` scans, `write` advances only when the value differs from the last kept one
+- b) Variant A (opposite ends): `left` and `right` walk toward each other
+- c) Neither -- this needs a hash set
+
+<details><summary>Show answer</summary>
+
+**(a)** -- this is the Move-Zeroes skeleton with "!= 0" swapped for "differs from the previous kept value". Opposite-end pointers do not help because the duplicates sit next to each other, not at the boundaries.
+
+</details>
+
+**Q3 (pattern recognition).** New problem: "return true if the string can be a palindrome after deleting at most one character." Which approach?
+- a) Opposite-end pointers; on the first mismatch, try skipping the left char OR the right char and check whether either side is a plain palindrome
+- b) Fast/slow read/write pointers
+- c) Sort the string, then compare ends
+
+<details><summary>Show answer</summary>
+
+**(a)** -- it is a direct extension of the Valid Palindrome opposite-end compare, with one "budget" deletion spent at the first mismatch. Sorting destroys the character order a palindrome depends on, so (c) is wrong.
+
+</details>
+
+**Q4 (apply).** Trace Two Sum II on `numbers = [1,3,4,5,7]`, `target = 9`. What is returned?
+- a) `[3,4]`
+- b) `[2,3]`
+- c) `[1,5]`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- step 1: 1+7=8 < 9 -> `left++`. step 2: 3+7=10 > 9 -> `right--`. step 3: 3+5=8 < 9 -> `left++`. step 4: 4+5=9 == 9 -> return `[left+1, right+1] = [3,4]`. Option (b) is the 0-based trap; (c) lists values, not indices.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) how to find the pair in a sorted array whose sum is CLOSEST to a target -- not necessarily equal -- and return that closest sum.
+
+<details><summary>Show answer</summary>
+
+Reuse the Two Sum II opposite-ends skeleton unchanged. Track the best (closest) sum seen. At each step, if the current sum is closer to the target than the best, update the best; then move exactly as in Two Sum II -- sum below target moves `left` (toward bigger), sum above moves `right` (toward smaller) -- because stepping toward the target is also stepping toward the closest. When the pointers meet, return the best.
+
+</details>
+
+---
+
+With those in mind, open [0125-valid-palindrome](./0125-valid-palindrome/) and start.

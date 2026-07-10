@@ -137,3 +137,56 @@ greedy choice with a formal proof.
 - **Forgetting the global feasibility check.** Gas Station only has an
   answer when `totalGas >= totalCost`. Skip that check and you will return a
   bogus start index on impossible inputs.
+
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** In one sentence, what is the core question you must answer before trusting a greedy solution?
+
+<details><summary>Show answer</summary>
+
+"Can I prove that the locally-best choice at this step is part of SOME optimal solution?" If yes, greedy is correct and fast; if you can find a counterexample, switch to DP.
+
+</details>
+
+**Q2 (pattern recognition).** New problem: "given `n` meetings each with a start and end time, return the maximum number of non-overlapping meetings one person can attend." Which greedy rule is provably optimal?
+- a) Sort by start time; always pick the meeting that starts earliest
+- b) Sort by end time; always pick the next meeting that ends earliest and starts after the last chosen
+- c) Sort by duration; always pick the shortest meeting
+
+<details><summary>Show answer</summary>
+
+**(b)** -- picking the earliest-finishing meeting leaves the most room for the rest. (a) and (c) both have easy counterexamples where a long early/short meeting blocks several others.
+
+</details>
+
+**Q3 (pattern recognition).** New problem: "make the amount 6 using the fewest coins from denominations {1, 3, 4}." Is greedy safe here?
+- a) Yes, always pick the largest coin that fits
+- b) No -- greedy picks 4+1+1 (3 coins) but 3+3 (2 coins) is optimal; this belongs to DP
+- c) Yes, sort the coins descending and proceed
+
+<details><summary>Show answer</summary>
+
+**(b)** -- this is the classic counterexample that breaks greedy-by-largest-coin. No local rule is safe for arbitrary denominations, so Coin Change is a 1-D DP problem.
+
+</details>
+
+**Q4 (apply).** Run a Kadane-style greedy on `nums = [-1, 2, 3, -1, 2]`. What is the running sum right after the last element (2), and what is the final best?
+- a) running = 6, best = 6
+- b) running = 4, best = 5
+- c) running = 0, best = 6
+
+<details><summary>Show answer</summary>
+
+**(a)** -- step 1 resets (-1); then running goes 2 -> 5 -> 4 -> 6. The last element leaves running at 6, which also becomes best.
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) a greedy solution for "assign cookies to children" (LC 455): each child has a greed factor `g[i]` (minimum cookie size to be content), each cookie a size `s[j]`; a child is content if given a cookie with `s[j] >= g[i]`. Maximize the number of content children.
+
+<details><summary>Show answer</summary>
+
+Sort both arrays ascending. Walk children smallest-greed first; for each child, advance a cookie pointer until a cookie of size >= g[i] is found, assign it, and advance both pointers; if cookies run out, stop. Giving a larger-than-needed cookie to an easy child would waste it, so the smallest-fit cookie for the easiest remaining child is the safe greedy rule. O(n log n) for the sorts.
+
+</details>

@@ -4,6 +4,12 @@
 **Pattern:** Trees
 **LeetCode:** https://leetcode.com/problems/kth-smallest-element-in-a-bst/
 
+## Concepts used
+
+- **Binary search tree (BST)** -- a binary tree where all left-subtree values are smaller and all right-subtree values are larger than the node. [glossary](../../../docs/10-glossary.md#binary-search-tree-bst)
+- **Inorder traversal** -- a depth-first order that visits the left subtree, then the node, then the right subtree; on a BST it visits values in sorted order. [glossary](../../../docs/10-glossary.md#preorder--inorder--postorder)
+- **Stack** -- a last-in-first-out container: the most recent item added is the first removed. [glossary](../../../docs/10-glossary.md#stack)
+
 ## Problem
 
 Given the `root` of a binary search tree and an integer `k`, return the `k`-th smallest value among
@@ -23,11 +29,75 @@ Examples:
 
 ## Intuition
 
-The key insight is BST-specific: an *inorder* traversal (left, node, right) visits the values in
-strictly ascending order. So "the kth smallest" is just "the kth node visited by an inorder
-walk." The trigger "kth smallest / sorted order in a BST" pins the traversal flavour. The trick
-is to do that walk *iteratively* with an explicit stack, so we can stop the instant we have popped
-`k` nodes -- no need to materialise the full sorted list.
+A [binary search tree](../../../docs/10-glossary.md#binary-search-tree-bst) (BST) is like a
+sorted filing cabinet arranged as a tree: everything in a node's left subtree is smaller,
+everything in its right subtree is larger. If you visit the files in a special order -- *left
+subtree first, then the node itself, then the right subtree* -- you read them out in ascending
+order. That order is called an **inorder traversal** (one of the three depth-first orderings
+on a tree; see [Preorder / Inorder / Postorder](../../../docs/10-glossary.md#preorder--inorder--postorder)).
+So "the kth smallest value" is simply "the kth node an inorder walk visits."
+
+Trace `root = [5,3,6,2,4,null,null,1]`, `k = 3`:
+
+```
+        5
+       / \
+      3   6
+     / \
+    2   4
+   /
+  1
+```
+
+Inorder always goes leftmost first. From `5`, go left to `3`, left to `2`, left to `1` -- no
+left child, so visit `1`. Back up to `2` (visit), back to `3` (visit), then right to `4`
+(visit). Back up to `5` (visit), then right to `6` (visit). The visit order is
+`1, 2, 3, 4, 5, 6`. The 3rd node visited is `3` -- the answer.
+
+We could collect the whole visit sequence into a list and read index `k-1`, but that does more
+work than needed. Instead we run the inorder walk *iteratively* with an explicit
+[stack](../../../docs/10-glossary.md#stack) (last-in-first-out), so we can **stop the instant
+we have visited k nodes**. Here is the mechanic, which simulates exactly what the recursive
+version would do:
+
+- From the current node, walk left as far as possible, pushing each node onto the stack. The
+  stack now holds the chain of suspended ancestors, deepest on top.
+- When you cannot go left any further, pop the top -- that is the next node in sorted order.
+  Visit it (decrement `k`); if `k` hits `0`, return its value immediately.
+- Then move to its *right* child and repeat the left-walk from there. If there is no right
+  child, the next pop simply resumes from where the previous descent was suspended.
+
+The reason this yields sorted order: the leftmost unvisited node is always the smallest one
+remaining, and popping it before any of its ancestors (which hold larger values) keeps the
+visit sequence ascending. The early return at `k == 0` means that on average we touch far
+fewer than `n` nodes.
+
+### Checkpoint A -- Spot the traversal
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** Which traversal visits a BST's values in ascending sorted order?
+- a) Preorder
+- b) Inorder
+- c) Postorder
+- d) Level-order
+
+<details><summary>Show answer</summary>
+
+**(b)** -- inorder (left, node, right) on a BST yields values from smallest to largest. So "the kth smallest" is simply "the kth node an inorder walk visits."
+
+</details>
+
+**Q2 (comprehend).** Why does the iterative version stop the moment `k` hits `0`, instead of collecting the whole inorder sequence?
+- a) To save stack space
+- b) Because the kth node visited in sorted order IS the kth smallest; visiting any more nodes is wasted work
+- c) Because the stack would overflow otherwise
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the moment we have popped k nodes we have the answer. Stopping early means we usually touch far fewer than n nodes.
+
+</details>
 
 ## Pseudocode
 
@@ -109,6 +179,48 @@ Inorder order: 1, 2, 3, 4, 5, 6.
 | 4    | 2.right is null; pop 3    | [5]                 | 3    | **0**   |
 
 `k == 0` after popping node `3` -> return `3`.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace this BST with `k = 4`:
+
+```
+        4
+       / \
+      2   5
+     / \
+    1   3
+```
+
+Inorder visits `1, 2, 3, 4, 5`. What is returned?
+- a) `3`
+- b) `4`
+- c) `5`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the 4th value in sorted order is `4`. The walk pops `1`, `2`, `3`, then `4`, at which point `k` reaches `0` and `4` is returned.
+
+</details>
+
+**Q2 (analyze).** What happens if you forget the `node = node.right` step after a pop?
+- a) Nothing changes; the traversal still works
+- b) The traversal collapses to a left-spine walk and misses every right subtree, returning the wrong value
+- c) It throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- after visiting a node, the next value in sorted order lives in its right subtree (or is the next suspended ancestor). Skipping the right move discards whole subtrees and the sequence becomes wrong.
+
+</details>
+
+**Q3 (transfer).** How would you find the KTH LARGEST element instead of the kth smallest, reusing the same idea? Outline it in words.
+
+<details><summary>Show answer</summary>
+
+Reverse the visit order: a REVERSED inorder (right subtree, then node, then left subtree) yields values in descending order on a BST. Run that reversed inorder and stop at the kth node visited -- that is the kth largest. Everything else (the stack, the early exit) stays the same.
+
+</details>
 
 ## Common mistakes
 

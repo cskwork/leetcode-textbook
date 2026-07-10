@@ -4,6 +4,12 @@
 **Pattern:** Linked List
 **LeetCode:** https://leetcode.com/problems/reorder-list/
 
+## Concepts used
+
+- **Linked list** -- a chain of nodes where each node stores a value and an arrow (pointer) to the next node; only forward traversal is possible. [glossary](../../../docs/10-glossary.md#linked-list)
+- **Two pointers** -- a slow pointer (one step per turn) and a fast pointer (two steps per turn) that locate the middle in one pass. [glossary](../../../docs/10-glossary.md#two-pointers)
+- **In-place** -- rewiring the existing nodes' arrows with O(1) extra memory, instead of copying values into an array. [glossary](../../../docs/10-glossary.md#in-place)
+
 ## Problem
 
 You are given the `head` of a singly linked list `L0 -> L1 -> ... -> Ln-1 -> Ln`. Reorder it
@@ -23,17 +29,67 @@ Examples:
 
 ## Intuition
 
-The target interleaves the *first half* of the list with the *second half reversed*. That
-sentence already names the three sub-techniques, each of which we have practiced on its own:
+The target order interleaves the front half of the list with the *back half
+reversed*: `L0, L1, L2, ...` becomes `L0, Ln, L1, Ln-1, L2, ...`. Think of
+shuffling a deck by taking one card from the top, one from the bottom, one from
+the top, one from the bottom -- except the "bottom" cards must be read in
+reverse order. A [linked list](../../../docs/10-glossary.md#linked-list) only
+points forward (each node's *pointer* is an arrow to the next node), so we
+cannot read the bottom half backwards directly. But we *can* flip its arrows, and
+once flipped, walking that half forward visits the bottom cards in exactly the
+reverse order we need.
 
-1. **Find the middle** with slow / fast pointers.
-2. **Reverse the second half** in place with the pointer flip.
-3. **Interleave** the two halves by alternating links.
+Smallest meaningful case, `1 -> 2 -> 3 -> 4` (target `1 -> 4 -> 2 -> 3`):
 
-Why this decomposition works: after reversing the second half, a pointer walking that half
-visits nodes in the order `Ln, Ln-1, Ln-2, ...` -- which is exactly the order they need to
-appear between the front-half nodes. So we hold one finger on each half and stitch them
-together two nodes at a time. No arrays, no recursion, no extra allocation.
+- Front half: `1 -> 2`. Back half: `3 -> 4`.
+- Reverse the back half: `4 -> 3`.
+- Interleave: take `1` (front), then `4` (back), then `2` (front), then `3`
+  (back) -- giving `1 -> 4 -> 2 -> 3`.
+
+So the solution is three steps, each a technique practiced on its own:
+
+1. **Find the middle**, using the trick from *Middle of the Linked List* (LC 876):
+   one pointer takes one step per turn, another takes two; when the fast one runs
+   off the end, the slow one is sitting on the middle.
+2. **Reverse the second half**, using the arrow-flipping dance from
+   [Reverse Linked List (LC 206)](../0206-reverse-linked-list/): for each node,
+   save its next arrow, point the node backward at the previous one, advance.
+3. **Interleave** the two halves: hold one finger on each and stitch them
+   together two nodes at a time.
+
+After step 2, a finger walking the reversed back half meets `Ln, Ln-1, Ln-2,
+...` -- exactly the order those nodes must appear between the front-half nodes --
+so the interleave is just "attach one from each side, repeat". Before
+interleaving we split the list cleanly with `slow.next = null`; otherwise the
+front half stays chained into the reversed back half and we would walk in a
+circle. Everything is [in-place](../../../docs/10-glossary.md#in-place) pointer
+surgery: no arrays, no recursion, no new nodes.
+
+### Checkpoint A -- The interleave recipe
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** List the three steps of `reorderList` in order.
+- a) reverse, find middle, interleave
+- b) find middle, reverse the back half, interleave the two halves
+- c) interleave, reverse, find middle
+
+<details><summary>Show answer</summary>
+
+**(b)** -- first locate the split, then flip the back half so it reads `Ln, Ln-1, ...`, then stitch one-from-each-side together.
+
+</details>
+
+**Q2 (comprehend).** Right after reversing the back half, the code sets `slow.next = null`. Why?
+- a) To free memory
+- b) To detach the front half from the reversed back half, so the interleave does not walk in a circle
+- c) To reverse the front half too
+
+<details><summary>Show answer</summary>
+
+**(b)** -- without it the front half's tail still points into the reversed back half, and the interleave would chase its own tail forever.
+
+</details>
 
 ## Pseudocode
 
@@ -168,6 +224,38 @@ Final chain read from head: A -> E -> B -> D -> C = `[1, 5, 2, 4, 3]`. Correct.
 
 Even-length `[1, 2, 3, 4]`: slow stops on B; back half C->D reverses to D->C; interleave gives
 A->D->B->C = `[1, 4, 2, 3]`. Correct.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `reorderList` on `head = [1, 2, 3, 4, 5, 6]`. What is the final list?
+- a) `[1, 6, 2, 5, 3, 4]`
+- b) `[6, 1, 5, 2, 4, 3]`
+- c) `[1, 2, 3, 4, 5, 6]`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- slow stops on 3, the back half `4->5->6` reverses to `6->5->4`, and interleaving front `[1,2,3]` with it yields `1, 6, 2, 5, 3, 4`.
+
+</details>
+
+**Q2 (analyze).** What goes wrong if you omit `slow.next = null` after reversing the back half?
+- a) The front half stays chained into the reversed back half, and the interleave walks in a circle
+- b) The whole list gets reversed
+- c) Nothing; the line is optional
+
+<details><summary>Show answer</summary>
+
+**(a)** -- the unbroken link turns the two halves into a loop, so the splice pointers never reach `null` and the list is corrupted.
+
+</details>
+
+**Q3 (transfer).** The interleave loop saves *both* `first.next` and `second.next` before splicing. Why must both be saved, and what breaks if only one is?
+
+<details><summary>Show answer</summary>
+
+The splice overwrites *both* links -- `first.next` becomes the back node and `second.next` becomes the next front node -- so if either successor is not saved first that finger loses its way forward and points at the wrong node, tangling the rest of the weave.
+
+</details>
 
 ## Common mistakes
 

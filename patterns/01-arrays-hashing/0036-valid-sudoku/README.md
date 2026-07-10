@@ -4,6 +4,15 @@
 **Pattern:** Arrays & Hashing
 **LeetCode:** https://leetcode.com/problems/valid-sudoku/
 
+## Concepts used
+
+- **Hash set** -- a container that remembers seen values and refuses a repeat; we keep one per
+  row, one per column, and one per 3x3 box. [glossary](../../../docs/10-glossary.md#hash-set)
+- **Array** -- numbered slots; we use nine of them to hold nine sets.
+  [glossary](../../../docs/10-glossary.md#array)
+- **Linear scan** -- walking all 81 cells of the board once.
+  [glossary](../../../docs/10-glossary.md#linear-scan)
+
 ## Problem
 
 Determine whether a 9 x 9 Sudoku board is valid. Only the filled cells need to be validated
@@ -29,12 +38,52 @@ Example (a valid board):
 
 ## Intuition
 
-The trigger signal is "no repeats" -- existence checks across three different groupings (rows,
-columns, boxes). For each group we want a HashSet that beeps the moment a digit tries to enter a
-second time. The only wrinkle is the box grouping: a cell at `(r, c)` lives in box index
-`(r / 3) * 3 + c / 3`, which squashes the 9x9 grid into nine 3x3 boxes numbered 0..8 in
-row-major order. One pass over all 81 cells, three set lookups and three inserts per filled cell,
-and we return `false` on the very first conflict.
+A bouncer checks three guest lists at the door -- one for the row, one for the column, one for the
+booth. Each guest (a digit) must be new on ALL three lists. The instant a name shows up twice on
+any single list, the alarm sounds and entry is refused.
+
+Look at the smallest conflict. Suppose the top-left cell holds a `5`, and the cell directly below
+it (still inside the same 3x3 box) also holds a `5`. The box's guest list already has a `5`, so
+the second `5` trips the alarm -- the board is invalid, even though no row and no column repeats.
+
+The general rule: a valid Sudoku demands three independent "no repeats" rules -- each row, each
+column, and each of the nine 3x3 boxes must contain the digits 1-9 at most once. For each rule we
+keep a [hash set](../../../docs/10-glossary.md#hash-set) that refuses a second sighting of the
+same digit. Scan all 81 cells once; for each filled cell, try to add its digit to three sets --
+its row's set, its column's set, and its box's set. If any add fails (the digit was already
+there), the board is invalid.
+
+How do we know which 3x3 box a cell belongs to? Number the nine boxes 0 through 8 in reading order
+(left-to-right, top-to-bottom). A cell at row `r`, column `c` lives in box `(r / 3) * 3 + (c / 3)`.
+Here `r / 3` is whole-number division (Java's `int / int`), giving which band of three rows the
+cell is in (0, 1, or 2); `c / 3` gives which band of three columns. Multiplying the row-band by 3
+and adding the column-band flattens the 3x3 grid of boxes into a single number 0-8.
+
+### Checkpoint A -- Three rules, three lists
+
+Pause before expanding.
+
+**Q1 (recall).** How many independent "no repeats" rules must each digit satisfy?
+- a) One (just the row)
+- b) Three: row, column, and 3x3 box
+- c) Nine
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a digit must be new on its row, its column, AND its 3x3 box. Failing any one invalidates the board.
+
+</details>
+
+**Q2 (comprehend).** A cell at row `r`, column `c` belongs to which box index?
+- a) `r + c`
+- b) `(r / 3) * 3 + (c / 3)`
+- c) `(r + c) / 3`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `r/3` is the row-band (0,1,2), `c/3` is the column-band; multiply the row-band by 3 and add the column-band to flatten the 3x3 layout of boxes into 0..8.
+
+</details>
 
 ## Pseudocode
 
@@ -130,6 +179,38 @@ Walking the first few filled cells:
 `boxes[0].add('5')` returns `false` because the box already holds a `5` from (0,0), so the
 function returns `false` at (1,1). Rows and columns each still have only one `5`, so without the
 box check the board would wrongly pass.
+
+### Checkpoint B -- Read the conflict
+
+**Q1 (apply).** Cell (2, 4) has a `7`, and cell (2, 7) also has a `7`. Which rule catches this as invalid?
+- a) The 3x3 box rule
+- b) The row rule (both in row 2)
+- c) The column rule
+
+<details><summary>Show answer</summary>
+
+**(b)** -- both cells are in row 2, so row 2's set already holds a `7` when the second is added; `add` returns false and the board is invalid.
+
+</details>
+
+**Q2 (analyze).** Why is `Set.add(ch)` used as the check, rather than calling `contains` then `add`?
+- a) `add` is the only method that works on Characters
+- b) `add` returns `false` exactly when the element was already present, so one call both tests and inserts -- half the work
+- c) `contains` would throw on duplicates
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `add` returns true if newly inserted, false if already there. Using its boolean return combines the check and the insert into one operation.
+
+</details>
+
+**Q3 (transfer).** How would you generalize this to an n x n board (with sqrt(n) x sqrt(n) boxes)? What changes about the complexity?
+
+<details><summary>Show answer</summary>
+
+Loop bounds become n instead of 9, the box formula stays `(r / s) * s + (c / s)` with `s = sqrt(n)`, and you allocate n sets per dimension. Time and space both become O(n^2), since there are n^2 cells and up to n distinct symbols.
+
+</details>
 
 ## Common mistakes
 

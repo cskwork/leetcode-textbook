@@ -4,6 +4,17 @@
 **Pattern:** Tries
 **LeetCode:** https://leetcode.com/problems/design-add-and-search-words-data-structure/
 
+## Concepts used
+
+- **Trie (prefix tree)** -- a tree whose edges are letters, so any path from the root spells a
+  word; the dictionary we store words in.
+  [glossary](../../../docs/10-glossary.md#trie-prefix-tree)
+- **Recursion** -- a function that calls itself on a smaller version of the same problem; we use
+  it to try every child at a `.` wildcard.
+  [glossary](../../../docs/10-glossary.md#recursion)
+- **DFS (Depth-First Search)** -- a traversal that dives down one branch fully before backing up
+  to try the next. [glossary](../../../docs/10-glossary.md#dfs-depth-first-search)
+
 ## Problem
 
 Design a data structure that supports two operations:
@@ -31,13 +42,62 @@ Example:
 
 ## Intuition
 
-This is LC 208's trie with one twist: the search query may contain `.` (wildcard). A normal
-letter forces us down one specific child, but a dot asks us to try **every** child and succeed if
-**any** branch reaches an end-of-word. That branching is exactly recursion (DFS) -- at a dot, we
-fan out to all non-null children; at a real letter, we follow just one child. The trigger signal
-is "word dictionary" plus "match any letter" -- the moment you see a wildcard over a structured
-alphabet, recursion on every branch is the natural move. The trie keeps the *dictionary* small
-(shared prefixes share nodes); recursion does the *query*.
+Picture an old card catalog in a library: each drawer leads you letter by letter to the book you
+want. Now ask the librarian "give me any three-letter word shaped `_ad`" -- the first letter could
+be anything, but the next two must be `a` and `d`. The librarian opens every drawer, and for each
+opening letter walks the `a -> d` path to see whether a complete word sits there. That is this
+problem: a [trie](../../../docs/10-glossary.md#trie-prefix-tree) (a
+[tree](../../../docs/10-glossary.md#tree) whose edges are letters) storing the dictionary, plus
+queries in which `.` means "any letter in this slot".
+
+Start from the trie built in LC 208. Inserting `"bad"`, `"dad"`, `"mad"` gives three branches
+under the root: `b -> a -> d`, `d -> a -> d`, `m -> a -> d`. A normal query like `"bad"` is easy --
+follow one child per letter, the same walk as before. The new twist is `.`. When the query
+character is a real letter, go down exactly one edge. When it is `.`, you don't know which edge to
+take, so try **every** child that exists and succeed if **any** branch reaches an end-of-word.
+"Try every child, then combine the answers" is
+[recursion](../../../docs/10-glossary.md#recursion) -- a function that calls itself on a smaller
+piece of the same problem, here the rest of the query -- and it is the same idea as
+[DFS](../../../docs/10-glossary.md#dfs-depth-first-search) (depth-first search): dive down one
+branch fully, and if it fails, back up and try the next.
+
+Trace the smallest wildcard query, `search("b..")`, on the `{bad, dad, mad}` dictionary. Position
+0 is `b`: take the single `b` child. Position 1 is `.`: from the `b` node the only child is `a`,
+so recurse into `a`. Position 2 is `.`: from `b -> a` the only child is `d`, recurse into `d`. The
+query is now exhausted, and `d` is an end-of-word node, so return `true`. For `search(".ad")` the
+first `.` fans out to `b`, `d`, and `m`; the `b` branch lands on an end-of-word first, so the whole
+search returns `true` without exploring the others.
+
+The cost depends sharply on the query shape. A query with no dots is the same O(L) walk as LC 208.
+A query of *all* dots is the worst case: each dot may branch into up to 26 children, giving as
+many as 26^L paths. In practice the trie is sparse -- most of those 26 children don't exist -- so
+the real dictionary prunes the branching hard.
+
+### Checkpoint A -- Real letter vs wildcard
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** In a search query, what does a `.` match?
+- a) Only the letter 'o'
+- b) Any single letter in that position
+- c) The end of a word
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a dot is a wildcard standing in for one arbitrary letter. It does not match more than one letter or mark a word boundary.
+
+</details>
+
+**Q2 (comprehend).** When the current query character is a real letter (not `.`), how many children do you follow?
+- a) Every non-null child, trying them all
+- b) Exactly one -- the child for that specific letter
+- c) Two -- the matching child plus a fallback
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a real letter names a single edge, so you descend into just that child. Branching over many children only happens at a `.`.
+
+</details>
 
 ## Pseudocode
 
@@ -170,6 +230,38 @@ without exploring the others.
 
 For `search("pad")`: at pos 0 we look for child `'p'` of root, which is null, so `match` returns
 `false` immediately.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** The dictionary contains only `addWord("bad")`. What do `search(".ad")` and `search("b.d")` each return?
+- a) `.ad` -> `true`; `b.d` -> `true`
+- b) `.ad` -> `false`; `b.d` -> `true`
+- c) `.ad` -> `true`; `b.d` -> `false`
+
+<details><summary>Show answer</summary>
+
+**(a)** -- both queries describe "any letter, then a, then d". The trie has exactly one `? -> a -> d(*)` branch (under `b`), so each wildcard resolves to `b` and lands on the end-of-word `d`.
+
+</details>
+
+**Q2 (analyze).** When handling a `.`, what goes wrong if you recurse into null children instead of skipping them?
+- a) Nothing; null children are ignored automatically
+- b) The next call dereferences null and throws a `NullPointerException`
+- c) It silently returns the wrong boolean
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a null slot means "no child here", and the recursive call would read fields off a null node. Always guard with `child != null` before recursing.
+
+</details>
+
+**Q3 (transfer).** Suppose the query also allowed `*` meaning "match zero or more letters" (a variable-length wildcard). Conceptually, how must the search change?
+
+<details><summary>Show answer</summary>
+
+At a `*`, the matcher must try two moves at once: consume nothing and continue with the rest of the query at the same node, OR consume one letter down a child and keep the `*`. The trie walk is unchanged, but the match function now branches into two recursive cases per star.
+
+</details>
 
 ## Common mistakes
 

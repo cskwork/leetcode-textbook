@@ -44,6 +44,32 @@ Why is expand-around-center correct? Every palindrome has a unique
 center, so iterating over all centers and greedily expanding is
 guaranteed to find the longest one. We just keep the best.
 
+### Checkpoint A -- Every palindrome has a center
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** Expand-around-center tries two kinds of center at each position. What are they?
+- a) Only single characters
+- b) A character (odd-length palindromes) and the gap between two characters (even-length)
+- c) The first and last characters
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `(center, center)` grows odd palindromes like "bab"; `(center, center+1)` grows even ones like "bb". Skipping the second misses all even-length answers.
+
+</details>
+
+**Q2 (comprehend).** Why is `best` initialised to 1 (not 0)?
+- a) Because 1 is the loop start value
+- b) Because every non-empty string has at least a length-1 palindrome (any single character), so the answer can never be 0
+- c) Because the array is 1-indexed
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a single character reads the same forwards and backwards, so the longest palindrome is at least 1; starting best=1 makes one-character inputs return that character.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -168,6 +194,38 @@ Detail of `expand(s, 1, 1)` (odd, center 'a'):
 
 Detail of `expand(s, 1, 2)` (even, between 'a' and 'b'):
 - left=1, right=2: s[1]='a' != s[2]='b' -> stop. Length = 2 - 1 - 1 = 0.
+
+### Checkpoint B -- Trace the expansions
+
+**Q1 (apply).** Trace `s = "abb"`. What does `longestPalindrome` return?
+- a) "a"
+- b) "bb"
+- c) "abb"
+
+<details><summary>Show answer</summary>
+
+**(b)** -- at center 1 the even expansion `(1,2)` matches 'b'=='b' and grows to length 2, giving best=2 and start=1; substring(1,3) is "bb".
+
+</details>
+
+**Q2 (analyze).** When the expansion loop exits, why is the palindrome length `right - left - 1` (not `right - left + 1`)?
+- a) Because the indices are 0-based
+- b) Because left and right have already moved one step PAST the last matching pair, so both ends must be trimmed back by one
+- c) Because the string is empty
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the loop increments right and decrements left BEFORE re-checking, so on exit both indices point just outside the palindrome; subtracting one on each side recovers the true span.
+
+</details>
+
+**Q3 (transfer).** If you wanted the longest palindromic SUBSEQUENCE (deletions allowed) instead of substring, why would expand-around-center no longer work, in one sentence?
+
+<details><summary>Show answer</summary>
+
+A subsequence can skip characters, so the palindrome need not be contiguous and has no single center to expand from; you would need a 2-D DP comparing ends and allowing gaps (dp over s[i..j]).
+
+</details>
 
 ## Common mistakes
 

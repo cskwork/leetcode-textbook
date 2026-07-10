@@ -4,6 +4,13 @@
 **Pattern:** Greedy
 **LeetCode:** https://leetcode.com/problems/maximum-subarray/
 
+## Concepts used
+
+- **Greedy** -- make the locally-best choice at each step and never revisit it; it only counts as greedy if you can prove that choice is part of some optimal answer. [glossary](../../../docs/10-glossary.md#greedy)
+- **Array** -- a row of numbered slots holding values, accessed by position in O(1). [glossary](../../../docs/10-glossary.md#array)
+- **Running sum** -- one variable that keeps adding the next value as you walk, so it always holds the total of the current stretch "so far".
+- **Invariant** -- a condition that is always true at the start of every loop iteration; stating it clearly is how you prove a loop correct. [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 Given an integer array `nums`, find the contiguous subarray (containing at
@@ -44,6 +51,32 @@ The locally-best choice at each step is "either extend the previous best,
 or start over here". The global answer is the maximum running sum seen.
 No backtracking is needed because we never regret resetting — a negative
 prefix is dead weight forever.
+
+### Checkpoint A -- The negative-prefix rule
+
+Pause and answer before expanding.
+
+**Q1 (recall).** In Kadane's algorithm, what happens the moment the running sum drops below zero?
+- a) The running sum is reset to 0
+- b) The loop stops and returns immediately
+- c) The array is re-scanned from the start
+
+<details><summary>Show answer</summary>
+
+**(a)** -- a negative prefix can only subtract from any subarray that extends it, so the algorithm drops it by resetting `running` to 0 and starting fresh.
+
+</details>
+
+**Q2 (comprehend).** Why is dropping a negative running sum safe -- it can never hide the optimal answer because:
+- a) The array is guaranteed to be sorted
+- b) Any subarray extending a negative prefix would be larger with that prefix removed
+- c) The reset only happens after the loop ends
+
+<details><summary>Show answer</summary>
+
+**(b)** -- this is Kadane's whole insight. Recording `best` *before* the reset is the mechanism that makes the drop lossless.
+
+</details>
 
 ## Pseudocode
 
@@ -118,6 +151,38 @@ Step-by-step on `nums = [-2,1,-3,4,-1,2,1,-5,4]`:
 Final `best = 6`, achieved by the subarray `[4, -1, 2, 1]` (steps 4–7).
 Notice step 3: even though running went to -2, `best` was already 1 from
 step 2, so the reset does not lose the answer.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `nums = [-3, 2, -1, 5]`. What is returned?
+- a) 6 (subarray [2, -1, 5])
+- b) 2
+- c) -3
+
+<details><summary>Show answer</summary>
+
+**(a)** -- step 1: running = -3, best = -3, reset to 0. Steps 2-4: running goes 2 -> 1 -> 6, so best ends at 6.
+
+</details>
+
+**Q2 (analyze).** If `best` were initialised to 0 instead of `Integer.MIN_VALUE`, what would `maxSubArray([-3, -1, -2])` return?
+- a) 0 -- wrong, it corresponds to the forbidden empty subarray
+- b) -1 -- correct
+- c) -3
+
+<details><summary>Show answer</summary>
+
+**(a)** -- no running sum ever beats 0, so `best` stays 0. The correct answer is `-1` (the single largest element); use `Integer.MIN_VALUE` or `nums[0]`.
+
+</details>
+
+**Q3 (transfer).** Suppose you also had to return the start and end indices of the winning subarray. What extra bookkeeping would you add?
+
+<details><summary>Show answer</summary>
+
+Keep a `start` index reset to the next element's position whenever `running` resets. Whenever `best` is updated, snapshot `bestStart = start` and `bestEnd = currentIndex`. After the loop `[bestStart, bestEnd]` is the answer.
+
+</details>
 
 ## Common mistakes
 

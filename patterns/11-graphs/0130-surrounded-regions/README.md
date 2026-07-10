@@ -4,6 +4,16 @@
 **Pattern:** Graphs
 **LeetCode:** https://leetcode.com/problems/surrounded-regions/
 
+## Concepts used
+
+- **Graph** -- a set of nodes connected by edges. The board is an implicit graph: each cell is a
+  node, its up/down/left/right cells are its neighbors (the edges).
+  [glossary](../../../docs/10-glossary.md#graph)
+- **Connected component** -- the largest group of nodes reachable from one another; a region of `'O'`
+  cells is one connected component. [glossary](../../../docs/10-glossary.md#connected-component)
+- **DFS (depth-first search)** -- a traversal that goes as deep as possible before backing up.
+  [glossary](../../../docs/10-glossary.md#dfs-depth-first-search)
+
 ## Problem
 
 Given an `m x n` matrix `board` containing `'X'` and `'O'`, **capture** every region of `'O'`s that
@@ -33,16 +43,65 @@ Examples:
 
 ## Intuition
 
-The trap is the word "surrounded": you cannot decide whether an `'O'` should flip just by looking at
-its local neighborhood -- you have to know whether *any* cell in its region reaches the border. Flip
-that around: a region is safe if and only if it touches the border. So instead of asking "is this O
-surrounded?", ask "is this O connected to a border O?". The trigger -- "grid", "connected" -- is
-classic grid DFS, but applied from the **border inward**: start a DFS from every `'O'` on the four
-edges and mark every `'O'` reachable from them as `SAFE`. After that pass, any `'O'` still on the
-board was provably not reachable from a border, so it must be fully surrounded -- flip it. Finally
-restore the `SAFE` markers back to `'O'`.
+An `'O'` region is a patch of `'O'`s sitting in a field of `'X'`s. The problem says to flip every
+`'O'` region to `'X'` *unless* it touches the outer border of the board -- because a region that
+touches the border is not truly "surrounded". The hard part: staring at one `'O'` deep inside, you
+cannot tell locally whether its region eventually sneaks out to the border. You have to look at the
+*whole* region.
 
-We use a third character `'S'` for the temporary safe mark, which doubles as the visited-set.
+So flip the question (this is the key move): instead of "is this `'O'` surrounded?", ask "is this
+`'O'` connected to a border `'O'?". A region is *safe* exactly when at least one of its cells touches
+the border. Treat the board as an implicit [graph](../../../docs/10-glossary.md#graph) (each cell a
+node, its up/down/left/right cells its **neighbors**, the edges); an `'O'` region is one
+[connected component](../../../docs/10-glossary.md#connected-component) of `'O'` nodes -- the largest
+group reachable from one another. The safe regions are precisely the connected components that
+include a border cell.
+
+So: start a [DFS](../../../docs/10-glossary.md#dfs-depth-first-search) from every `'O'` sitting on
+the four edges, and mark every `'O'` reachable from them as *safe* (we use a temporary marker `'S'`,
+which doubles as our **visited** flag -- a mark so we never step on the same cell twice). After that
+pass, any `'O'` still left on the board was provably *not* reachable from a border -- so it must be
+fully surrounded, and we flip it to `'X'`. Finally we turn the `'S'` markers back into `'O'`.
+
+Trace:
+
+```
+X X X X
+X O O X
+X X O X
+X O X X
+```
+
+The only border `'O'` is at (3,1) -- mark it `'S'`; its neighbors are all `'X'` or out-of-bounds, so
+the DFS stops there. Now the cleanup pass: the inner cluster (1,1), (1,2), (2,2) are still `'O'` ->
+flip to `'X'`; the `'S'` at (3,1) -> back to `'O'`. The bottom `'O'` survives *because* it touched
+the border; the inner cluster did not, so it was surrounded and flipped.
+
+### Checkpoint A -- Flip the question
+
+Pause and pick before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** Why mark border-connected `'O'`s as `'S'` first, rather than testing each interior `'O'`?
+- a) `'S'` is required by the problem statement
+- b) An interior `'O'` cannot tell locally whether its region escapes to the border; marking from the border out identifies each whole safe region in one pass
+- c) Border cells are fewer, so it is faster
+
+<details><summary>Show answer</summary>
+
+**(b)** -- "is this region surrounded?" is a whole-region question, so it is easiest to flip it: mark everything reachable FROM a border `'O'`, then whatever `'O'` remains is provably surrounded.
+
+</details>
+
+**Q2 (comprehend).** In the cleanup pass, why can `'O' -> 'X'` and `'S' -> 'O'` happen in a single pass with no conflict?
+- a) They run in separate loops
+- b) `'O'` and `'S'` are mutually exclusive marks -- each cell is exactly one of them -- so one if/else handles both
+- c) The order of the two checks matters
+
+<details><summary>Show answer</summary>
+
+**(b)** -- a cell is either still `'O'` (surrounded -> flip to `'X'`) or `'S'` (safe -> restore to `'O'`); the two cases never overlap, so one pass suffices.
+
+</details>
 
 ## Pseudocode
 
@@ -185,6 +244,38 @@ X O X X
 
 The bottom-row `'O'` survives *because* it touched the border; the inner cluster did not, so it was
 surrounded and flipped.
+
+### Checkpoint B -- Mark a new board
+
+**Q1 (apply).** Trace a new board that is a 2x2 of all `'O'` (every cell sits on the border). After `solve()`, what is the board?
+- a) All `'X'` -- everything is captured
+- b) All `'O'` -- every cell touches a border, so every `'O'` is marked safe and restored
+- c) The corners become `'X'`, the rest stay `'O'`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the border-seeded DFS marks all four cells `'S'`, and the cleanup restores every `'S'` back to `'O'`. Nothing is surrounded because nothing is fully interior.
+
+</details>
+
+**Q2 (analyze).** What breaks if you seed DFS from only the TOP and LEFT edges?
+- a) Nothing -- the other edges are redundant
+- b) A region that escapes only through the bottom or right border never gets marked safe and is wrongly flipped to `'X'`
+- c) It throws on rectangular boards
+
+<details><summary>Show answer</summary>
+
+**(b)** -- all four edges must seed the DFS; missing one leaves a whole escape route unmarked, so a genuinely border-connected region looks surrounded.
+
+</details>
+
+**Q3 (transfer).** How would you solve the inverse -- flip the `'O'` regions that DO touch the border to `'X'`, and leave surrounded regions alone?
+
+<details><summary>Show answer</summary>
+
+Run the same border DFS to mark safe cells, but in cleanup flip the `'S'` (border-connected) cells to `'X'` and leave the untouched interior `'O'`s as `'O'` -- the reverse of the original rules.
+
+</details>
 
 ## Common mistakes
 

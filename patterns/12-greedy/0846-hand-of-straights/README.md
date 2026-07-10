@@ -4,6 +4,13 @@
 **Pattern:** Greedy
 **LeetCode:** https://leetcode.com/problems/hand-of-straights/
 
+## Concepts used
+
+- **Greedy** -- make the locally-best choice at each step and never revisit it; works only when you can prove that choice is part of some optimal solution. [glossary](../../../docs/10-glossary.md#greedy)
+- **Sorting** -- putting elements in order (ascending or descending); standard sorts run in O(n log n). [glossary](../../../docs/10-glossary.md#sorting)
+- **Hash map** -- a key->value lookup table, O(1) average; here we use a sorted one (`TreeMap`) to count cards. [glossary](../../../docs/10-glossary.md#hash-map)
+- **Invariant** -- a condition that is always true at the start of every loop iteration; stating it clearly is how you prove a loop correct. [glossary](../../../docs/10-glossary.md#invariant)
+
 ## Problem
 
 Alice holds `n` cards, given as an integer array `hand` where `hand[i]` is
@@ -54,6 +61,32 @@ smallest overall. Contradiction. So in *every* valid partition, the
 smallest card starts a group. After we commit that group and remove its
 cards, the same argument applies recursively to the new smallest card. By
 the exchange argument, greedy is optimal.
+
+### Checkpoint A -- The smallest card has no choice
+
+Pause and answer before expanding.
+
+**Q1 (recall).** At each step, which card is chosen to start the next group?
+- a) The most frequent card
+- b) The smallest remaining card
+- c) Any card that still has a positive count
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the smallest remaining card cannot be placed in the middle of a group, so it is forced to start one.
+
+</details>
+
+**Q2 (comprehend).** Why MUST the smallest remaining card start a group, rather than sit in the middle of one?
+- a) Because smaller cards are worth more
+- b) Because a middle slot would need a `card - 1` to come before it, and no such card exists
+- c) Because the cards are sorted alphabetically
+
+<details><summary>Show answer</summary>
+
+**(b)** -- sitting in the middle requires a predecessor one less, which cannot exist when the card is the global minimum. So it must open a group; this is the exchange argument.
+
+</details>
 
 ## Pseudocode
 
@@ -154,6 +187,38 @@ For `hand = [1,2,3,4,5]`, `groupSize = 5`:
 | 1    | 1     | [1,2,3,4,5]    | {}                        | ok     |
 
 Return **true**: one group of all five cards.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `hand = [1, 2, 2, 3, 3, 4]`, `groupSize = 3`. What is returned?
+- a) true (groups [1,2,3] and [2,3,4])
+- b) false
+- c) true only after re-sorting
+
+<details><summary>Show answer</summary>
+
+**(a)** -- counts start {1:1, 2:2, 3:2, 4:1}. First run [1,2,3] leaves {2:1,3:1,4:1}; second run [2,3,4] empties the map, so return true.
+
+</details>
+
+**Q2 (analyze).** On `hand = [1, 2, 3, 4]`, `groupSize = 2`, the answer is true. What goes wrong if zero-count entries are left in the map instead of being removed?
+- a) `firstKey()` would keep returning an already-used card, eventually hitting a count of 0 and wrongly returning false
+- b) Nothing -- the algorithm still works
+- c) It throws a null-pointer error immediately
+
+<details><summary>Show answer</summary>
+
+**(a)** -- after consuming [1,2], if those keys stay at 0, `firstKey()` returns 1 again; `counts.get(1)` is 0, triggering a false "false". The remove-when-zero rule keeps "smallest key" meaning "smallest key with a remaining card".
+
+</details>
+
+**Q3 (transfer).** Suppose each group only needs to be 3-or-more consecutive cards, of any length (not a fixed size). Does "consume the smallest card's run greedily" still decide everything? What extra information is needed?
+
+<details><summary>Show answer</summary>
+
+No -- with variable lengths you cannot fix the run. The smallest card must still start a run, but you must also decide whether to EXTEND an existing run ending at `card-1` or start a new one, typically tracked with a second map of open runs (this is LC 659).
+
+</details>
 
 ## Common mistakes
 

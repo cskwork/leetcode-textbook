@@ -4,6 +4,11 @@
 **Pattern:** Trees
 **LeetCode:** https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/
 
+## Concepts used
+
+- **Binary search tree (BST)** -- a binary tree where, for every node, all values in its left subtree are smaller and all values in its right subtree are larger. [glossary](../../../docs/10-glossary.md#binary-search-tree-bst)
+- **Tree** -- a hierarchy of nodes with one root at the top and no cycles. [glossary](../../../docs/10-glossary.md#tree)
+
 ## Problem
 
 Given a binary *search* tree `root` and two nodes `p` and `q`, return their *lowest common
@@ -24,12 +29,65 @@ Examples:
 
 ## Intuition
 
-This is a BST problem, not an ordinary-tree problem -- the trigger is "lowest common ancestor" +
-"BST". The ordering property (`left < node < right`) makes the LCA trivial to spot: walk down from
-the root, and the instant `p` and `q` stop being on the *same* side of the current node, that node
-is the split point -- which is exactly the LCA. If both are smaller, go left; if both are larger,
-go right; otherwise we have found the fork. No recursion state, no backtracking: a single
-descending walk.
+Imagine a company where every manager's left-hand team has lower employee IDs and right-hand
+team has higher IDs. To find the lowest-ranking manager who oversees two specific employees
+`p` and `q`, you walk down from the CEO: if both IDs are smaller than the current manager's,
+go left; if both are bigger, go right; the moment they lie on opposite sides -- or you step
+onto one of them -- that manager is the answer. This works because the input is a
+[binary search tree](../../../docs/10-glossary.md#binary-search-tree-bst) (BST): at every
+[node](../../../docs/10-glossary.md#tree), all values in its left subtree are smaller and all
+values in its right subtree are larger, so one comparison tells you which side any value lives
+on.
+
+Trace `root = [6,2,8,0,4,7,9,null,null,3,5]`, `p = 2`, `q = 8`:
+
+```
+        6
+       / \
+      2   8
+```
+
+At the root `6`: `p = 2 < 6` (lives on the left), `q = 8 > 6` (lives on the right). They have
+split. Going left would abandon `q`; going right would abandon `p`. So `6` is the deepest node
+that is still an ancestor of both -- the **lowest common ancestor** (LCA). Answer: `6`. For
+`p = 2, q = 4`: both are `< 6`, so go left to node `2`. Now `p == 2`, and a node is its own
+ancestor, so `2` is the LCA.
+
+Here is the reasoning made explicit (no handwaving). The LCA is, by definition, the *deepest*
+node that is an ancestor of both `p` and `q`. As long as `p` and `q` sit on the *same* side of
+the current node, the current node is not the deepest common ancestor -- there is a deeper one
+(the next node down on that side) -- so we must keep descending. The instant they sit on
+*opposite* sides (or one of them equals the current node), descending further would mean
+abandoning one of them, so no deeper node can still be an ancestor of both. That fork is
+therefore the LCA. The whole thing is a single descending walk -- no recursion, no
+backtracking -- which is why it uses `O(1)` extra space, unlike the ordinary-tree version
+(LC 236) that has no ordering to exploit and must recurse through the whole tree.
+
+### Checkpoint A -- Spot the BST shortcut
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** The BST property says: all values in a node's left subtree are ____ the node, and all in the right subtree are ____.
+- a) equal to; greater than
+- b) smaller than; larger than
+- c) larger than; smaller than
+
+<details><summary>Show answer</summary>
+
+**(b)** -- left subtree values are smaller, right subtree values are larger. One comparison against the current node tells you which side any value lives on.
+
+</details>
+
+**Q2 (comprehend).** The loop descends while `p` and `q` are on the SAME side, and returns the node the moment they split. Why is that split point the LOWEST common ancestor, not just any ancestor?
+- a) Because it is the root of the whole tree
+- b) Because descending any further would mean walking toward only one of `p`/`q`, abandoning the other, so no deeper node can still be an ancestor of both
+- c) Because BST nodes are sorted by depth
+
+<details><summary>Show answer</summary>
+
+**(b)** -- once the targets lie on opposite sides, going either direction leaves one target behind. So this node is the deepest one that still has both targets underneath it.
+
+</details>
 
 ## Pseudocode
 
@@ -99,6 +157,38 @@ Output: node `6`.
 
 For `p = 2`, `q = 4`: at node `6`, both `2, 4 < 6`, go left to `2`; at node `2`, `p.val == node`,
 so the `else` fires and returns `2` (a node is its own ancestor).
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** BST `root = [10,5,15]` (root `10`, left `5`, right `15`), with `p = 5`, `q = 15`. What is the LCA?
+- a) node `5`
+- b) node `10`
+- c) node `15`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- at the root `10`, `5 < 10` and `15 > 10`: they split, so the loop returns `10` immediately without descending.
+
+</details>
+
+**Q2 (analyze).** This solution uses `O(1)` extra space. Why can the ordinary-binary-tree LCA (no ordering) NOT match that?
+- a) Because ordinary trees simply have more nodes
+- b) Because with no ordering, you cannot know which side a value lives on, so you must explore both subtrees via recursion, which needs an `O(h)` stack
+- c) Because Java forbids iteration on ordinary trees
+
+<details><summary>Show answer</summary>
+
+**(b)** -- without the BST property there is no single "go left or right" decision, so the search must fan out into both subtrees and combine results on the way back. That recursion costs `O(h)` space.
+
+</details>
+
+**Q3 (transfer).** How would you find the LCA of two nodes in an ordinary (non-search) binary tree, where no ordering is available? Outline the idea in words.
+
+<details><summary>Show answer</summary>
+
+Recurse from the root: a node is the LCA when `p` and `q` are found in different subtrees of it (one in each), or when the node itself is `p` or `q` and the other lies somewhere beneath it. Each call reports whether its subtree contains `p` and/or `q`; the node where both sides report "found" is the LCA. This is `O(n)` time and `O(h)` space.
+
+</details>
 
 ## Common mistakes
 

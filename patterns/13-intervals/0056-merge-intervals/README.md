@@ -49,6 +49,32 @@ later interval can be fully nested inside an earlier one (e.g. `[1,10]`
 then `[2,5]`), and a plain assignment would shrink the end and lose
 coverage.
 
+### Checkpoint A -- Sort then walk
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** Once the intervals are sorted by start, any interval that overlaps something can only overlap which one?
+- a) Any interval anywhere in the list
+- b) The interval at the tail of the result so far (its immediate predecessor)
+- c) Only the interval immediately after it
+
+<details><summary>Show answer</summary>
+
+**(b)** -- after start-sorting, every interval that starts before the current one has already been placed, and the only one whose end could still reach forward is the tail of the result. That is what makes the overlap test local.
+
+</details>
+
+**Q2 (comprehend).** On input `[[1,10],[2,5]]` the merge step uses `last.end = max(last.end, cur.end)`. What goes wrong if you wrote `last.end = cur.end` instead?
+- a) Nothing -- both give the same merged range
+- b) The merged interval shrinks to `[1,5]`, losing coverage of points 5..10
+- c) The merged interval grows to `[1,10]` correctly
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `[2,5]` is fully nested inside `[1,10]`, so assigning `cur.end` (5) overwrites the larger end (10). The `max` is mandatory precisely for this nested case.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -131,6 +157,38 @@ A nested case to show why `max` matters, `[[1,10],[2,5],[6,8]]`:
 
 Without `max`, step 2 would set end to 5 and lose coverage of `[6,8]`.
 With `max`, the result stays `[[1,10]]` — correct.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace `intervals = [[1,4],[2,3]]` (already start-sorted). What does `merge` return?
+- a) `[[1,3]]`
+- b) `[[1,4]]`
+- c) `[[1,4],[2,3]]`
+
+<details><summary>Show answer</summary>
+
+**(b)** -- step 1 appends `[1,4]`; step 2 reads `[2,3]`, `2 <= 4` overlaps, and `end = max(4, 3) = 4`, so the tail stays `[1,4]`. The nested `[2,3]` is swallowed without shrinking the end.
+
+</details>
+
+**Q2 (analyze).** On `[[1,4],[4,5]]` the overlap test is `cur.start <= last.end`. What would change if you used `<` instead?
+- a) Correct: returns `[[1,5]]`
+- b) Wrong: returns `[[1,4],[4,5]]`, because the touching pair would not merge
+- c) It throws an exception
+
+<details><summary>Show answer</summary>
+
+**(b)** -- this problem treats touching intervals as overlapping, so the test must be `<=`. A strict `<` leaves `[1,4]` and `[4,5]` separate, failing the problem's own example.
+
+</details>
+
+**Q3 (transfer).** Instead of returning the merged list, suppose you must return the total LENGTH of the number line covered by at least one interval (e.g. `[[1,3],[8,10]]` covers `2 + 2 = 4`). How would you adapt the merge pass?
+
+<details><summary>Show answer</summary>
+
+Build the merged list exactly as before, then sum `(end - start)` over each interval in it. The merged list is precisely the union of coverage, so its total length is the answer. No other change is needed.
+
+</details>
 
 ## Common mistakes
 

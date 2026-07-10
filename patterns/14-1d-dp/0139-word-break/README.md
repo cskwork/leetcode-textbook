@@ -60,6 +60,32 @@ For fast membership checks we put `wordDict` into a `HashSet`. The
 inner loop scans candidate word lengths (or the words directly); both
 work. We scan words for clarity.
 
+### Checkpoint A -- Reachability of a prefix
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** In Word Break, `dp[i]` being true means what?
+- a) The single character s[i] is in the dictionary
+- b) The prefix of the first i characters, s[0..i), can be segmented into dictionary words
+- c) There are i words in the dictionary
+
+<details><summary>Show answer</summary>
+
+**(b)** -- dp[i] records whether the first i characters are fully breakable; the answer is dp[n] for the whole string.
+
+</details>
+
+**Q2 (comprehend).** Why is `dp[0]` set to `true`?
+- a) Because the dictionary contains the empty string
+- b) Because the empty prefix is trivially segmentable (zero words), and every segmentation chains forward from it
+- c) Because all strings start empty
+
+<details><summary>Show answer</summary>
+
+**(b)** -- dp[0]=true is the seed; without it no dp[i] could ever become true, because every word match needs the prefix before it to already be reachable.
+
+</details>
+
 ## Pseudocode
 
 ```text
@@ -153,6 +179,39 @@ Final `dp = [T, F, F, F, T, F, F, F, T]`, so `dp[8] = true`. The
 segmentation is `"leet" | "code"`. Notice how `dp[4]` first becomes
 true (the prefix `"leet"` is segmentable), and then `dp[8]` builds on
 it by appending `"code"`.
+
+### Checkpoint B -- Trace the boolean table
+
+**Q1 (apply).** Trace `s = "abc"`, `wordDict = ["a", "bc"]`. What is `dp[3]`?
+- a) true ("a" + "bc")
+- b) false
+- c) true ("abc" as one word)
+
+<details><summary>Show answer</summary>
+
+**(a)** -- dp[1]=true ("a"), dp[2]=false, dp[3]=true because "bc" matches s[1..3) and dp[1] is true. So "a"+"bc" segments the string.
+
+</details>
+
+**Q2 (analyze).** A word matches the tail only if THREE things hold. Which is NOT one of them?
+- a) The word's length fits (len <= i)
+- b) The prefix before the word was segmentable (dp[i-len] is true)
+- c) The word appears earlier in wordDict than any other word
+- d) The tail characters equal the word (s[i-len..i) == w)
+
+<details><summary>Show answer</summary>
+
+**(c)** -- dictionary order is irrelevant; a word is usable regardless of where it sits. The real conditions are (a) length, (b) reachable prefix, and (d) character match.
+
+</details>
+
+**Q3 (transfer).** If you needed to return ALL possible segmentations (not just true/false), what would dp[i] store instead of a boolean, in one sentence?
+
+<details><summary>Show answer</summary>
+
+dp[i] would store a list of segmentations of s[0..i); each match appends the word to every segmentation recorded at dp[i-len], which can grow exponentially.
+
+</details>
 
 ## Common mistakes
 

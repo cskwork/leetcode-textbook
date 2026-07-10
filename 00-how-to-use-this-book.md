@@ -92,12 +92,48 @@ what makes patterns stick.
 
 ## When you get stuck
 
-1. Re-read the **pattern README** (the `patterns/XX-name/README.md` file). It lists the
+1. **Read the "Concepts used" callout at the top of the problem README first.** It lists every
+   prerequisite idea in plain English with a link to the glossary. If a concept is unfamiliar,
+   read its glossary entry before continuing.
+2. Re-read the **pattern README** (the `patterns/XX-name/README.md` file). It lists the
    pattern's trigger signals and a template.
-2. Read only the **Intuition** section of the problem, then try again.
-3. Only as a last resort, read pseudocode + Java together.
-4. After seeing the solution, **close the book and re-type the solution from memory.** Typing it
+3. Read only the **Intuition** section of the problem, then try again.
+4. Only as a last resort, read pseudocode + Java together.
+5. After seeing the solution, **close the book and re-type the solution from memory.** Typing it
    from understanding (not copying) is what cements it.
+
+## The checkpoint quizzes
+
+Every problem README now contains **two short "Checkpoint" quiz blocks** -- one right after the
+Intuition, one right after the Dry-Run. Each pattern's `README.md` ends with a longer
+**Pattern Mastery Quiz**. The questions ramp **simplest first** (recall a fact) and get harder
+(move toward applying and transferring the idea), so a beginner can always answer Q1 and is
+stretched by the last question.
+
+How to use them well:
+
+1. **Attempt every question before expanding the answer.** A wrong guess you correct yourself
+   sticks far better than a right answer you merely read.
+2. **Use the collapsible answers.** Each answer is wrapped in a `<details>` block -- click
+   "Show answer" only after you have committed to a guess. On GitHub these render as collapsible
+   sections; in a plain text editor the answer is visible underneath the tag.
+3. **Checkpoint A checks the concept** (do you understand *why* the pattern fits?).
+   **Checkpoint B checks execution** (can you trace a new input, spot an edge case, adapt the
+   idea?). If you trip on Checkpoint A, re-read Intuition. If you trip on Checkpoint B, re-do the
+   Dry-Run with your own numbers.
+4. **The Pattern Mastery Quiz is your gate to move on.** If you can answer its pattern-recognition
+   questions (given a brand-new problem statement, which tool fits?), you are ready for the next
+   pattern. If not, re-solve two problems in this section from memory first.
+
+Retrieval practice -- forcing yourself to recall before checking -- is the single most effective
+way to make a pattern stick. Treat the quizzes as part of the lesson, not a test.
+
+## Where to look up unfamiliar terms
+
+Every technical term used in this book is defined in plain English in
+[docs/10-glossary.md](./docs/10-glossary.md). When a problem README uses a term for the first
+time, it links to the glossary entry. Bookmark the glossary -- you will reference it often in
+the first few patterns.
 
 ## What this book does NOT cover
 

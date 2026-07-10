@@ -174,3 +174,56 @@ entirely.
 - **Forgetting the "impossible" sentinel.** Coin Change must return
   `-1` when no combination exists. Use `+infinity` (or `amount+1`) as
   the "unreachable" marker and convert it to `-1` at the return.
+
+## Pattern Mastery Quiz
+
+Five questions ramping from recall to design. Try each before revealing.
+
+**Q1 (recall).** What two ingredients must a problem have before dynamic programming applies?
+
+<details><summary>Show answer</summary>
+
+Overlapping subproblems (the same smaller question recurs) and optimal substructure (the big answer builds from the smaller answers). Without both, caching gains nothing.
+
+</details>
+
+**Q2 (pattern recognition).** New problem: "count the number of ways to decode a digit string where '1'->A ... '26'->Z." Which 1-D DP shape fits?
+- a) dp[i] = max(dp[i-1], dp[i-2] + nums[i-1])
+- b) dp[i] = dp[i-1] + dp[i-2], adding a term only when the one- or two-digit chunk is valid
+- c) dp[a] = min over choices of dp[a-c] + 1
+
+<details><summary>Show answer</summary>
+
+**(b)** -- it is a "how many ways" problem like Climbing Stairs, but each 1- or 2-step move is gated by whether the digit chunk decodes to 1..26; the recurrence is additive with validity guards.
+
+</details>
+
+**Q3 (pattern recognition).** New problem: "minimum number of jumps to reach the last index, given a max jump length at each position." Which shape fits?
+- a) A scan-over-choices minimisation like Coin Change, where dp[i] = min over reachable predecessors j of dp[j] + 1
+- b) A boolean reachability like Word Break
+- c) A two-variable rolling max like House Robber
+
+<details><summary>Show answer</summary>
+
+**(a)** -- it is a minimisation over a set of predecessors (every j within nums[j]'s reach), exactly the Coin Change flavour with "reachable j" playing the role of "coin c".
+
+</details>
+
+**Q4 (apply).** For House Robber on `nums = [2, 1, 1, 2]` (dp[0]=0, dp[1]=2), what is the answer dp[4]?
+- a) 3
+- b) 4
+- c) 2
+
+<details><summary>Show answer</summary>
+
+**(b)** -- i=2: max(2, 0+1)=2; i=3: max(2, 2+1)=3; i=4: max(3, 2+2)=4. Rob houses 0 and 3 (2+2).
+
+</details>
+
+**Q5 (design).** Sketch (in words, not code) how to solve "Paint Fence: n posts, k colors, no more than two adjacent posts the same color" using ideas from this pattern.
+
+<details><summary>Show answer</summary>
+
+Define dp[i] = number of ways to paint the first i posts. Split by whether post i matches post i-1: same-color ways depend on dp[i-2] (the run must then differ at i-2), different-color ways are (k-1) * dp[i-1]. Add the two; base cases dp[1]=k, dp[2]=k*k. Same additive, choice-splitting shape as Climbing Stairs.
+
+</details>

@@ -4,6 +4,11 @@
 **Pattern:** Stack
 **LeetCode:** https://leetcode.com/problems/min-stack/
 
+## Concepts used
+
+- **Stack** — a last-in-first-out (LIFO) container: the last item in is the first one out, like a stack of plates. [glossary](../../../docs/10-glossary.md#stack)
+- **Time complexity** — how the runtime grows as the input grows; O(1) means "constant time, regardless of input size." [glossary](../../../docs/10-glossary.md#time-complexity)
+
 ## Problem
 
 Design a stack that supports `push`, `pop`, `top`, and retrieving the **minimum**
@@ -28,14 +33,57 @@ Example (verbatim from LeetCode):
 
 ## Intuition
 
-A plain stack already gives O(1) `push`/`pop`/`top`, but `getMin` would need a
-linear scan. The trick is to remember the minimum **at every depth** so that
-after any pop we instantly know the new minimum without recomputing.
+Picture a stack of index cards, each with a number, where you can only see or
+take the top card. You also want to always know the **smallest** number in the
+pile without flipping through every card. The trick: every time you add a card,
+jot down "the smallest value seen so far" on a sticky note and place that note
+on a second pile. The second pile's top always reports the current minimum, and
+when you remove a card you remove its sticky note too — the two piles move in
+sync.
 
-We keep a second "min stack" that **mirrors** the main stack: every push to the
-main stack also pushes the minimum *as seen at that point* onto the min stack.
-Then `getMin` is just the top of the min stack, and a pop removes one entry from
-each — they stay perfectly in sync.
+Walk through the smallest case, pushing `-2`, then `0`, then `-3`:
+
+- push(-2): values `-2`, mins `-2`. Min = -2.
+- push(0): values `-2, 0`; `0` is not below -2, so the min is unchanged — mins
+  becomes `-2, -2`. Min still -2.
+- push(-3): values `-2, 0, -3`; -3 is a new low — mins becomes `-2, -2, -3`.
+  Min = -3.
+- pop(): remove `-3` from values **and** `-3` from mins. values `-2, 0`, mins
+  `-2, -2`. Min = -2 instantly — no scanning.
+
+The general rule: keep a second [stack](../../../docs/10-glossary.md#stack) that,
+at every depth, holds the minimum among all values at that depth or below. The
+two stacks always have the same size, so `getMin` just reads the top of the min
+stack. Why a second stack at all, instead of scanning for the min on demand?
+Scanning is [time complexity](../../../docs/10-glossary.md#time-complexity) O(n)
+per `getMin`, but the problem demands O(1); the second stack buys O(1) speed by
+spending O(n) extra memory.
+
+### Checkpoint A -- Two stacks
+
+Pause and answer before expanding. Wrong guesses teach more than fast right ones.
+
+**Q1 (recall).** In this design, what does the second stack (`mins`) hold at every depth?
+- a) The maximum value seen so far
+- b) The minimum among all live values at that depth or below
+- c) The number of elements
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `mins` mirrors `values` one-for-one, so its top is always the minimum of everything currently in the stack.
+
+</details>
+
+**Q2 (comprehend).** On `push`, when `val` is NOT a new minimum the code pushes a COPY of the current `mins` top instead of `val`. Why?
+- a) To keep the two stacks the same size, so a later `pop` drops one from each and `getMin` stays a single O(1) peek
+- b) To use less memory
+- c) To sort the values
+
+<details><summary>Show answer</summary>
+
+**(a)** -- carrying the running min forward makes every push add exactly one entry to `mins`, so `pop` can remove exactly the right partner and `getMin` never scans.
+
+</details>
 
 ## Pseudocode
 
@@ -120,6 +168,38 @@ getMin.
 
 After popping `-3` the top of `mins` drops back to `-2` automatically — no scan
 required.
+
+### Checkpoint B -- Trace and stress it
+
+**Q1 (apply).** Trace: `push(5)`, `push(2)`, `push(7)`, then `getMin`. What is returned?
+- a) 2
+- b) 5
+- c) 7
+
+<details><summary>Show answer</summary>
+
+**(a)** -- values = `[5, 2, 7]`, mins = `[5, 2, 2]` (7 is not below 2, so 2 is copied); `getMin` peeks the mins top = 2.
+
+</details>
+
+**Q2 (analyze).** What breaks if you forget to call `mins.pop()` inside `pop()`?
+- a) Nothing -- `mins` is independent of `values`
+- b) `mins` falls out of sync; after popping the minimum, `getMin` still returns that now-removed value
+- c) It throws immediately
+
+<details><summary>Show answer</summary>
+
+**(b)** -- the two stacks must move in lockstep; skipping `mins.pop` leaves a stale entry on top, so `getMin` reports a value no longer in the stack.
+
+</details>
+
+**Q3 (transfer).** How would you extend the design to also support `getMax()` in O(1)?
+
+<details><summary>Show answer</summary>
+
+Add a third parallel stack `maxs` with the same mirroring logic, but push `val` when it is a new MAXIMUM, otherwise copy the current top. All operations stay O(1); the cost is more memory.
+
+</details>
 
 ## Common mistakes
 

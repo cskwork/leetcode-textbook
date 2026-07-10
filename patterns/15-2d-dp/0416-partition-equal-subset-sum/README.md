@@ -39,6 +39,32 @@ include it (only possible when `t >= nums[i-1]`, and then we need
 `dp[i-1][t - nums[i-1]]`). The base `dp[i][0] = true` for every `i` because the
 empty subset always sums to 0. We return `dp[n][target]`.
 
+### Checkpoint A -- The 0/1 knapsack decision
+
+Pause and answer before expanding. A wrong first guess teaches more than a fast right one.
+
+**Q1 (recall).** What does `dp[i][t]` represent?
+- a) The number of subsets that sum to `t`
+- b) Whether the first `i` numbers can form a subset summing to exactly `t`
+- c) The maximum sum achievable using `i` numbers
+
+<details><summary>Show answer</summary>
+
+**(b)** -- `dp[i][t]` is a true/false answer: can the first `i` numbers reach sum `t`? (a) would be a counting problem (Coin Change II), and (c) is a different optimisation.
+
+</details>
+
+**Q2 (comprehend).** Why does the code return `false` immediately when the total sum is odd?
+- a) Because the table would be too large to allocate
+- b) Because two equal halves must each sum to `total/2`, which is not an integer when `total` is odd -- so an even split is impossible
+- c) Because odd totals always contain a duplicate value
+
+<details><summary>Show answer</summary>
+
+**(b)** -- equal partition needs integer halves; an odd `total` has no such split, so we can quit before building any table.
+
+</details>
+
 ## Pseudocode
 
     function canPartition(nums):
@@ -142,6 +168,38 @@ Two cells worth tracing in the final row (`item 5`, the second `5`):
 `dp[4][11] = true`, the answer. The witnessing subset is `{1, 5, 5}` (the `1`
 from row 1, plus the two `5`s): it sums to `11`, exactly half of `22`, and the
 complement `{11}` makes the other half.
+
+### Checkpoint B -- Trace a fresh input
+
+**Q1 (apply).** Trace `nums = [1, 2, 5]` (`total = 8`, `target = 4`). After processing the first two numbers (`1` and `2`), what is `dp[2][3]`?
+- a) true (`{1, 2}` sums to 3)
+- b) false
+- c) true only if `3` itself is in the array
+
+<details><summary>Show answer</summary>
+
+**(a)** -- using just `{1, 2}` we can hit sum 3 as `{1, 2}`, so the skip-OR-include recurrence sets `dp[2][3] = dp[1][3] OR dp[1][1] = false OR true = true`.
+
+</details>
+
+**Q2 (analyze).** In the 1-D space-optimised version, why must the inner `t` loop run DESCENDING?
+- a) So that large sums are computed before small ones
+- b) So that `dp[t - nums[i-1]]` still reflects the previous row when read, preventing any number from being spent twice
+- c) To make the loop run faster
+
+<details><summary>Show answer</summary>
+
+**(b)** -- descending reads still-unupdated slots from the previous row, so each number is included at most once; ascending would let the same number reuse itself within one pass.
+
+</details>
+
+**Q3 (transfer).** How would the approach change if each number could be used an UNLIMITED number of times (still asking "can we hit `target = total/2`")?
+
+<details><summary>Show answer</summary>
+
+It becomes unbounded knapsack: flip the inner loop to ASCENDING so `dp[t - nums[i-1]]` may include the current number again. The recurrence stays "skip OR include"; only the direction flips, exactly as in Coin Change II.
+
+</details>
 
 ## Common mistakes
 
