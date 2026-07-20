@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Move Zeroes - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 290px; }
+  #status { top: 16px; right: 16px; width: 330px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 38px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .legend {
+    display: flex; flex-direction: column; gap: 5px;
+    margin-top: 12px; padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .legend-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #cbd5e1; }
+  .legend-swatch {
+    width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .status-value.mono { font-size: 12px; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Move Zeroes</h1>
+  <div class="sub">two pointers &middot; fast/slow swap &middot; interactive 3D</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Input <span class="light">(comma-separated integers)</span></h3>
+  <div class="row"><label>nums</label><input id="nums-input" type="text" value="0,1,0,3,12" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="0,1,0,3,12">[0,1,0,3,12]</button>
+    <button class="preset" data-preset="0">[0]</button>
+    <button class="preset" data-preset="1">[1]</button>
+    <button class="preset" data-preset="1,0">[1,0]</button>
+    <button class="preset" data-preset="0,0,1">[0,0,1]</button>
+    <button class="preset" data-preset="1,2,3,0,0,4">[1,2,3,0,0,4]</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="legend">
+    <div class="legend-row"><span class="legend-swatch" style="background:#3b82f6"></span>array element (non-zero)</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:#475569"></span>zero value</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:#fbbf24"></span>pair being swapped (amber)</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:#34d399"></span>just swapped (green flash)</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:#60a5fa"></span>slow pointer (write slot)</div>
+    <div class="legend-row"><span class="legend-swatch" style="background:#ef4444"></span>fast pointer (scan)</div>
+  </div>
+  <div class="help">Comma-separated integers, 1-10 elements, each between -999 and 999. The algorithm swaps every non-zero into the next write slot, so zeroes naturally drift to the back.</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">scan</span></div>
+  <div class="status-line"><span class="status-label">fast (scan)</span><span class="status-value danger" id="s-fast">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">slow (write)</span><span class="status-value write" id="s-slow">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">nums[fast]</span><span class="status-value" id="s-val">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Is zero?</span><span class="status-value" id="s-iszero">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Action</span><span class="status-value" id="s-action">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Iteration</span><span class="status-value" id="s-iter">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Array</span><span class="status-value mono" id="s-array">&mdash;</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> to walk one phase, or <b>Play</b> to auto-advance.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const ROW_Y = 0;
+const SPACING_X = 2.4;
+const BOX_W = 1.6, BOX_H = 1.4, BOX_D = 0.8;
+const BOX_TOP_Y = BOX_H / 2;            // 0.7
+const POINTER_TIP_Y = BOX_TOP_Y + 0.15; // just above each box
+
+const COLORS = {
+  box:            0x3b82f6, boxEdge:     0x1e3a8a,  // array non-zero (blue)
+  zero:           0x475569, zeroEdge:    0x1e293b,  // zero value (slate)
+  swap:           0xfbbf24, swapEdge:    0xb45309,  // being swapped (amber)
+  swapped:        0x34d399, swappedEdge: 0x047857,  // just swapped (green)
+  slow:           0x60a5fa,                          // slow pointer (light blue)
+  fast:           0xef4444,                          // fast pointer (red)
+  packed:         0x34d399,                          // packed-prefix ground strip
+};
+
+const PHASE_NAMES = {
+  scan: 'SCAN', check: 'CHECK',
+  skip: 'SKIP', 'swap-pre': 'SWAP', 'swap-post': 'SWAP',
+  done: 'DONE',
+};
+
+/* ============ STATE ============ */
+const State = {
+  nums: [0, 1, 0, 3, 12],
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+};
+
+/* ============ ALGORITHM (swap variant, pre-computes frames) ============
+ * For each index `fast` from 0 to n-1:
+ *   - if nums[fast] != 0: swap nums[slow] and nums[fast]; slow++
+ *   - else: do nothing
+ * After the loop, all non-zeros are packed at the front, zeroes at the back.
+ * Each iteration emits 3 or 4 frames: scan, check, then either skip or
+ * (swap-pre, swap-post). A final 'done' frame caps the sequence.
+ */
+function runAlgorithm(input) {
+  const arr = input.slice();
+  const n = arr.length;
+  const frames = [];
+  let slow = 0;
+
+  for (let fast = 0; fast < n; fast++) {
+    // SCAN: fast arrives at this index, slow holds the write slot.
+    frames.push({
+      phase: 'scan', iter: fast, slow, fast,
+      array: arr.slice(),
+      message: `<b>fast</b> advances to index <b>${fast}</b>. Reading nums[${fast}] = <b>${arr[fast]}</b>. <b>slow</b> waits at the write slot, index ${slow}.`,
+    });
+
+    // CHECK: decide based on whether nums[fast] is zero.
+    const value = arr[fast];
+    const isZero = value === 0;
+    frames.push({
+      phase: 'check', iter: fast, slow, fast, value, isZero,
+      array: arr.slice(),
+      message: isZero
+        ? `nums[${fast}] = <b>0</b> -- a blank. Skip it; <b>slow</b> stays put at ${slow}. Zeros are passed over and naturally drift toward the back.`
+        : `nums[${fast}] = <b>${value}</b> -- a real value. Swap it into the write slot at <b>slow</b> = ${slow}, then advance <b>slow</b>.`,
+    });
+
+    if (isZero) {
+      // SKIP: zero found, nothing to do.
+      frames.push({
+        phase: 'skip', iter: fast, slow, fast,
+        array: arr.slice(),
+        message: `Zero -> no swap. Array unchanged. <b>fast</b> will move rightward next; <b>slow</b> still marks where the next non-zero should land.`,
+      });
+    } else {
+      // SWAP-PRE: about to swap the two slots.
+      const valSlow = arr[slow];
+      const valFast = arr[fast];
+      const selfSwap = (slow === fast);
+      frames.push({
+        phase: 'swap-pre', iter: fast, slow, fast,
+        array: arr.slice(), swapPair: [slow, fast],
+        message: selfSwap
+          ? `Swap nums[slow=${slow}] = <b>${valSlow}</b> with nums[fast=${fast}] = <b>${valFast}</b>. <b>slow and fast coincide</b> (no zeroes skipped yet), so this is a self-swap -- the value stays in place, but the algorithm still advances <b>slow</b>.`
+          : `Swap nums[slow=${slow}] = <b>${valSlow}</b> with nums[fast=${fast}] = <b>${valFast}</b>. The non-zero hops into the write slot; whatever was at <b>slow</b> moves out to <b>fast</b>.`,
+      });
+      // Perform the swap in-place.
+      const tmp = arr[slow]; arr[slow] = arr[fast]; arr[fast] = tmp;
+      // SWAP-POST: swap complete, slow advances.
+      frames.push({
+        phase: 'swap-post', iter: fast, slow: slow + 1, fast,
+        array: arr.slice(), swappedPair: [slow, fast],
+        message: `Swap complete. <b>slow</b> advances to <b>${slow + 1}</b>. The prefix nums[0..${slow}] now holds every non-zero seen so far, in original order. Array is now [${arr.join(', ')}].`,
+      });
+      slow++;
+    }
+  }
+
+  // DONE: summarize.
+  let doneMsg;
+  if (slow === 0) {
+    doneMsg = `Done. Every element was zero; nothing was moved. Final nums = [${arr.join(', ')}].`;
+  } else if (slow === n) {
+    doneMsg = `Done. No zeroes were found; the array is unchanged. Final nums = [${arr.join(', ')}].`;
+  } else {
+    doneMsg = `Done. Non-zeros are packed at indices [0..${slow - 1}] in their original order; zeroes fill indices [${slow}..${n - 1}]. Final nums = [${arr.join(', ')}].`;
+  }
+  frames.push({
+    phase: 'done', iter: n, slow, fast: n,
+    array: arr.slice(),
+    message: doneMsg,
+  });
+
+  return frames;
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 25, 75);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(5, 4, 16);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 5;
+controls.maxDistance = 60;
+controls.target.set(5, 0.5, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+dirLight.position.set(5, 10, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.4);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(80, 40, 0x1e293b, 0x1e293b);
+grid.position.y = -1.5;
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+
+/* ============ FACTORIES ============ */
+function makeDigitTexture(text, opts = {}) {
+  const { font = '700 110px -apple-system, BlinkMacSystemFont, sans-serif', color = '#ffffff' } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeDigitSprite(text, opts = {}) {
+  const { color = '#ffffff', size = 1.0, font } = opts;
+  const tex = makeDigitTexture(text, { color, font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.1 * size, 1.1 * size, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+function makeBox() {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(BOX_W, BOX_H, BOX_D);
+  const meshMat = new THREE.MeshStandardMaterial({
+    color: COLORS.box, metalness: 0.25, roughness: 0.55,
+  });
+  const mesh = new THREE.Mesh(geo, meshMat);
+  group.add(mesh);
+  const edgeMat = new THREE.LineBasicMaterial({
+    color: COLORS.boxEdge, transparent: true, opacity: 0.9,
+  });
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
+  group.add(edges);
+  group.userData.meshMat = meshMat;
+  group.userData.edgeMat = edgeMat;
+  group.userData.digitSprite = null;
+  group.userData.currentValue = null;
+  group.userData.isSwapping = false;
+  group.userData.isSwapped = false;
+  group.userData.isCurrent = false;
+  return group;
+}
+
+function setBoxValue(group, text) {
+  // Recreate the digit sprite only when the value actually changes.
+  if (group.userData.currentValue === text) return;
+  group.userData.currentValue = text;
+  if (group.userData.digitSprite) {
+    group.remove(group.userData.digitSprite);
+    const m = group.userData.digitSprite.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+  }
+  const sprite = makeDigitSprite(text, { color: '#ffffff', size: 1.0 });
+  sprite.position.set(0, 0, BOX_D / 2 + 0.02);
+  group.add(sprite);
+  group.userData.digitSprite = sprite;
+}
+
+function setBoxColor(group, colorInt, edgeInt) {
+  group.userData.meshMat.color.setHex(colorInt);
+  group.userData.edgeMat.color.setHex(edgeInt);
+}
+
+function makePointer(colorInt, label, labelY) {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({
+    color: colorInt, metalness: 0.35, roughness: 0.35,
+    emissive: colorInt, emissiveIntensity: 0.35,
+  });
+  // Vertical post
+  const postHeight = 1.7;
+  const post = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.07, 0.07, postHeight, 14),
+    mat
+  );
+  post.position.y = POINTER_TIP_Y + 0.45 + postHeight / 2;
+  group.add(post);
+  // Cone tip pointing down at the box
+  const tip = new THREE.Mesh(
+    new THREE.ConeGeometry(0.24, 0.5, 18),
+    mat
+  );
+  tip.position.y = POINTER_TIP_Y + 0.25;
+  tip.rotation.x = Math.PI; // rotate so apex points downward
+  group.add(tip);
+  // Label sprite above the post
+  const hex = '#' + colorInt.toString(16).padStart(6, '0');
+  const labelSprite = makeDigitSprite(label, {
+    color: hex, size: 0.75,
+    font: '700 80px -apple-system, BlinkMacSystemFont, sans-serif',
+  });
+  labelSprite.position.set(0, labelY, 0);
+  group.add(labelSprite);
+  return group;
+}
+
+function makeIndexLabel(text, x) {
+  const tex = makeDigitTexture(text, {
+    font: '600 70px ui-monospace, "SF Mono", Menlo, monospace',
+    color: '#64748b',
+  });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(0.9, 0.6, 1);
+  sprite.position.set(x, -1.25, 0);
+  sprite.renderOrder = 5;
+  return sprite;
+}
+
+function makeRowLabel(text, x, colorInt) {
+  const hex = '#' + colorInt.toString(16).padStart(6, '0');
+  const tex = makeDigitTexture(text, {
+    font: '700 90px -apple-system, BlinkMacSystemFont, sans-serif',
+    color: hex,
+  });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(2.0, 0.8, 1);
+  sprite.position.set(x, ROW_Y, 0);
+  sprite.renderOrder = 5;
+  return sprite;
+}
+
+function makePackedStrip() {
+  // Translucent plane laid flat under the boxes to mark the [0, slow) packed prefix.
+  const geo = new THREE.PlaneGeometry(1, 0.5);
+  const mat = new THREE.MeshBasicMaterial({
+    color: COLORS.packed, transparent: true, opacity: 0.22,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.y = -1.15;
+  mesh.renderOrder = 1;
+  mesh.visible = false;
+  return mesh;
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const nums = State.nums;
+  const n = nums.length;
+
+  // Row label to the left of index 0.
+  Scene.root.add(makeRowLabel('nums', -SPACING_X * 1.4, ROW_Y, 0xa5b4fc));
+
+  // Boxes + index labels.
+  Scene.boxes = [];
+  for (let i = 0; i < n; i++) {
+    const box = makeBox();
+    box.position.set(i * SPACING_X, ROW_Y, 0);
+    setBoxValue(box, String(nums[i]));
+    const isZero = nums[i] === 0;
+    setBoxColor(box, isZero ? COLORS.zero : COLORS.box, isZero ? COLORS.zeroEdge : COLORS.boxEdge);
+    Scene.root.add(box);
+    Scene.boxes.push(box);
+    Scene.root.add(makeIndexLabel(String(i), i * SPACING_X));
+  }
+
+  // Packed-prefix ground strip.
+  Scene.packedStrip = makePackedStrip();
+  Scene.root.add(Scene.packedStrip);
+
+  // Pointer markers. Offset in z so they never collide when slow === fast;
+  // fast pointer sits a bit further back and its label is staggered upward.
+  Scene.slowPtr = makePointer(COLORS.slow, 'slow', POINTER_TIP_Y + 3.05);
+  Scene.slowPtr.position.set(0, 0, 0.55);
+  Scene.slowPtr.visible = false;
+  Scene.root.add(Scene.slowPtr);
+
+  Scene.fastPtr = makePointer(COLORS.fast, 'fast', POINTER_TIP_Y + 3.55);
+  Scene.fastPtr.position.set(0, 0, -0.55);
+  Scene.fastPtr.visible = false;
+  Scene.root.add(Scene.fastPtr);
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const n = State.nums.length;
+  const minX = -SPACING_X * 1.7;
+  const maxX = (n - 1) * SPACING_X + SPACING_X * 1.7;
+  const midX = (minX + maxX) / 2;
+  const width = maxX - minX;
+  const dist = Math.max(12, width * 1.05);
+  controls.target.set(midX, 0.5, 0);
+  camera.position.set(midX, 3.8, dist);
+  controls.update();
+}
+
+/* ============ APPLY FRAME ============ */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+
+  const n = State.nums.length;
+  const arr = f.array;
+
+  // Reset each box: value text + default color (slate for zero, blue for non-zero),
+  // and clear all transient highlight flags.
+  for (let i = 0; i < n; i++) {
+    setBoxValue(Scene.boxes[i], String(arr[i]));
+    const isZero = arr[i] === 0;
+    setBoxColor(Scene.boxes[i], isZero ? COLORS.zero : COLORS.box, isZero ? COLORS.zeroEdge : COLORS.boxEdge);
+    Scene.boxes[i].userData.isSwapping = false;
+    Scene.boxes[i].userData.isSwapped = false;
+    Scene.boxes[i].userData.isCurrent = false;
+  }
+
+  // Apply phase-specific box highlights.
+  if (f.phase === 'scan' || f.phase === 'check') {
+    // Emphasize the box fast is currently reading.
+    if (f.fast >= 0 && f.fast < n) Scene.boxes[f.fast].userData.isCurrent = true;
+  } else if (f.phase === 'skip') {
+    if (f.fast >= 0 && f.fast < n) Scene.boxes[f.fast].userData.isCurrent = true;
+  } else if (f.phase === 'swap-pre' && f.swapPair) {
+    // The pair about to be swapped turns amber.
+    for (const i of f.swapPair) {
+      if (i >= 0 && i < n) {
+        setBoxColor(Scene.boxes[i], COLORS.swap, COLORS.swapEdge);
+        Scene.boxes[i].userData.isSwapping = true;
+      }
+    }
+  } else if (f.phase === 'swap-post' && f.swappedPair) {
+    // The pair that was just swapped flashes green.
+    for (const i of f.swappedPair) {
+      if (i >= 0 && i < n) {
+        setBoxColor(Scene.boxes[i], COLORS.swapped, COLORS.swappedEdge);
+        Scene.boxes[i].userData.isSwapped = true;
+      }
+    }
+  }
+
+  // Packed-prefix strip visibility and geometry.
+  if (f.slow > 0 && f.phase !== 'done') {
+    Scene.packedStrip.visible = true;
+    const widthUnits = f.slow * SPACING_X;
+    Scene.packedStrip.scale.x = widthUnits;
+    Scene.packedStrip.position.x = ((f.slow - 1) * SPACING_X) / 2;
+  } else if (f.phase === 'done' && f.slow > 0) {
+    // On done, show the entire packed prefix in its final form.
+    Scene.packedStrip.visible = true;
+    const widthUnits = f.slow * SPACING_X;
+    Scene.packedStrip.scale.x = widthUnits;
+    Scene.packedStrip.position.x = ((f.slow - 1) * SPACING_X) / 2;
+  } else {
+    Scene.packedStrip.visible = false;
+  }
+
+  // Pointer positions and visibility.
+  const slowInRange = (f.slow >= 0 && f.slow < n);
+  const fastInRange = (f.fast >= 0 && f.fast < n);
+  if (f.phase === 'done') {
+    // Keep them visible if in range to show where each ended up.
+    Scene.slowPtr.visible = slowInRange;
+    Scene.fastPtr.visible = false;
+  } else {
+    Scene.slowPtr.visible = slowInRange;
+    Scene.fastPtr.visible = fastInRange;
+  }
+  if (Scene.slowPtr.visible) Scene.slowPtr.position.x = f.slow * SPACING_X;
+  if (Scene.fastPtr.visible) Scene.fastPtr.position.x = f.fast * SPACING_X;
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+
+  $('s-phase').textContent = PHASE_NAMES[f.phase] || f.phase;
+  const n = State.nums.length;
+
+  if (f.phase === 'done') {
+    $('s-fast').textContent = 'end';
+    $('s-slow').textContent = f.slow >= n ? 'end' : String(f.slow);
+    $('s-val').textContent = '\u2014';
+    $('s-iszero').textContent = '\u2014';
+    $('s-action').textContent = 'returned';
+    $('s-action').className = 'status-value ok';
+    $('s-iter').textContent = `${n} of ${n}`;
+  } else {
+    $('s-fast').textContent = String(f.fast);
+    $('s-slow').textContent = String(f.slow);
+    $('s-val').textContent = String(f.array[f.fast]);
+    const isZero = f.array[f.fast] === 0;
+    $('s-iszero').textContent = isZero ? 'YES' : 'no';
+    $('s-iszero').className = 'status-value ' + (isZero ? 'danger' : 'ok');
+
+    let action, actionClass = 'status-value';
+    if (f.phase === 'scan')           { action = 'read'; }
+    else if (f.phase === 'check')     { action = isZero ? 'will skip' : 'will swap'; actionClass = 'status-value ' + (isZero ? 'danger' : 'write'); }
+    else if (f.phase === 'skip')      { action = 'skip (no-op)'; actionClass = 'status-value danger'; }
+    else if (f.phase === 'swap-pre')  { action = 'swap (pre)';   actionClass = 'status-value write'; }
+    else if (f.phase === 'swap-post') { action = 'swap (post)';  actionClass = 'status-value ok'; }
+    else                              { action = '\u2014'; }
+    $('s-action').textContent = action;
+    $('s-action').className = actionClass;
+    $('s-iter').textContent = `${f.iter + 1} of ${n}`;
+  }
+
+  $('s-array').textContent = `[${f.array.join(', ')}]`;
+  $('s-message').innerHTML = f.message;
+}
+
+/* ============ INPUT PARSING ============ */
+function parseNums(s) {
+  return s.split(',').map(t => t.trim()).filter(t => t !== '').map(t => parseInt(t, 10));
+}
+
+function validateNums(arr) {
+  if (arr.length < 1) return 'Need at least 1 element.';
+  if (arr.length > 10) return 'At most 10 elements.';
+  for (const v of arr) {
+    if (!Number.isInteger(v) || Number.isNaN(v)) return `Each element must be an integer (got "${v}").`;
+    if (v < -999 || v > 999) return `Each element must be between -999 and 999 (got ${v}).`;
+  }
+  return null;
+}
+
+function applyInputs(arr) {
+  State.nums = arr;
+  State.frames = runAlgorithm(arr);
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ============ TRANSPORT ============ */
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 950;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next();
+      schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick = () => { pause(); next(); };
+document.getElementById('play-btn').onclick = togglePlay;
+
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = () => {
+  const arr = parseNums(document.getElementById('nums-input').value);
+  const err = validateNums(arr);
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(arr);
+};
+
+document.getElementById('reset-btn').onclick = () => fitCamera();
+
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    const s = btn.dataset.preset;
+    document.getElementById('nums-input').value = s;
+    document.getElementById('err').textContent = '';
+    applyInputs(parseNums(s));
+  };
+});
+
+document.getElementById('nums-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('apply-btn').click();
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  // Per-box pulses: swapping pair breathes amber; swapped pair pops green;
+  // the box currently being read gets a subtle highlight.
+  if (Scene.boxes) {
+    for (const box of Scene.boxes) {
+      if (!box.visible) continue;
+      if (box.userData.isSwapped) {
+        box.scale.setScalar(1.0 + 0.07 * Math.sin(t * 6));
+      } else if (box.userData.isSwapping) {
+        box.scale.setScalar(1.0 + 0.045 * Math.sin(t * 8));
+      } else if (box.userData.isCurrent) {
+        box.scale.setScalar(1.0 + 0.025 * Math.sin(t * 5));
+      } else {
+        box.scale.setScalar(1);
+      }
+    }
+  }
+
+  // Gentle bob on the active pointers so the eye can tell they are alive.
+  if (Scene.slowPtr && Scene.slowPtr.visible) {
+    Scene.slowPtr.position.y = 0.08 * Math.sin(t * 2.2);
+  }
+  if (Scene.fastPtr && Scene.fastPtr.visible) {
+    Scene.fastPtr.position.y = 0.08 * Math.sin(t * 2.2 + 1.2);
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.nums);
+animate();
+</script>
+</body>
+</html>

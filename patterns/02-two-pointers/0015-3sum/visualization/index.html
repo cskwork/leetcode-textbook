@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3Sum - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 280px; }
+  #status { top: 16px; right: 16px; width: 320px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 38px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .status-value.purple { color: #c4b5fd; }
+  .status-value.blue { color: #93c5fd; }
+  .status-value.red { color: #fca5a5; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>3Sum</h1>
+  <div class="sub">sort &middot; anchor + two pointers &middot; unique triplets summing to 0</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Input <span class="light">(unsorted)</span></h3>
+  <div class="row"><label>nums</label><input id="nums-input" type="text" value="-1,0,1,2,-1,-4" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="-1,0,1,2,-1,-4">Main example</button>
+    <button class="preset" data-preset="0,1,1">No triplet</button>
+    <button class="preset" data-preset="0,0,0">Single triplet</button>
+    <button class="preset" data-preset="-2,0,1,1,2">Two triplets</button>
+    <button class="preset" data-preset="-2,-1,-1,-1,0,0,1,1,2">Many duplicates</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Comma-separated integers, 3 to 12 values, each between -100 and 100. The array is sorted automatically before the algorithm runs.</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">ready</span></div>
+  <div class="status-line"><span class="status-label">i (anchor)</span><span class="status-value purple" id="s-i">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">left</span><span class="status-value blue" id="s-left">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">right</span><span class="status-value red" id="s-right">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">target (&minus;nums[i])</span><span class="status-value" id="s-target">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">sum</span><span class="status-value write" id="s-sum">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">triplets found</span><span class="status-value ok" id="s-count">0</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> to anchor the first element, or <b>Play</b> to auto-advance.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const SPACING_X = 1.8;
+const BOX_W = 1.3, BOX_H = 1.2, BOX_D = 0.6;
+const MARKER_Y = 1.15;
+const EQUATION_Y = 4.4;
+const TARGET_Y = 3.45;
+const RESULTS_START_Y = -2.9;
+const RESULTS_DY = -1.25;
+const FOUND_BOX_W = 0.9, FOUND_BOX_H = 0.8, FOUND_BOX_D = 0.4;
+const FOUND_SPACING = 1.1;
+
+const COLORS = {
+  array:        0x3b82f6, arrayEdge:    0x1e3a8a,
+  found:        0x10b981, foundEdge:    0x065f46,
+  iMarker:      0xa78bfa,
+  leftMarker:   0x60a5fa,
+  rightMarker:  0xf87171,
+  highlight:    0xfbbf24,
+};
+
+/* ============ STATE ============ */
+const State = {
+  original: [-1, 0, 1, 2, -1, -4],
+  sorted: [],
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+};
+
+/* ============ ALGORITHM (pre-computes frames) ============ */
+function snapshot(arr) { return arr.map(t => t.slice()); }
+function fmtTriplet(t) { return '[' + t.join(', ') + ']'; }
+
+function runAlgorithm(nums) {
+  const sorted = [...nums].sort((a, b) => a - b);
+  const n = sorted.length;
+  const frames = [];
+  const result = [];
+
+  if (n < 3) {
+    frames.push({
+      phase: 'done', i: null, left: null, right: null,
+      result: [], target: null, sum: null,
+      message: 'Array has fewer than 3 elements; no triplet is possible.',
+    });
+    return { sorted, frames };
+  }
+
+  frames.push({
+    phase: 'ready', i: null, left: null, right: null,
+    target: null, sum: null, result: [],
+    message: 'Sorted array: <b>[' + sorted.join(', ') + ']</b>. The algorithm fixes one anchor at a time, then runs a two-pointer scan for the matching pair.',
+  });
+
+  for (let i = 0; i < n - 2; i++) {
+    if (i > 0 && sorted[i] === sorted[i - 1]) {
+      frames.push({
+        phase: 'outer-advance', kind: 'skip',
+        i, left: null, right: null,
+        anchor: sorted[i], prevAnchor: sorted[i - 1], target: -sorted[i],
+        result: snapshot(result),
+        message: '<b>i = ' + i + '</b>: nums[' + i + '] = <b>' + sorted[i] + '</b> equals nums[' + (i - 1) + '] = <b>' + sorted[i - 1] + '</b>. Skip this anchor so the same first value is not fixed twice.',
+      });
+      continue;
+    }
+
+    frames.push({
+      phase: 'outer-advance', kind: 'pick',
+      i, left: null, right: null,
+      anchor: sorted[i], target: -sorted[i],
+      result: snapshot(result),
+      message: '<b>i = ' + i + '</b>: anchor nums[' + i + '] = <b>' + sorted[i] + '</b>. The remaining pair must sum to -(' + sorted[i] + ') = <b>' + (-sorted[i]) + '</b>.',
+    });
+
+    let left = i + 1, right = n - 1;
+
+    frames.push({
+      phase: 'inner-init',
+      i, left, right,
+      anchor: sorted[i], target: -sorted[i],
+      vi: sorted[i], vleft: sorted[left], vright: sorted[right],
+      result: snapshot(result),
+      message: 'Initialize the two pointers: <b>left = i + 1 = ' + left + '</b> (value ' + sorted[left] + '), <b>right = n - 1 = ' + right + '</b> (value ' + sorted[right] + ').',
+    });
+
+    while (left < right) {
+      const sum = sorted[i] + sorted[left] + sorted[right];
+
+      frames.push({
+        phase: 'compute-sum',
+        i, left, right,
+        vi: sorted[i], vleft: sorted[left], vright: sorted[right],
+        sum, target: -sorted[i],
+        result: snapshot(result),
+        message: 'Sum = nums[' + i + '] + nums[' + left + '] + nums[' + right + '] = <b>' + sorted[i] + ' + ' + sorted[left] + ' + ' + sorted[right] + ' = ' + sum + '</b>.',
+      });
+
+      if (sum === 0) {
+        frames.push({
+          phase: 'compare-zero', action: 'record',
+          i, left, right,
+          vi: sorted[i], vleft: sorted[left], vright: sorted[right],
+          sum, target: -sorted[i],
+          result: snapshot(result),
+          message: '<b>' + sum + ' == 0</b> &mdash; record the triplet <b>[' + sorted[i] + ', ' + sorted[left] + ', ' + sorted[right] + ']</b>.',
+        });
+
+        result.push([sorted[i], sorted[left], sorted[right]]);
+        const newIdx = result.length - 1;
+
+        frames.push({
+          phase: 'record-triplet', newIdx,
+          i, left, right,
+          vi: sorted[i], vleft: sorted[left], vright: sorted[right],
+          sum, target: -sorted[i],
+          result: snapshot(result),
+          message: 'Triplet <b>[' + sorted[i] + ', ' + sorted[left] + ', ' + sorted[right] + ']</b> added to the results area. Total found so far: <b>' + result.length + '</b>.',
+        });
+
+        const beforeLeft = left, beforeRight = right;
+        while (left < right && sorted[left] === sorted[left + 1]) left++;
+        while (left < right && sorted[right] === sorted[right - 1]) right--;
+        left++;
+        right--;
+
+        frames.push({
+          phase: 'skip-duplicates',
+          i, left, right, beforeLeft, beforeRight,
+          anchor: sorted[i], target: -sorted[i],
+          result: snapshot(result),
+          message: 'Skip neighbours equal to the just-used pair values, then step past them: <b>left: ' + beforeLeft + ' &rarr; ' + left + '</b>, <b>right: ' + beforeRight + ' &rarr; ' + right + '</b>.',
+        });
+      } else if (sum < 0) {
+        frames.push({
+          phase: 'compare-zero', action: 'left++',
+          i, left, right,
+          vi: sorted[i], vleft: sorted[left], vright: sorted[right],
+          sum, target: -sorted[i],
+          result: snapshot(result),
+          message: '<b>' + sum + ' &lt; 0</b> &mdash; the sum is too small. Bump <b>left</b> forward to bring in a larger value.',
+        });
+        left++;
+      } else {
+        frames.push({
+          phase: 'compare-zero', action: 'right--',
+          i, left, right,
+          vi: sorted[i], vleft: sorted[left], vright: sorted[right],
+          sum, target: -sorted[i],
+          result: snapshot(result),
+          message: '<b>' + sum + ' &gt; 0</b> &mdash; the sum is too big. Pull <b>right</b> back to bring in a smaller value.',
+        });
+        right--;
+      }
+    }
+  }
+
+  const list = result.length === 0 ? 'none' : result.map(fmtTriplet).join(', ');
+  frames.push({
+    phase: 'done', i: null, left: null, right: null,
+    result: snapshot(result),
+    message: 'Done. Found <b>' + result.length + '</b> triplet' + (result.length === 1 ? '' : 's') + ': ' + list + '.',
+  });
+
+  return { sorted, frames };
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 30, 75);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 2, 18);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 80;
+controls.target.set(0, -1, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+dirLight.position.set(5, 10, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.5);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(100, 50, 0x1e293b, 0x1e293b);
+grid.position.y = -9;
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+
+/* ============ FACTORIES ============ */
+function makeDigitTexture(text, opts) {
+  opts = opts || {};
+  const font = opts.font || '700 110px -apple-system, BlinkMacSystemFont, sans-serif';
+  const color = opts.color || '#ffffff';
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeDigitSprite(text, opts) {
+  opts = opts || {};
+  const color = opts.color || '#ffffff';
+  const size = opts.size || 1.0;
+  const font = opts.font;
+  const tex = makeDigitTexture(text, { color: color, font: font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.1 * size, 1.1 * size, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+function makeWideTexture(text, color, fontStr) {
+  color = color || '#fde68a';
+  fontStr = fontStr || '700 95px ui-monospace, "SF Mono", Menlo, monospace';
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = fontStr;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 512, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  return tex;
+}
+
+function makeWideSprite(initialText, color, scaleX, scaleY) {
+  const tex = makeWideTexture(initialText, color);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(scaleX || 6, scaleY || 1.5, 1);
+  sprite.renderOrder = 8;
+  return sprite;
+}
+
+function setWideSpriteText(sprite, text, color) {
+  if (sprite.material.map) sprite.material.map.dispose();
+  const tex = makeWideTexture(text, color);
+  sprite.material.map = tex;
+  sprite.material.needsUpdate = true;
+}
+
+function makeSmallSprite(text, color) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = '700 70px ui-monospace, "SF Mono", Menlo, monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 256, 70);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(3.5, 0.9, 1);
+  sprite.renderOrder = 8;
+  return sprite;
+}
+
+function setSmallSpriteText(sprite, text, color) {
+  if (sprite.material.map) sprite.material.map.dispose();
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = '700 70px ui-monospace, "SF Mono", Menlo, monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 256, 70);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  sprite.material.map = tex;
+  sprite.material.needsUpdate = true;
+}
+
+function makeArrayBox(value) {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(BOX_W, BOX_H, BOX_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.array, metalness: 0.25, roughness: 0.55,
+    emissive: 0x1e3a8a, emissiveIntensity: 0.18,
+  });
+  group.add(new THREE.Mesh(geo, mat));
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.arrayEdge, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  const sprite = makeDigitSprite(String(value), { color: '#ffffff', size: 1.0 });
+  sprite.position.set(0, 0, BOX_D / 2 + 0.02);
+  group.add(sprite);
+  group.userData.isNew = false;
+  return group;
+}
+
+function makeFoundBox(value) {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(FOUND_BOX_W, FOUND_BOX_H, FOUND_BOX_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.found, metalness: 0.3, roughness: 0.45,
+    emissive: 0x065f46, emissiveIntensity: 0.3,
+  });
+  group.add(new THREE.Mesh(geo, mat));
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.foundEdge, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  const sprite = makeDigitSprite(String(value), { color: '#ffffff', size: 0.75 });
+  sprite.position.set(0, 0, FOUND_BOX_D / 2 + 0.02);
+  group.add(sprite);
+  return group;
+}
+
+function makeHighlightPlane(color) {
+  const geo = new THREE.PlaneGeometry(BOX_W + 0.5, BOX_H + 0.5);
+  const mat = new THREE.MeshBasicMaterial({
+    color: color, transparent: true, opacity: 0.3,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
+function makeMarker(label, colorInt) {
+  const group = new THREE.Group();
+  const stemMat = new THREE.MeshBasicMaterial({ color: colorInt });
+  const tagMat = new THREE.MeshStandardMaterial({
+    color: colorInt, emissive: colorInt, emissiveIntensity: 0.45,
+    metalness: 0.3, roughness: 0.4,
+  });
+
+  const pill = new THREE.Mesh(new THREE.SphereGeometry(0.3, 18, 14), tagMat);
+  pill.position.set(0, 0.7, 0);
+  group.add(pill);
+
+  const labelSprite = makeDigitSprite(label, {
+    color: '#ffffff', size: 0.55,
+    font: '700 150px -apple-system, sans-serif',
+  });
+  labelSprite.position.set(0, 0.7, 0.32);
+  group.add(labelSprite);
+
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.55, 8), stemMat);
+  stem.position.y = 0.2;
+  group.add(stem);
+
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.28, 14), stemMat);
+  tip.rotation.x = Math.PI;
+  tip.position.y = -0.2;
+  group.add(tip);
+
+  group.userData.pill = pill;
+  group.userData.label = label;
+  return group;
+}
+
+function makeTripletRow(triplet, idx) {
+  const group = new THREE.Group();
+  const startX = -FOUND_SPACING;
+  for (let k = 0; k < 3; k++) {
+    const box = makeFoundBox(triplet[k]);
+    box.position.set(startX + k * FOUND_SPACING, 0, 0);
+    group.add(box);
+  }
+  const idxLabel = makeDigitSprite('#' + (idx + 1), {
+    color: '#86efac', size: 0.6,
+    font: '700 90px -apple-system, sans-serif',
+  });
+  idxLabel.position.set(startX - FOUND_BOX_W - 0.2, 0, 0);
+  group.add(idxLabel);
+
+  const bracketMat = new THREE.LineBasicMaterial({ color: COLORS.foundEdge, transparent: true, opacity: 0.7 });
+  const bracketPts = [
+    new THREE.Vector3(startX - 0.6, -0.55, 0),
+    new THREE.Vector3(startX - 0.6,  0.55, 0),
+    new THREE.Vector3(startX + 2 * FOUND_SPACING + 0.6,  0.55, 0),
+    new THREE.Vector3(startX + 2 * FOUND_SPACING + 0.6, -0.55, 0),
+  ];
+  const bracketGeo = new THREE.BufferGeometry().setFromPoints(bracketPts);
+  group.add(new THREE.Line(bracketGeo, bracketMat));
+
+  group.userData.isNew = false;
+  return group;
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(function (o) {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(function (m) { m.dispose(); });
+      else o.material.dispose();
+    }
+  });
+}
+
+function boxX(index) {
+  if (index === null || index === undefined) return 0;
+  const n = State.sorted.length;
+  const offsetX = -(n - 1) * SPACING_X / 2;
+  return offsetX + index * SPACING_X;
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const sorted = State.sorted;
+  const n = sorted.length;
+  const offsetX = -(n - 1) * SPACING_X / 2;
+
+  Scene.arrayBoxes = [];
+  Scene.indexLabels = [];
+  for (let i = 0; i < n; i++) {
+    const box = makeArrayBox(sorted[i]);
+    box.position.set(offsetX + i * SPACING_X, 0, 0);
+    Scene.root.add(box);
+    Scene.arrayBoxes.push(box);
+
+    const idxLabel = makeDigitSprite(String(i), {
+      color: '#64748b', size: 0.45,
+      font: '700 80px ui-monospace, monospace',
+    });
+    idxLabel.position.set(offsetX + i * SPACING_X, -1.0, 0);
+    Scene.root.add(idxLabel);
+    Scene.indexLabels.push(idxLabel);
+  }
+
+  const numsLabel = makeDigitSprite('nums', {
+    color: '#94a3b8', size: 0.75,
+    font: '700 95px -apple-system, sans-serif',
+  });
+  numsLabel.position.set(offsetX - SPACING_X * 0.9, 0, 0);
+  Scene.root.add(numsLabel);
+
+  Scene.highlights = [];
+  for (let k = 0; k < 3; k++) {
+    const hl = makeHighlightPlane(COLORS.highlight);
+    hl.position.z = -0.3;
+    hl.visible = false;
+    Scene.root.add(hl);
+    Scene.highlights.push(hl);
+  }
+
+  Scene.iMarker = makeMarker('i', COLORS.iMarker);
+  Scene.iMarker.visible = false;
+  Scene.root.add(Scene.iMarker);
+
+  Scene.leftMarker = makeMarker('L', COLORS.leftMarker);
+  Scene.leftMarker.visible = false;
+  Scene.root.add(Scene.leftMarker);
+
+  Scene.rightMarker = makeMarker('R', COLORS.rightMarker);
+  Scene.rightMarker.visible = false;
+  Scene.root.add(Scene.rightMarker);
+
+  Scene.equation = makeWideSprite(' ', '#fde68a', 6.5, 1.6);
+  Scene.equation.position.set(0, EQUATION_Y, 0);
+  Scene.equation.visible = false;
+  Scene.root.add(Scene.equation);
+
+  Scene.target = makeSmallSprite(' ', '#c4b5fd');
+  Scene.target.position.set(0, TARGET_Y, 0);
+  Scene.target.visible = false;
+  Scene.root.add(Scene.target);
+
+  Scene.tripletRows = [];
+  const resultsHeader = makeDigitSprite('results', {
+    color: '#86efac', size: 0.7,
+    font: '700 90px -apple-system, sans-serif',
+  });
+  resultsHeader.position.set(offsetX - SPACING_X * 0.9, RESULTS_START_Y + 0.6, 0);
+  Scene.root.add(resultsHeader);
+  Scene.resultsHeader = resultsHeader;
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const n = State.sorted.length;
+  const width = (n + 2) * SPACING_X;
+  const dist = Math.max(15, width * 1.05);
+  controls.target.set(0, -1.2, 0);
+  camera.position.set(0, 2, dist);
+  controls.update();
+}
+
+/* ============ APPLY FRAME ============ */
+function fmtNum(n) { return String(n); }
+
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+
+  for (let k = 0; k < Scene.tripletRows.length; k++) {
+    Scene.tripletRows[k].userData.isNew = false;
+  }
+
+  const hasI = f.i !== null && f.i !== undefined;
+  const hasLeft = f.left !== null && f.left !== undefined;
+  const hasRight = f.right !== null && f.right !== undefined;
+
+  const markerPhasesI = ['outer-advance', 'inner-init', 'compute-sum', 'compare-zero', 'record-triplet', 'skip-duplicates'];
+  const markerPhasesLR = ['inner-init', 'compute-sum', 'compare-zero', 'record-triplet', 'skip-duplicates'];
+
+  const showI = hasI && markerPhasesI.indexOf(f.phase) !== -1;
+  const showLeft = hasLeft && markerPhasesLR.indexOf(f.phase) !== -1;
+  const showRight = hasRight && markerPhasesLR.indexOf(f.phase) !== -1;
+
+  if (showI) {
+    Scene.iMarker.visible = true;
+    Scene.iMarker.position.set(boxX(f.i), MARKER_Y, 0);
+  } else {
+    Scene.iMarker.visible = false;
+  }
+
+  if (showLeft) {
+    Scene.leftMarker.visible = true;
+    Scene.leftMarker.position.set(boxX(f.left), MARKER_Y, 0);
+  } else {
+    Scene.leftMarker.visible = false;
+  }
+
+  if (showRight) {
+    Scene.rightMarker.visible = true;
+    Scene.rightMarker.position.set(boxX(f.right), MARKER_Y, 0);
+  } else {
+    Scene.rightMarker.visible = false;
+  }
+
+  const hlIPhases = ['inner-init', 'compute-sum', 'compare-zero', 'record-triplet'];
+  const hlLRPhases = ['inner-init', 'compute-sum', 'compare-zero', 'record-triplet'];
+
+  const hlI = ((f.phase === 'outer-advance' && f.kind === 'pick') || hlIPhases.indexOf(f.phase) !== -1) && hasI;
+  const hlLR = hlLRPhases.indexOf(f.phase) !== -1 && hasLeft && hasRight;
+
+  if (hlI) {
+    Scene.highlights[0].position.set(boxX(f.i), 0, -0.3);
+    Scene.highlights[0].visible = true;
+  } else {
+    Scene.highlights[0].visible = false;
+  }
+  if (hlLR) {
+    Scene.highlights[1].position.set(boxX(f.left), 0, -0.3);
+    Scene.highlights[1].visible = true;
+    Scene.highlights[2].position.set(boxX(f.right), 0, -0.3);
+    Scene.highlights[2].visible = true;
+  } else {
+    Scene.highlights[1].visible = false;
+    Scene.highlights[2].visible = false;
+  }
+
+  if (f.phase === 'compute-sum' || f.phase === 'compare-zero' || f.phase === 'record-triplet') {
+    const eq = fmtNum(f.vi) + ' + ' + fmtNum(f.vleft) + ' + ' + fmtNum(f.vright) + ' = ' + fmtNum(f.sum);
+    setWideSpriteText(Scene.equation, eq, '#fde68a');
+    Scene.equation.visible = true;
+  } else if (f.phase === 'skip-duplicates') {
+    setWideSpriteText(Scene.equation, 'dedup: step past equal neighbours', '#86efac');
+    Scene.equation.visible = true;
+  } else if (f.phase === 'inner-init') {
+    setWideSpriteText(Scene.equation, 'inner two-pointer scan begins', '#a5b4fc');
+    Scene.equation.visible = true;
+  } else {
+    Scene.equation.visible = false;
+  }
+
+  if (hasI && f.target !== null && f.target !== undefined && f.phase !== 'ready') {
+    setSmallSpriteText(Scene.target, 'target = -nums[i] = ' + fmtNum(f.target), '#c4b5fd');
+    Scene.target.visible = true;
+  } else {
+    Scene.target.visible = false;
+  }
+
+  const currentCount = f.result ? f.result.length : 0;
+  while (Scene.tripletRows.length < currentCount) {
+    const newIdx = Scene.tripletRows.length;
+    const row = makeTripletRow(f.result[newIdx], newIdx);
+    row.position.set(0, RESULTS_START_Y + newIdx * RESULTS_DY, 0);
+    row.visible = false;
+    Scene.root.add(row);
+    Scene.tripletRows.push(row);
+  }
+  for (let k = 0; k < Scene.tripletRows.length; k++) {
+    Scene.tripletRows[k].visible = (k < currentCount);
+  }
+  if (f.phase === 'record-triplet' && f.newIdx !== undefined && Scene.tripletRows[f.newIdx]) {
+    Scene.tripletRows[f.newIdx].userData.isNew = true;
+  }
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function updateStatusPanel(f) {
+  const $ = function (id) { return document.getElementById(id); };
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+
+  const phaseNames = {
+    ready: 'READY',
+    'outer-advance': 'OUTER',
+    'inner-init': 'INIT',
+    'compute-sum': 'SUM',
+    'compare-zero': 'COMPARE',
+    'record-triplet': 'RECORD',
+    'skip-duplicates': 'DEDUP',
+    done: 'DONE',
+  };
+  let phaseTxt = phaseNames[f.phase] || f.phase;
+  if (f.phase === 'outer-advance') phaseTxt += f.kind === 'skip' ? ' \u00b7 SKIP' : ' \u00b7 PICK';
+  if (f.phase === 'compare-zero' && f.action) phaseTxt += ' \u00b7 ' + f.action;
+  $('s-phase').textContent = phaseTxt;
+
+  const dash = '\u2014';
+
+  if (f.i !== null && f.i !== undefined) {
+    $('s-i').textContent = f.i + '  (val ' + State.sorted[f.i] + ')';
+    $('s-i').className = 'status-value purple';
+  } else {
+    $('s-i').textContent = dash;
+    $('s-i').className = 'status-value';
+  }
+
+  if (f.left !== null && f.left !== undefined) {
+    $('s-left').textContent = f.left + '  (val ' + State.sorted[f.left] + ')';
+    $('s-left').className = 'status-value blue';
+  } else {
+    $('s-left').textContent = dash;
+    $('s-left').className = 'status-value';
+  }
+
+  if (f.right !== null && f.right !== undefined) {
+    $('s-right').textContent = f.right + '  (val ' + State.sorted[f.right] + ')';
+    $('s-right').className = 'status-value red';
+  } else {
+    $('s-right').textContent = dash;
+    $('s-right').className = 'status-value';
+  }
+
+  $('s-target').textContent = (f.target !== null && f.target !== undefined) ? fmtNum(f.target) : dash;
+  $('s-sum').textContent = (f.sum !== null && f.sum !== undefined) ? fmtNum(f.sum) : dash;
+  $('s-count').textContent = f.result ? f.result.length : 0;
+
+  $('s-message').innerHTML = f.message;
+}
+
+/* ============ INPUT PARSING ============ */
+function parseNums(s) {
+  const parts = s.split(',').map(function (t) { return t.trim(); }).filter(function (t) { return t !== ''; });
+  const nums = [];
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    if (!/^-?\d+$/.test(p)) return null;
+    nums.push(parseInt(p, 10));
+  }
+  return nums;
+}
+
+function validateNums(arr) {
+  if (!arr) return 'Could not parse numbers. Use the form -1,0,1,2,-1,-4.';
+  if (arr.length < 3) return 'Need at least 3 numbers.';
+  if (arr.length > 12) return 'At most 12 numbers for a clear visualization.';
+  for (let i = 0; i < arr.length; i++) {
+    const v = arr[i];
+    if (!Number.isInteger(v) || Math.abs(v) > 100) return 'Each value must be an integer in [-100, 100] (got "' + v + '").';
+  }
+  return null;
+}
+
+function applyInputs(nums) {
+  State.original = nums.slice();
+  const out = runAlgorithm(nums);
+  State.sorted = out.sorted;
+  State.frames = out.frames;
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ============ TRANSPORT ============ */
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 1100;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(function () {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next();
+      schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { if (State.playing) pause(); else play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick = function () { pause(); prev(); };
+document.getElementById('next-btn').onclick = function () { pause(); next(); };
+document.getElementById('play-btn').onclick = togglePlay;
+
+document.getElementById('speed').oninput = function (e) {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = function () {
+  const raw = document.getElementById('nums-input').value;
+  const nums = parseNums(raw);
+  let err;
+  if (!nums) err = 'Could not parse numbers. Use the form -1,0,1,2,-1,-4.';
+  else err = validateNums(nums);
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(nums);
+};
+
+document.getElementById('reset-btn').onclick = function () { fitCamera(); };
+
+document.querySelectorAll('button.preset').forEach(function (btn) {
+  btn.onclick = function () {
+    const v = btn.dataset.preset;
+    document.getElementById('nums-input').value = v;
+    document.getElementById('err').textContent = '';
+    applyInputs(parseNums(v));
+  };
+});
+
+window.addEventListener('keydown', function (e) {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', function () {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  if (Scene.iMarker && Scene.iMarker.visible) {
+    const s = 1.0 + 0.06 * Math.sin(t * 3.0);
+    Scene.iMarker.userData.pill.scale.setScalar(s);
+    Scene.iMarker.position.y = MARKER_Y + 0.04 * Math.sin(t * 2.4);
+  }
+  if (Scene.leftMarker && Scene.leftMarker.visible) {
+    const s = 1.0 + 0.06 * Math.sin(t * 3.0 + 1.0);
+    Scene.leftMarker.userData.pill.scale.setScalar(s);
+    Scene.leftMarker.position.y = MARKER_Y + 0.04 * Math.sin(t * 2.4 + 1.0);
+  }
+  if (Scene.rightMarker && Scene.rightMarker.visible) {
+    const s = 1.0 + 0.06 * Math.sin(t * 3.0 + 2.0);
+    Scene.rightMarker.userData.pill.scale.setScalar(s);
+    Scene.rightMarker.position.y = MARKER_Y + 0.04 * Math.sin(t * 2.4 + 2.0);
+  }
+
+  if (Scene.highlights) {
+    const pulse = 0.30 + 0.10 * Math.sin(t * 3.5);
+    for (let k = 0; k < Scene.highlights.length; k++) {
+      if (Scene.highlights[k].visible) Scene.highlights[k].material.opacity = pulse;
+    }
+  }
+
+  if (Scene.tripletRows) {
+    for (let k = 0; k < Scene.tripletRows.length; k++) {
+      const row = Scene.tripletRows[k];
+      if (!row.visible) continue;
+      if (row.userData.isNew) {
+        const s = 1.0 + 0.12 * Math.sin(t * 6.0);
+        row.scale.setScalar(s);
+      } else {
+        row.scale.setScalar(1);
+      }
+    }
+  }
+
+  if (Scene.equation && Scene.equation.visible) {
+    Scene.equation.position.y = EQUATION_Y + 0.05 * Math.sin(t * 1.8);
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.original);
+animate();
+</script>
+</body>
+</html>
