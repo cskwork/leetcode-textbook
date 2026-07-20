@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0143 Reorder List - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 16px 18px;
+    font-size: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 280px; }
+  #status { top: 16px; right: 16px; width: 340px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 24px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .stage-banner {
+    margin-bottom: 12px; padding: 8px 12px; border-radius: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; text-align: center;
+  }
+  .stage-start     { background: rgba(148,163,184,0.15); color: #cbd5e1; border: 1px solid rgba(148,163,184,0.3); }
+  .stage-find-mid  { background: rgba(96,165,250,0.15); color: #93c5fd; border: 1px solid rgba(96,165,250,0.35); }
+  .stage-reverse   { background: rgba(251,191,36,0.15); color: #fcd34d; border: 1px solid rgba(251,191,36,0.35); }
+  .stage-interleave{ background: rgba(52,211,153,0.15); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.35); }
+  .stage-done      { background: rgba(168,85,247,0.15); color: #c4b5fd; border: 1px solid rgba(168,85,247,0.35); }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Reorder List</h1>
+  <div class="sub">find middle &middot; reverse back half &middot; interleave</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Input <span class="light">(list values)</span></h3>
+  <div class="row"><label>vals</label><input id="vals-input" type="text" value="1,2,3,4,5" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="1,2,3,4,5">[1,2,3,4,5] (odd)</button>
+    <button class="preset" data-preset="1,2,3,4">[1,2,3,4] (even)</button>
+    <button class="preset" data-preset="1,2,3,4,5,6">[1..6] (even)</button>
+    <button class="preset" data-preset="1,2">[1,2]</button>
+    <button class="preset" data-preset="1">[1] (degenerate)</button>
+    <button class="preset" data-preset="1,2,3,4,5,6,7">[1..7] (long odd)</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Comma-separated values, 1-9 nodes. The list reorders in place to L0, Ln, L1, Ln-1, ...</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="stage-banner stage-start" id="s-stage">START</div>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">init</span></div>
+  <div class="status-line"><span class="status-label">Markers</span><span class="status-value" id="s-markers">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">List (logical)</span><span class="status-value" id="s-list">&mdash;</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> to walk one phase, or <b>Play</b> to auto-advance.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous (Left)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next (Right)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ===== CONSTANTS ===== */
+const SPACING_X = 2.6;
+const NODE_W = 1.4, NODE_H = 1.2, NODE_D = 0.6;
+const ROW_Y = 0;
+const COLORS = {
+  body:        0x475569,
+  bodyEdge:    0x1e293b,
+  front:       0x60a5fa,  // blue (front-half highlight after split)
+  back:        0x34d399,  // green (back-half highlight after split)
+  result:      0xfbbf24,  // amber (final woven chain)
+  fwd:         0x60a5fa,  // forward arrows
+  back2:       0xfbbf24,  // reversed/weaved arrows
+  nullBox:     0x1f2937,
+  markers: {
+    slow:   0xa855f7,  // purple
+    fast:   0xec4899,  // pink
+    prev:   0xfb923c,  // orange
+    curr:   0xfacc15,  // yellow
+    next:   0x22d3ee,  // cyan
+    first:  0x60a5fa,  // blue
+    second: 0x34d399,  // green
+  },
+};
+const MARKER_LABEL = {
+  slow: 'slow', fast: 'fast', prev: 'prev', curr: 'curr', next: 'next',
+  first: 'first', second: 'second',
+};
+
+/* ===== STATE ===== */
+const State = {
+  values: [1, 2, 3, 4, 5],
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+};
+
+/* ===== ALGORITHM (precompute frames across all 3 stages) ===== */
+function readList(next, head, values) {
+  const out = [];
+  let cur = head, guard = 0;
+  while (cur !== null && guard++ < 50) {
+    out.push(values[cur]);
+    cur = next[cur];
+  }
+  return out.length ? out.join(' -> ') : '(empty)';
+}
+
+function runAlgorithm(values) {
+  const n = values.length;
+  const frames = [];
+  let next = Array.from({ length: n }, (_, i) => (i + 1 < n ? i + 1 : null));
+
+  function snap(stage, phase, markers, message) {
+    frames.push({
+      stage, phase,
+      markers: Object.fromEntries(Object.entries(markers).filter(([_, v]) => v !== undefined)),
+      next: next.slice(),
+      listStr: readList(next, 0, values),
+      message,
+    });
+  }
+
+  snap('start', 'init', {}, `Input list: <b>${values.join(' -> ')}</b>. Goal: reorder to <b>L0, Ln, L1, Ln-1, ...</b>`);
+
+  if (n <= 1) {
+    snap('done', 'done', {}, `Length ${n}: nothing to reorder. Done.`);
+    return frames;
+  }
+
+  /* ---- STAGE 1: find middle (slow=1, fast=2; condition fast.next && fast.next.next) ---- */
+  let slow = 0, fast = 0;
+  snap('find-middle', 'init', { slow, fast },
+    `<b>Stage 1: Find middle.</b> slow at index 0, fast at index 0.`);
+  while (next[fast] !== null && next[next[fast]] !== null) {
+    snap('find-middle', 'check', { slow, fast },
+      `fast.next (index ${next[fast]}) and fast.next.next (index ${next[next[fast]]}) both exist. Advance both pointers.`);
+    slow = next[slow];
+    fast = next[next[fast]];
+    snap('find-middle', 'move', { slow, fast },
+      `slow += 1 -> index ${slow}; fast += 2 -> index ${fast}.`);
+  }
+  snap('find-middle', 'middle-found', { slow, fast },
+    `Middle found: slow on index <b>${slow}</b> (value ${values[slow]}). Back half starts at slow.next (index ${next[slow] === null ? 'null' : next[slow]}).`);
+  const midIdx = slow;
+  const backStart = next[slow];
+
+  /* ---- STAGE 2: detach + reverse back half ---- */
+  next[slow] = null;
+  snap('reverse', 'detach', { slow, backStart },
+    `<b>Stage 2: Reverse back half.</b> slow.next set to <b>null</b>. Front half: indices 0..${midIdx}. Back half: indices ${backStart}..${n - 1}.`);
+
+  let prev = null, curr = backStart;
+  snap('reverse', 'init', { prev: null, curr },
+    `Begin reverse: prev = <b>null</b>, curr = index <b>${curr}</b> (value ${values[curr]}).`);
+  while (curr !== null) {
+    const nxt = next[curr];
+    snap('reverse', 'save-next', { prev, curr, next: nxt },
+      `Save next: tmp = curr.next (index ${nxt === null ? 'null' : nxt}).`);
+    next[curr] = prev;
+    snap('reverse', 'flip', { prev, curr },
+      `Flip: curr.next now points to prev (index ${prev === null ? 'null' : prev}).`);
+    prev = curr;
+    curr = nxt;
+    if (curr !== null) {
+      snap('reverse', 'advance', { prev, curr },
+        `Advance: prev = index ${prev}, curr = index ${curr}.`);
+    }
+  }
+  const reversedHead = prev;
+  snap('reverse', 'done', { reversedHead },
+    `Reverse complete. Head of reversed back half is index <b>${reversedHead}</b> (value ${values[reversedHead]}). Back half reads: ${readList(next, reversedHead, values)}.`);
+
+  /* ---- STAGE 3: interleave ---- */
+  let first = 0, second = reversedHead;
+  snap('interleave', 'init', { first, second },
+    `<b>Stage 3: Interleave.</b> first = index 0 (front head), second = index ${second} (reversed back head).`);
+  while (second !== null) {
+    const tmpFirst = next[first];
+    const tmpSecond = next[second];
+    snap('interleave', 'save-tmps', { first, second, tmpFirst, tmpSecond },
+      `Save both successors: tmpFirst = first.next (index ${tmpFirst === null ? 'null' : tmpFirst}), tmpSecond = second.next (index ${tmpSecond === null ? 'null' : tmpSecond}).`);
+    next[first] = second;
+    snap('interleave', 'splice-A', { first, second },
+      `Splice A: first.next (index ${first}) -> second (index ${second}).`);
+    next[second] = tmpFirst;
+    snap('interleave', 'splice-B', { first, second },
+      `Splice B: second.next (index ${second}) -> tmpFirst (index ${tmpFirst === null ? 'null' : tmpFirst}).`);
+    first = tmpFirst;
+    second = tmpSecond;
+    snap('interleave', 'advance', { first, second },
+      `Advance: first = ${first === null ? 'null (will not be used again)' : 'index ' + first}, second = ${second === null ? 'null -> loop ends' : 'index ' + second}.`);
+  }
+
+  snap('done', 'done', {},
+    `<b>Done.</b> Reordered list reads: <b>${readList(next, 0, values)}</b>.`);
+  return frames;
+}
+
+/* ===== THREE.JS SETUP ===== */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 20, 55);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(6, 4, 18);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 60;
+controls.target.set(4, 0, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(5, 10, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.4);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(80, 40, 0x1e293b, 0x1e293b);
+grid.position.y = -3.5;
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+
+/* ===== FACTORIES ===== */
+function makeDigitTexture(text, opts = {}) {
+  const { font = '700 110px -apple-system, BlinkMacSystemFont, sans-serif', color = '#ffffff' } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeDigitSprite(text, opts = {}) {
+  const { color = '#ffffff', size = 1.0, font } = opts;
+  const tex = makeDigitTexture(text, { color, font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.1 * size, 1.1 * size, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+function makeNode() {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(NODE_W, NODE_H, NODE_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.body, metalness: 0.25, roughness: 0.55,
+  });
+  group.add(new THREE.Mesh(geo, mat));
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.bodyEdge, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  group.userData.body = group.children[0];
+  group.userData.digitSprite = null;
+  group.userData.indexSprite = null;
+  return group;
+}
+
+function setNodeValue(group, text, color = '#ffffff') {
+  if (group.userData.digitSprite) {
+    group.remove(group.userData.digitSprite);
+    const m = group.userData.digitSprite.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+  }
+  const sprite = makeDigitSprite(text, { color });
+  sprite.position.set(0, 0, NODE_D / 2 + 0.02);
+  group.add(sprite);
+  group.userData.digitSprite = sprite;
+}
+
+function setNodeIndexLabel(group, text, color = '#94a3b8') {
+  if (group.userData.indexSprite) {
+    group.remove(group.userData.indexSprite);
+    const m = group.userData.indexSprite.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+  }
+  const sprite = makeDigitSprite(text, { color, size: 0.45, font: '600 60px -apple-system, sans-serif' });
+  sprite.position.set(0, -NODE_H / 2 - 0.45, 0);
+  group.add(sprite);
+  group.userData.indexSprite = sprite;
+}
+
+function setNodeColor(group, colorInt, edgeInt) {
+  group.userData.body.material.color.setHex(colorInt);
+  group.userData.body.material.needsUpdate = true;
+  if (edgeInt !== undefined) {
+    group.userData.edges && group.userData.edges.material.color.setHex(edgeInt);
+  }
+}
+
+/* Arrow: a curved tube from node i to node next[i], arcs over the row */
+function makeArrowMesh(fromIdx, toIdx, colorInt) {
+  const startX = fromIdx * SPACING_X + NODE_W / 2 + 0.1;
+  const endX = toIdx * SPACING_X - NODE_W / 2 - 0.1;
+  const dist = Math.abs(toIdx - fromIdx);
+  const arcH = 0.6 + dist * 0.45;
+  const midX = (startX + endX) / 2;
+  const start = new THREE.Vector3(startX, ROW_Y, 0.3);
+  const end = new THREE.Vector3(endX, ROW_Y, 0.3);
+  const mid = new THREE.Vector3(midX, ROW_Y + arcH, 0.3);
+  const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+  const geom = new THREE.TubeGeometry(curve, 32, 0.06, 8, false);
+  const mat = new THREE.MeshBasicMaterial({ color: colorInt });
+  const mesh = new THREE.Mesh(geom, mat);
+
+  // Tip cone at the end
+  const tipGeom = new THREE.ConeGeometry(0.18, 0.35, 14);
+  const tip = new THREE.Mesh(tipGeom, mat);
+  // orient along tangent at end
+  const tangent = curve.getTangent(1).normalize();
+  tip.position.copy(end);
+  // align cone (default +Y) to tangent
+  const up = new THREE.Vector3(0, 1, 0);
+  const quat = new THREE.Quaternion().setFromUnitVectors(up, tangent);
+  tip.quaternion.copy(quat);
+  const group = new THREE.Group();
+  group.add(mesh);
+  group.add(tip);
+  group.userData.shaftGeom = geom;
+  group.userData.tipGeom = tipGeom;
+  group.userData.material = mat;
+  return group;
+}
+
+function disposeArrow(arrowGroup) {
+  if (!arrowGroup) return;
+  arrowGroup.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      o.material.dispose();
+    }
+  });
+}
+
+function makeNullBox() {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(NODE_W * 0.7, NODE_H * 0.7, NODE_D * 0.7);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.nullBox, transparent: true, opacity: 0.45,
+  });
+  group.add(new THREE.Mesh(geo, mat));
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: 0x0f172a, transparent: true, opacity: 0.8 })
+  );
+  group.add(edges);
+  const label = makeDigitSprite('null', { color: '#94a3b8', size: 0.55, font: '600 60px -apple-system, sans-serif' });
+  label.position.set(0, 0, NODE_D / 2 + 0.02);
+  group.add(label);
+  return group;
+}
+
+function makeMarker(colorInt, label) {
+  const group = new THREE.Group();
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.28, 24, 16),
+    new THREE.MeshStandardMaterial({
+      color: colorInt, emissive: colorInt, emissiveIntensity: 0.45,
+      metalness: 0.3, roughness: 0.35,
+    })
+  );
+  group.add(sphere);
+  const stick = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.04, 0.04, 0.9, 8),
+    new THREE.MeshBasicMaterial({ color: colorInt })
+  );
+  stick.position.y = -0.55;
+  group.add(stick);
+  const lbl = makeDigitSprite(label, { color: '#ffffff', size: 0.55, font: '700 60px -apple-system, sans-serif' });
+  lbl.position.set(0, 0.55, 0);
+  group.add(lbl);
+  group.visible = false;
+  group.userData.sphere = sphere;
+  group.userData.colorInt = colorInt;
+  return group;
+}
+
+function makeHighlight() {
+  const geo = new THREE.PlaneGeometry(NODE_W + 0.4, NODE_H + 0.4);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0xa5b4fc, transparent: true, opacity: 0.22,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
+/* ===== SCENE ===== */
+const Scene = { root: null };
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const values = State.values;
+  const n = values.length;
+
+  // Nodes
+  Scene.nodes = [];
+  for (let i = 0; i < n; i++) {
+    const node = makeNode();
+    node.position.set(i * SPACING_X, ROW_Y, 0);
+    setNodeValue(node, String(values[i]), '#ffffff');
+    setNodeIndexLabel(node, `[${i}]`, '#64748b');
+    Scene.root.add(node);
+    Scene.nodes.push(node);
+  }
+
+  // Null box at the right (end of list)
+  Scene.nullBox = makeNullBox();
+  Scene.nullBox.position.set(n * SPACING_X, ROW_Y, 0);
+  Scene.nullBox.visible = false; // shown only in 'start' phase
+  Scene.root.add(Scene.nullBox);
+
+  // Arrow pool (one per node; recreated per frame in applyFrame via dispose+rebuild)
+  Scene.arrowGroups = new Array(n).fill(null);
+
+  // Markers (one of each kind; positioned/shown per frame)
+  Scene.markers = {};
+  for (const name of Object.keys(COLORS.markers)) {
+    const m = makeMarker(COLORS.markers[name], MARKER_LABEL[name]);
+    Scene.root.add(m);
+    Scene.markers[name] = m;
+  }
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const n = State.values.length;
+  const midX = ((n - 1) * SPACING_X) / 2;
+  const width = (n + 1) * SPACING_X;
+  const dist = Math.max(14, width * 0.85);
+  controls.target.set(midX, 0.5, 0);
+  camera.position.set(midX, 2.5, dist);
+  controls.update();
+}
+
+/* ===== APPLY FRAME ===== */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+
+  // Dispose and rebuild arrows from f.next
+  for (let i = 0; i < Scene.arrowGroups.length; i++) {
+    if (Scene.arrowGroups[i]) {
+      Scene.root.remove(Scene.arrowGroups[i]);
+      disposeArrow(Scene.arrowGroups[i]);
+      Scene.arrowGroups[i] = null;
+    }
+  }
+  for (let i = 0; i < State.values.length; i++) {
+    const j = f.next[i];
+    if (j !== null) {
+      const forward = j > i;
+      const colorInt = forward ? COLORS.fwd : COLORS.back2;
+      const arrow = makeArrowMesh(i, j, colorInt);
+      Scene.root.add(arrow);
+      Scene.arrowGroups[i] = arrow;
+    }
+  }
+
+  // Recolor nodes based on stage
+  const n = State.values.length;
+  for (let i = 0; i < n; i++) {
+    setNodeColor(Scene.nodes[i], COLORS.body, COLORS.bodyEdge);
+  }
+  // null box visibility (only in start phase)
+  Scene.nullBox.visible = (f.stage === 'start');
+
+  if (f.stage === 'find-middle') {
+    // all nodes neutral; highlight slow and fast via markers
+  } else if (f.stage === 'reverse' || f.stage === 'interleave' || f.stage === 'done') {
+    // Recolor: which nodes belong to front vs back half after split
+    // Determine the split: middle was slow's index in stage 1.
+    // Find midIdx by re-running stage 1 (cheap, n small) — or compute once at build time.
+    const midIdx = computeMidIdx(State.values);
+    for (let i = 0; i <= midIdx; i++) {
+      setNodeColor(Scene.nodes[i], COLORS.front, 0x1d4ed8);
+    }
+    for (let i = midIdx + 1; i < n; i++) {
+      setNodeColor(Scene.nodes[i], COLORS.back, 0x047857);
+    }
+  }
+
+  // Markers
+  const presentMarkers = Object.keys(f.markers);
+  for (const name of Object.keys(Scene.markers)) {
+    const m = Scene.markers[name];
+    if (presentMarkers.includes(name) && f.markers[name] !== null && f.markers[name] !== undefined) {
+      const idx = f.markers[name];
+      // Special: 'reversedHead' is not a node pointer, it's a value reference; skip rendering as marker
+      if (name === 'reversedHead') {
+        m.visible = false;
+        continue;
+      }
+      // 'backStart', 'tmpFirst', 'tmpSecond', 'next' are also index references but we DO want to show them if value is integer
+      if (typeof idx === 'number' && idx >= 0 && idx < n) {
+        m.visible = true;
+        m.position.set(idx * SPACING_X, ROW_Y + 1.5, 0.5);
+      } else {
+        m.visible = false;
+      }
+    } else {
+      m.visible = false;
+    }
+  }
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function computeMidIdx(values) {
+  // Replicate the stage-1 loop to find where slow stopped
+  const n = values.length;
+  if (n <= 1) return 0;
+  const next = Array.from({ length: n }, (_, i) => (i + 1 < n ? i + 1 : null));
+  let slow = 0, fast = 0;
+  while (next[fast] !== null && next[next[fast]] !== null) {
+    slow = next[slow];
+    fast = next[next[fast]];
+  }
+  return slow;
+}
+
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+
+  const stageNames = {
+    'start': 'START',
+    'find-middle': 'STAGE 1 / 3 - FIND MIDDLE',
+    'reverse': 'STAGE 2 / 3 - REVERSE BACK HALF',
+    'interleave': 'STAGE 3 / 3 - INTERLEAVE',
+    'done': 'DONE',
+  };
+  const stageBanner = $('s-stage');
+  stageBanner.textContent = stageNames[f.stage] || f.stage;
+  stageBanner.className = 'stage-banner stage-' + f.stage;
+
+  $('s-phase').textContent = f.phase;
+
+  // Markers summary
+  const markerStr = Object.entries(f.markers)
+    .filter(([_, v]) => v !== null && v !== undefined)
+    .map(([k, v]) => `${k}=${v}`)
+    .join(', ') || '\u2014';
+  $('s-markers').textContent = markerStr;
+
+  $('s-list').textContent = f.listStr;
+  $('s-message').innerHTML = f.message;
+}
+
+/* ===== INPUT PARSING ===== */
+function parseValues(s) {
+  return s.split(',').map(t => t.trim()).filter(t => t !== '').map(t => parseInt(t, 10));
+}
+function validateValues(arr) {
+  if (arr.length < 1) return 'Need at least 1 value.';
+  if (arr.length > 9) return 'Max 9 values (for a tidy scene).';
+  for (const v of arr) {
+    if (!Number.isInteger(v) || v < -99 || v > 99) return `Each value must be an integer in -99..99 (got "${v}").`;
+  }
+  return null;
+}
+function applyInputs(values) {
+  State.values = values;
+  State.frames = runAlgorithm(values);
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ===== TRANSPORT ===== */
+function next() { if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1); else pause(); }
+function prev() { if (State.frameIndex > 0) applyFrame(State.frameIndex - 1); }
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const ms = 1100 / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) { next(); schedulePlay(); }
+    else pause();
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ===== EVENTS ===== */
+document.getElementById('prev-btn').onclick = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick = () => { pause(); next(); };
+document.getElementById('play-btn').onclick = togglePlay;
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+document.getElementById('apply-btn').onclick = () => {
+  const v = parseValues(document.getElementById('vals-input').value);
+  const err = validateValues(v);
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(v);
+};
+document.getElementById('reset-btn').onclick = () => fitCamera();
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    document.getElementById('vals-input').value = btn.dataset.preset;
+    document.getElementById('err').textContent = '';
+    applyInputs(parseValues(btn.dataset.preset));
+  };
+});
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ===== ANIMATION LOOP ===== */
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+  // Pulse marker spheres
+  for (const name of Object.keys(Scene.markers || {})) {
+    const m = Scene.markers[name];
+    if (m && m.visible) {
+      const s = 1.0 + 0.08 * Math.sin(t * 4 + name.length);
+      m.userData.sphere.scale.setScalar(s);
+    }
+  }
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ===== INIT ===== */
+applyInputs(State.values);
+animate();
+</script>
+</body>
+</html>

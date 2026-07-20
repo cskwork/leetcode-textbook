@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reverse Linked List - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 280px; }
+  #status { top: 16px; right: 16px; width: 320px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 38px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Reverse Linked List</h1>
+  <div class="sub">in-place arrow flip &middot; three pointers &middot; interactive 3D</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Input list <span class="light">(head first)</span></h3>
+  <div class="row"><label>head</label><input id="list-input" type="text" value="1,2,3,4,5" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="1,2,3,4,5">1-&gt;2-&gt;3-&gt;4-&gt;5</button>
+    <button class="preset" data-preset="1">single node</button>
+    <button class="preset" data-preset="1,2">two nodes</button>
+    <button class="preset" data-preset="1,2,3,4,5,6,7">seven nodes</button>
+    <button class="preset" data-preset="3,1,4,1,5,9,2">mixed digits</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Comma-separated values, head first. 1-10 nodes, integers in [-99, 99]. The algorithm reverses every arrow in place using three pointers: prev, curr, next.</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">INITIALIZE</span></div>
+  <div class="status-line"><span class="status-label">Iteration</span><span class="status-value" id="s-iter">0</span></div>
+  <div class="status-line"><span class="status-label">prev</span><span class="status-value" id="s-prev">null</span></div>
+  <div class="status-line"><span class="status-label">curr</span><span class="status-value write" id="s-curr">node 1</span></div>
+  <div class="status-line"><span class="status-label">next (saved)</span><span class="status-value ok" id="s-next">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Arrows flipped</span><span class="status-value" id="s-flipped">0 / 5</span></div>
+  <div class="status-line"><span class="status-label">Loop continues?</span><span class="status-value ok" id="s-loop">YES</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> to walk one phase, or <b>Play</b> to auto-advance.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const ROW_Y = 0;
+const SPACING_X = 2.6;
+const NODE_W = 1.4, NODE_H = 1.2, NODE_D = 0.6;
+const MARKER_Y = ROW_Y + 1.95;
+
+// Color language:
+//   blue  = prev-side / before-reversal / forward arrows
+//   amber = currently-operating node (curr)
+//   green = after-reversal / next pointer / reversed arrows
+const COLORS = {
+  node:           0x60a5fa, nodeEdge:    0x1d4ed8,
+  nullNode:       0x1f2937, nullEdge:    0x0f172a,
+  forward:        0x60a5fa,   // blue  - original next pointers
+  reversed:       0x34d399,   // green - flipped next pointers
+  prev:           0x60a5fa,   // blue
+  curr:           0xfbbf24,   // amber
+  next:           0x34d399,   // green
+  returnHalo:     0xfde68a,
+  highlightCurr:  0xfbbf24,
+  highlightNext:  0x34d399,
+};
+
+/* ============ STATE ============ */
+const State = {
+  values: [1, 2, 3, 4, 5],
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+};
+
+/* ============ ALGORITHM (pre-computes frames) ============
+ *
+ * Per iteration we capture four sub-phase frames matching the
+ * four statements inside the while loop:
+ *    1. save-next     : next = curr.next
+ *    2. reverse       : curr.next = prev      (arrow flip happens here)
+ *    3. advance-prev  : prev = curr
+ *    4. advance-curr  : curr = next
+ *
+ * Each frame stores pure pointer state (indices, not live nodes),
+ * so applyFrame can render a deterministic snapshot.
+ */
+function runAlgorithm(values) {
+  const frames = [];
+  const n = values.length;
+
+  // init frame
+  frames.push({
+    phase: 'init', iter: 0,
+    prevIdx: null, currIdx: 0, nextIdx: null,
+    reversedCount: 0, totalNodes: n,
+    message: `Initialize: <b>prev = null</b>, <b>curr = head</b> (node with value ${values[0]}). All ${n} arrows still point forward.`,
+  });
+
+  let prevIdx = null;
+  let currIdx = 0;
+  let reversedCount = 0;
+
+  for (let i = 0; i < n; i++) {
+    const currVal = values[currIdx];
+    const nextIdx = (currIdx + 1 < n) ? currIdx + 1 : null;
+    const nextDesc = nextIdx !== null ? `node with value ${values[nextIdx]}` : `null`;
+
+    // Step 1: save the curr.next pointer before we overwrite it.
+    frames.push({
+      phase: 'save-next', iter: i,
+      prevIdx, currIdx, nextIdx,
+      reversedCount, totalNodes: n,
+      message: `<b>Step 1 - Save.</b> Remember <b>next = curr.next</b> = ${nextDesc}. We must save it before overwriting, or the rest of the list is lost.`,
+    });
+
+    // Step 2: flip the arrow.
+    reversedCount += 1;
+    const flipTarget = prevIdx === null ? `null` : `node with value ${values[prevIdx]}`;
+    frames.push({
+      phase: 'reverse', iter: i,
+      prevIdx, currIdx, nextIdx,
+      reversedCount, totalNodes: n,
+      message: `<b>Step 2 - Flip.</b> <b>curr.next = prev</b>. Node ${currVal}'s arrow now points back at ${flipTarget}.`,
+    });
+
+    // Step 3: advance prev.
+    prevIdx = currIdx;
+    frames.push({
+      phase: 'advance-prev', iter: i,
+      prevIdx, currIdx, nextIdx,
+      reversedCount, totalNodes: n,
+      message: `<b>Step 3 - Advance prev.</b> <b>prev = curr</b> - prev moves onto node ${currVal}.`,
+    });
+
+    // Step 4: advance curr via the saved next.
+    currIdx = nextIdx;
+    const cont = currIdx !== null;
+    frames.push({
+      phase: 'advance-curr', iter: i,
+      prevIdx, currIdx, nextIdx: null, // next has been consumed
+      reversedCount, totalNodes: n,
+      message: cont
+        ? `<b>Step 4 - Advance curr.</b> <b>curr = next</b> = node with value ${values[currIdx]}. Loop continues because curr is not null.`
+        : `<b>Step 4 - Advance curr.</b> <b>curr = next</b> = null. Loop test will fail on the next check.`,
+    });
+  }
+
+  // done frame
+  const reversed = [...values].reverse();
+  frames.push({
+    phase: 'done', iter: n,
+    prevIdx, currIdx: null, nextIdx: null,
+    reversedCount, totalNodes: n, returnIdx: prevIdx,
+    message: `Loop exits because <b>curr = null</b>. Return <b>prev</b> = node with value <b>${values[prevIdx]}</b>, the new head. Reversed list: <b>${reversed.join(' -&gt; ')} -&gt; null</b>.`,
+  });
+
+  return frames;
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 25, 65);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(6, 2, 20);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 70;
+controls.target.set(4, 0, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(5, 10, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.45);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(80, 40, 0x1e293b, 0x1e293b);
+grid.position.y = -3.2;
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+
+/* ============ FACTORIES ============ */
+function makeDigitTexture(text, opts = {}) {
+  const { font = '700 110px -apple-system, BlinkMacSystemFont, sans-serif', color = '#ffffff' } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeDigitSprite(text, opts = {}) {
+  const { color = '#ffffff', size = 1.0, font } = opts;
+  const tex = makeDigitTexture(text, { color, font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.1 * size, 1.1 * size, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+function makeNode(color, edgeColor, opts = {}) {
+  const { opacity = 1 } = opts;
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(NODE_W, NODE_H, NODE_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color, metalness: 0.25, roughness: 0.55,
+    transparent: opacity < 1, opacity,
+  });
+  group.add(new THREE.Mesh(geo, mat));
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: edgeColor, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  group.userData.digitSprite = null;
+  group.userData.isReversing = false;
+  return group;
+}
+
+function setNodeDigit(group, text, color, spriteScale = 1.0) {
+  if (group.userData.digitSprite) {
+    group.remove(group.userData.digitSprite);
+    const m = group.userData.digitSprite.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+  }
+  const sprite = makeDigitSprite(text, { color, size: spriteScale });
+  sprite.position.set(0, 0, NODE_D / 2 + 0.02);
+  group.add(sprite);
+  group.userData.digitSprite = sprite;
+}
+
+// Arrow whose tail sits at the group origin and whose tip points in +X.
+function makeArrow(color) {
+  const group = new THREE.Group();
+  const shaftLen = SPACING_X - NODE_W - 0.3;
+  const mat = new THREE.MeshBasicMaterial({ color });
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, shaftLen, 10), mat);
+  shaft.rotation.z = -Math.PI / 2;
+  shaft.position.x = shaftLen / 2;
+  group.add(shaft);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.35, 14), mat);
+  tip.rotation.z = -Math.PI / 2;
+  tip.position.x = shaftLen + 0.18;
+  group.add(tip);
+  group.userData.isActive = false;
+  return group;
+}
+
+function makeForwardArrow() {
+  return makeArrow(COLORS.forward);
+}
+
+// Same geometry, rotated 180 about Y so the tip points in -X.
+function makeReverseArrow() {
+  const g = makeArrow(COLORS.reversed);
+  g.rotation.y = Math.PI;
+  return g;
+}
+
+function makeHighlightPlane(color) {
+  const geo = new THREE.PlaneGeometry(NODE_W + 0.5, NODE_H + 0.5);
+  const mat = new THREE.MeshBasicMaterial({
+    color, transparent: true, opacity: 0.22,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
+// "Lollipop" pointer marker: ball on top, stick pointing down at the node, label above.
+function makePointerMarker(colorInt, label) {
+  const group = new THREE.Group();
+  const stickHeight = 1.85;
+  const stick = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.04, 0.04, stickHeight, 8),
+    new THREE.MeshBasicMaterial({ color: colorInt, transparent: true, opacity: 0.8 })
+  );
+  stick.position.y = -stickHeight / 2;
+  group.add(stick);
+
+  const ball = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32, 24, 18),
+    new THREE.MeshStandardMaterial({
+      color: colorInt, emissive: colorInt, emissiveIntensity: 0.45,
+      metalness: 0.3, roughness: 0.35,
+    })
+  );
+  group.add(ball);
+
+  const labelSprite = makeDigitSprite(label, {
+    color: '#ffffff', size: 0.7,
+    font: '700 80px -apple-system, BlinkMacSystemFont, sans-serif',
+  });
+  labelSprite.position.set(0, 0.7, 0);
+  group.add(labelSprite);
+
+  group.userData.ball = ball;
+  group.userData.label = label;
+  group.visible = false;
+  return group;
+}
+
+// Golden halo + label that appears over the new head in the done frame.
+function makeReturnIndicator() {
+  const group = new THREE.Group();
+  const halo = new THREE.Mesh(
+    new THREE.TorusGeometry(0.95, 0.08, 12, 36),
+    new THREE.MeshStandardMaterial({
+      color: COLORS.returnHalo, emissive: COLORS.returnHalo,
+      emissiveIntensity: 0.7, metalness: 0.5, roughness: 0.3,
+    })
+  );
+  halo.rotation.x = Math.PI / 2;
+  group.add(halo);
+  const label = makeDigitSprite('return prev', {
+    color: '#fde68a', size: 0.85,
+    font: '700 70px -apple-system, sans-serif',
+  });
+  label.position.set(0, 1.4, 0);
+  group.add(label);
+  group.userData.halo = halo;
+  group.visible = false;
+  return group;
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const v = State.values;
+  const n = v.length;
+
+  // leftNull marker (target of the first reversal, where prev starts)
+  Scene.leftNull = makeNode(COLORS.nullNode, COLORS.nullEdge, { opacity: 0.55 });
+  Scene.leftNull.position.set(-SPACING_X, ROW_Y, 0);
+  setNodeDigit(Scene.leftNull, 'null', '#94a3b8', 0.65);
+  Scene.root.add(Scene.leftNull);
+
+  // rightNull marker (initial target of the last node's forward arrow)
+  Scene.rightNull = makeNode(COLORS.nullNode, COLORS.nullEdge, { opacity: 0.55 });
+  Scene.rightNull.position.set(n * SPACING_X, ROW_Y, 0);
+  setNodeDigit(Scene.rightNull, 'null', '#94a3b8', 0.65);
+  Scene.root.add(Scene.rightNull);
+
+  // nodes + forward/reverse arrows
+  Scene.nodes = [];
+  Scene.forwardArrows = [];
+  Scene.reverseArrows = [];
+  for (let i = 0; i < n; i++) {
+    const node = makeNode(COLORS.node, COLORS.nodeEdge);
+    node.position.set(i * SPACING_X, ROW_Y, 0);
+    setNodeDigit(node, String(v[i]), '#ffffff');
+    Scene.root.add(node);
+    Scene.nodes.push(node);
+
+    // forward arrow: tail at right edge of node i, tip at left edge of node i+1 (or rightNull)
+    const fArrow = makeForwardArrow();
+    fArrow.position.set(i * SPACING_X + NODE_W / 2 + 0.15, ROW_Y, 0.4);
+    Scene.root.add(fArrow);
+    Scene.forwardArrows.push(fArrow);
+
+    // reverse arrow: tail at left edge of node i, tip at right edge of node i-1 (or leftNull)
+    const rArrow = makeReverseArrow();
+    rArrow.position.set(i * SPACING_X - NODE_W / 2 - 0.15, ROW_Y, 0.4);
+    rArrow.visible = false;
+    Scene.root.add(rArrow);
+    Scene.reverseArrows.push(rArrow);
+  }
+
+  // pointer markers (above the row)
+  Scene.prevMarker = makePointerMarker(COLORS.prev, 'prev');
+  Scene.currMarker = makePointerMarker(COLORS.curr, 'curr');
+  Scene.nextMarker = makePointerMarker(COLORS.next, 'next');
+  Scene.root.add(Scene.prevMarker, Scene.currMarker, Scene.nextMarker);
+
+  // highlight planes (behind the row)
+  Scene.currHL = makeHighlightPlane(COLORS.highlightCurr);
+  Scene.currHL.position.z = -0.3;
+  Scene.root.add(Scene.currHL);
+  Scene.nextHL = makeHighlightPlane(COLORS.highlightNext);
+  Scene.nextHL.position.z = -0.3;
+  Scene.root.add(Scene.nextHL);
+
+  // return indicator (shown only in done frame)
+  Scene.returnIndicator = makeReturnIndicator();
+  Scene.root.add(Scene.returnIndicator);
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const n = State.values.length;
+  const minX = -SPACING_X * 1.9;
+  const maxX = (n + 0.8) * SPACING_X;
+  const midX = (minX + maxX) / 2;
+  const width = maxX - minX;
+  const dist = Math.max(13, width * 0.85);
+  controls.target.set(midX, 0.4, 0);
+  camera.position.set(midX, 1.2, dist);
+  controls.update();
+}
+
+/* ============ APPLY FRAME ============ */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+  const n = State.values.length;
+
+  // reset per-node / per-arrow flags
+  for (const node of Scene.nodes) node.userData.isReversing = false;
+  for (const a of Scene.forwardArrows) a.userData.isActive = false;
+  for (const a of Scene.reverseArrows) a.userData.isActive = false;
+
+  // per-node arrow state: i < reversedCount -> reversed (green), else forward (blue)
+  for (let i = 0; i < n; i++) {
+    const reversed = i < f.reversedCount;
+    Scene.forwardArrows[i].visible = !reversed;
+    Scene.reverseArrows[i].visible = reversed;
+  }
+
+  // highlight the arrow being operated on; pulse the curr node during the flip
+  if (f.phase === 'save-next' && f.currIdx !== null && Scene.forwardArrows[f.currIdx]) {
+    Scene.forwardArrows[f.currIdx].userData.isActive = true;
+  }
+  if (f.phase === 'reverse' && f.currIdx !== null) {
+    if (Scene.nodes[f.currIdx]) Scene.nodes[f.currIdx].userData.isReversing = true;
+    if (Scene.reverseArrows[f.currIdx]) Scene.reverseArrows[f.currIdx].userData.isActive = true;
+  }
+
+  // prev marker (hidden in done phase - return indicator takes over)
+  if (f.phase === 'done') {
+    Scene.prevMarker.visible = false;
+  } else {
+    Scene.prevMarker.visible = true;
+    const px = f.prevIdx === null ? -SPACING_X : f.prevIdx * SPACING_X;
+    Scene.prevMarker.position.set(px, MARKER_Y, 0.15);
+  }
+
+  // curr marker (hidden when curr is null, i.e. in done phase)
+  if (f.phase === 'done' || f.currIdx === null) {
+    Scene.currMarker.visible = false;
+  } else {
+    Scene.currMarker.visible = true;
+    Scene.currMarker.position.set(f.currIdx * SPACING_X, MARKER_Y, -0.15);
+  }
+
+  // next marker (only during save-next, reverse, advance-prev)
+  const showNext = (f.phase === 'save-next' || f.phase === 'reverse' || f.phase === 'advance-prev');
+  if (showNext) {
+    Scene.nextMarker.visible = true;
+    const nx = f.nextIdx === null ? n * SPACING_X : f.nextIdx * SPACING_X;
+    Scene.nextMarker.position.set(nx, MARKER_Y, 0.35);
+  } else {
+    Scene.nextMarker.visible = false;
+  }
+
+  // highlight planes for curr / next
+  if (f.currIdx !== null && f.phase !== 'done') {
+    Scene.currHL.position.set(f.currIdx * SPACING_X, ROW_Y, -0.3);
+    Scene.currHL.visible = true;
+  } else {
+    Scene.currHL.visible = false;
+  }
+  if (showNext && f.nextIdx !== null) {
+    Scene.nextHL.position.set(f.nextIdx * SPACING_X, ROW_Y, -0.3);
+    Scene.nextHL.visible = true;
+  } else {
+    Scene.nextHL.visible = false;
+  }
+
+  // return indicator (done phase only)
+  if (f.phase === 'done') {
+    Scene.returnIndicator.visible = true;
+    const rx = f.returnIdx * SPACING_X;
+    Scene.returnIndicator.position.set(rx, ROW_Y + 0.4, 0);
+  } else {
+    Scene.returnIndicator.visible = false;
+  }
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+
+  const phaseNames = {
+    'init':         'INITIALIZE',
+    'save-next':    'SAVE next',
+    'reverse':      'FLIP curr.next',
+    'advance-prev': 'ADVANCE prev',
+    'advance-curr': 'ADVANCE curr',
+    'done':         'DONE',
+  };
+  $('s-phase').textContent = phaseNames[f.phase] || f.phase;
+  $('s-iter').textContent = f.iter;
+
+  const valStr = (idx) => idx === null ? 'null' : `node ${State.values[idx]}`;
+  $('s-prev').textContent = valStr(f.prevIdx);
+  $('s-prev').className = 'status-value';
+
+  if (f.currIdx === null) {
+    $('s-curr').textContent = 'null';
+    $('s-curr').className = 'status-value danger';
+  } else {
+    $('s-curr').textContent = valStr(f.currIdx);
+    $('s-curr').className = 'status-value write';
+  }
+
+  if (f.phase === 'save-next' || f.phase === 'reverse' || f.phase === 'advance-prev') {
+    $('s-next').textContent = valStr(f.nextIdx);
+    $('s-next').className = 'status-value ok';
+  } else {
+    $('s-next').textContent = '\u2014';
+    $('s-next').className = 'status-value';
+  }
+
+  $('s-flipped').textContent = `${f.reversedCount} / ${f.totalNodes}`;
+
+  // Loop-continuation prediction
+  if (f.phase === 'done') {
+    $('s-loop').textContent = 'returned';
+    $('s-loop').className = 'status-value ok';
+  } else if (f.phase === 'advance-curr') {
+    const willCont = f.currIdx !== null;
+    $('s-loop').textContent = willCont ? 'YES' : 'NO (last)';
+    $('s-loop').className = 'status-value ' + (willCont ? 'ok' : 'danger');
+  } else if (f.phase === 'init') {
+    $('s-loop').textContent = 'YES';
+    $('s-loop').className = 'status-value ok';
+  } else {
+    const onLast = f.currIdx === f.totalNodes - 1;
+    $('s-loop').textContent = onLast ? 'YES (last iter)' : 'YES';
+    $('s-loop').className = 'status-value ok';
+  }
+
+  $('s-message').innerHTML = f.message;
+}
+
+/* ============ INPUT PARSING ============ */
+function parseValues(s) {
+  return s.split(',').map(t => t.trim()).filter(t => t !== '').map(t => parseInt(t, 10));
+}
+function validateValues(arr, name) {
+  if (arr.length < 1) return `${name} must have at least 1 value.`;
+  if (arr.length > 10) return `${name} must have at most 10 values.`;
+  for (const v of arr) {
+    if (!Number.isInteger(v) || v < -99 || v > 99) return `${name}: each value must be an integer in [-99, 99] (got "${v}").`;
+  }
+  return null;
+}
+function applyInputs(values) {
+  State.values = values;
+  State.frames = runAlgorithm(values);
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ============ TRANSPORT ============ */
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 1100;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next();
+      schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick  = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick  = () => { pause(); next(); };
+document.getElementById('play-btn').onclick  = togglePlay;
+
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = () => {
+  const v = parseValues(document.getElementById('list-input').value);
+  const err = validateValues(v, 'list');
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(v);
+};
+
+document.getElementById('reset-btn').onclick = () => fitCamera();
+
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    const v = parseValues(btn.dataset.preset);
+    document.getElementById('list-input').value = btn.dataset.preset;
+    document.getElementById('err').textContent = '';
+    applyInputs(v);
+  };
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  // Pulse the curr node while its arrow is mid-flip.
+  if (Scene.nodes) {
+    for (const node of Scene.nodes) {
+      if (node.userData.isReversing && node.visible) {
+        node.scale.setScalar(1.0 + 0.08 * Math.sin(t * 6));
+      } else if (node.visible) {
+        node.scale.setScalar(1);
+      }
+    }
+  }
+
+  // Scale the arrow currently being operated on.
+  const pulseArrow = (arr) => {
+    if (!arr) return;
+    for (const a of arr) {
+      if (!a.visible) continue;
+      if (a.userData.isActive) a.scale.setScalar(1.0 + 0.18 * Math.sin(t * 5));
+      else a.scale.setScalar(1);
+    }
+  };
+  pulseArrow(Scene.forwardArrows);
+  pulseArrow(Scene.reverseArrows);
+
+  // Gentle pulse on each marker ball so the pointers feel alive.
+  const pulseMarker = (m, freq) => {
+    if (m && m.visible) {
+      const s = 1.0 + 0.07 * Math.sin(t * freq);
+      m.userData.ball.scale.setScalar(s);
+    }
+  };
+  pulseMarker(Scene.prevMarker, 3.0);
+  pulseMarker(Scene.currMarker, 5.0);
+  pulseMarker(Scene.nextMarker, 4.0);
+
+  // Spin the return halo in the done frame.
+  if (Scene.returnIndicator && Scene.returnIndicator.visible) {
+    Scene.returnIndicator.userData.halo.rotation.z = t * 1.2;
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.values);
+animate();
+</script>
+</body>
+</html>

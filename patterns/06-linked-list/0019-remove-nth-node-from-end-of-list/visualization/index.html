@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remove Nth Node From End of List - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 290px; }
+  #status { top: 16px; right: 16px; width: 330px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 32px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.slow { color: #60a5fa; }
+  .status-value.fast { color: #f87171; }
+  .status-value.target { color: #fca5a5; }
+  .status-value.removed { color: #fbbf24; }
+  .status-value.ok { color: #86efac; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Remove Nth Node From End of List</h1>
+  <div class="sub">two pointers &middot; dummy head &middot; interactive 3D</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Inputs <span class="light">(list values, then n)</span></h3>
+  <div class="row"><label>vals</label><input id="vals-input" type="text" value="1,2,3,4,5" autocomplete="off" spellcheck="false"></div>
+  <div class="row"><label>n</label><input id="n-input" type="text" value="2" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="1,2,3,4,5|2">[1,2,3,4,5] n=2</button>
+    <button class="preset" data-preset="1,2,3,4,5|1">n=1 (last)</button>
+    <button class="preset" data-preset="1,2,3,4,5|5">n=5 (head)</button>
+    <button class="preset" data-preset="1|1">[1] n=1</button>
+    <button class="preset" data-preset="1,2|2">[1,2] n=2</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Comma-separated integers for the list (1-10 nodes, values -100..100). n is the 1-indexed position from the end (1 &le; n &le; length).</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">init</span></div>
+  <div class="status-line"><span class="status-label">List length</span><span class="status-value" id="s-length">5</span></div>
+  <div class="status-line"><span class="status-label">n (from end)</span><span class="status-value" id="s-n">2</span></div>
+  <div class="status-line"><span class="status-label">slow index</span><span class="status-value slow" id="s-slow">-1 (dummy)</span></div>
+  <div class="status-line"><span class="status-label">fast index</span><span class="status-value fast" id="s-fast">-1 (dummy)</span></div>
+  <div class="status-line"><span class="status-label">Gap (fast ahead)</span><span class="status-value" id="s-gap">0</span></div>
+  <div class="status-line"><span class="status-label">Target (slow.next)</span><span class="status-value target" id="s-target">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Removed value</span><span class="status-value removed" id="s-removed">&mdash;</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> or <b>Play</b> to start.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const ROW_Y = 0;
+const SPACING_X = 2.6;
+const NODE_W = 1.4, NODE_H = 1.2, NODE_D = 0.6;
+
+const COLORS = {
+  node:          0x6366f1, nodeEdge:    0x312e81,
+  dummy:         0x6b7280, dummyEdge:   0x374151,
+  nullNode:      0x1f2937, nullEdge:    0x0f172a,
+  slow:          0x60a5fa, slowEdge:    0x1d4ed8,
+  fast:          0xf87171, fastEdge:    0xb91c1c,
+  target:        0xef4444, targetEdge:  0x7f1d1d,
+  removed:       0x4b5563, removedEdge: 0x1f2937,
+  skipArrow:     0xfbbf24,
+  gapLabel:      0xfde68a,
+};
+
+/* ============ STATE ============ */
+const State = {
+  values: [1, 2, 3, 4, 5],
+  n: 2,
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+};
+
+/* ============ ALGORITHM (pre-computes frames) ============ */
+function idxDesc(idx, values) {
+  if (idx === -1) return 'dummy';
+  if (idx >= values.length) return 'null (off the end)';
+  return `index ${idx} (value ${values[idx]})`;
+}
+
+function runAlgorithm(values, n) {
+  const length = values.length;
+  const frames = [];
+
+  // init
+  frames.push({
+    phase: 'init',
+    slowIdx: -1, fastIdx: -1, targetIdx: null, removedIdx: null,
+    message: `Initialize: place a <b>dummy</b> node before the head; point both <b>slow</b> and <b>fast</b> at it. List length = <b>${length}</b>, n = <b>${n}</b>.`,
+  });
+
+  // Phase 1: advance fast n+1 steps (loop runs for i = 0..n inclusive => n+1 moves)
+  for (let step = 0; step <= n; step++) {
+    const newFastIdx = step; // dummy(-1) advanced step+1 times lands on index `step`
+    const isLast = (step === n);
+    const gap = newFastIdx - (-1);
+    frames.push({
+      phase: 'advance-fast',
+      step, totalSteps: n + 1,
+      slowIdx: -1, fastIdx: newFastIdx,
+      targetIdx: null, removedIdx: null,
+      message: isLast
+        ? `Phase 1 complete: fast moved <b>${step + 1} of ${n + 1}</b> steps to <b>${idxDesc(newFastIdx, values)}</b>. Gap = <b>${gap}</b> (= n+1). Slow still on dummy.`
+        : `Phase 1 step <b>${step + 1} of ${n + 1}</b>: fast advances to <b>${idxDesc(newFastIdx, values)}</b>. Gap so far = ${gap}.`,
+    });
+  }
+
+  // Phase 2: slide both forward until fast runs off the end
+  let slowIdx = -1;
+  let fastIdx = n;
+  let iter = 0;
+  while (fastIdx < length) {
+    slowIdx++;
+    fastIdx++;
+    iter++;
+    frames.push({
+      phase: 'advance-both',
+      iter, slowIdx, fastIdx,
+      targetIdx: null, removedIdx: null,
+      message: `Phase 2 iter <b>${iter}</b>: slide both forward together. slow &rarr; <b>${idxDesc(slowIdx, values)}</b>, fast &rarr; <b>${idxDesc(fastIdx, values)}</b>. Gap stays at <b>${fastIdx - slowIdx}</b>.`,
+    });
+  }
+
+  // After phase 2: slow on predecessor, target = length - n
+  const targetIdx = length - n;
+  const newNextIdx = targetIdx + 1; // could equal length (null)
+
+  // remove-pre: highlight the target
+  frames.push({
+    phase: 'remove-pre',
+    slowIdx, fastIdx, targetIdx, removedIdx: null,
+    message: `Loop exit: fast is null, slow on predecessor (<b>${idxDesc(slowIdx, values)}</b>). Target = slow.next = <b>index ${targetIdx}, value ${values[targetIdx]}</b> (the nth from end).`,
+  });
+
+  // remove: re-route slow.next past the target
+  frames.push({
+    phase: 'remove',
+    slowIdx, fastIdx, targetIdx, removedIdx: targetIdx, newNextIdx,
+    message: `Execute <b>slow.next = slow.next.next</b>: slow's arrow skips index ${targetIdx} and now points to <b>${idxDesc(newNextIdx, values)}</b>. Node value <b>${values[targetIdx]}</b> is unlinked.`,
+  });
+
+  // done
+  const remaining = values.filter((_, i) => i !== targetIdx);
+  const resultStr = remaining.length === 0 ? '[] (empty list)' : `[${remaining.join(', ')}]`;
+  frames.push({
+    phase: 'done',
+    slowIdx, fastIdx, targetIdx, removedIdx: targetIdx,
+    message: `Done. Removed node with value <b>${values[targetIdx]}</b>. Result = <b>${resultStr}</b>. Return <b>dummy.next</b> (never the original head).`,
+  });
+
+  return frames;
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 28, 75);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(4, 3, 20);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 80;
+controls.target.set(4, 0, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(5, 10, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.45);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(80, 40, 0x1e293b, 0x1e293b);
+grid.position.y = -5.0;
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+
+/* ============ FACTORIES ============ */
+function makeDigitTexture(text, opts = {}) {
+  const { font = '700 110px -apple-system, BlinkMacSystemFont, sans-serif', color = '#ffffff' } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeDigitSprite(text, opts = {}) {
+  const { color = '#ffffff', size = 1.0, font } = opts;
+  const tex = makeDigitTexture(text, { color, font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.1 * size, 1.1 * size, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+function makeNode(color, edgeColor, opts = {}) {
+  const { opacity = 1 } = opts;
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(NODE_W, NODE_H, NODE_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color, metalness: 0.25, roughness: 0.55,
+    transparent: opacity < 1, opacity,
+  });
+  group.add(new THREE.Mesh(geo, mat));
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: edgeColor, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  group.userData.digitSprite = null;
+  group.userData.mesh = group.children[0];
+  group.userData.baseColor = color;
+  return group;
+}
+
+function setNodeDigit(group, text, color, spriteScale = 1.0) {
+  if (group.userData.digitSprite) {
+    group.remove(group.userData.digitSprite);
+    const m = group.userData.digitSprite.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+  }
+  const sprite = makeDigitSprite(text, { color, size: spriteScale });
+  sprite.position.set(0, 0, NODE_D / 2 + 0.02);
+  group.add(sprite);
+  group.userData.digitSprite = sprite;
+}
+
+function makeArrow(color, opts = {}) {
+  const { opacity = 1 } = opts;
+  const group = new THREE.Group();
+  const shaftLen = SPACING_X - NODE_W - 0.3;
+  const mat = new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity });
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, shaftLen, 10), mat);
+  shaft.rotation.z = -Math.PI / 2;
+  shaft.position.x = shaftLen / 2;
+  group.add(shaft);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 14), mat);
+  tip.rotation.z = -Math.PI / 2;
+  tip.position.x = shaftLen + 0.2;
+  group.add(tip);
+  group.userData.material = mat;
+  group.userData.defaultOpacity = opacity;
+  return group;
+}
+
+function resetArrowOpacity(arrow) {
+  if (!arrow) return;
+  arrow.userData.material.opacity = arrow.userData.defaultOpacity;
+}
+
+function makeHighlightPlane(color, w, h) {
+  const geo = new THREE.PlaneGeometry(w || (NODE_W + 0.5), h || (NODE_H + 0.5));
+  const mat = new THREE.MeshBasicMaterial({
+    color, transparent: true, opacity: 0.25,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  mesh.userData.baseOpacity = 0.25;
+  return mesh;
+}
+
+function makeMarker(color, label, isAbove) {
+  // isAbove=true: marker sits above row, cone points DOWN at the node.
+  // isAbove=false: marker sits below row, cone points UP at the node.
+  const group = new THREE.Group();
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.4, 32, 24),
+    new THREE.MeshStandardMaterial({
+      color, emissive: color, emissiveIntensity: 0.45,
+      metalness: 0.3, roughness: 0.35,
+    })
+  );
+  group.add(sphere);
+  const labelSprite = makeDigitSprite(label, {
+    color: '#ffffff', size: 0.55,
+    font: '700 90px -apple-system, BlinkMacSystemFont, sans-serif',
+  });
+  labelSprite.position.set(0, isAbove ? 0.75 : -0.75, 0);
+  group.add(labelSprite);
+
+  const lineLen = 1.0;
+  const lineMat = new THREE.MeshBasicMaterial({ color });
+  const line = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, lineLen, 8), lineMat);
+  line.position.set(0, isAbove ? -lineLen / 2 - 0.4 : lineLen / 2 + 0.4, 0);
+  group.add(line);
+
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 14), lineMat);
+  cone.position.set(0, isAbove ? -lineLen - 0.8 + 0.2 : lineLen + 0.8 - 0.2, 0);
+  if (isAbove) cone.rotation.x = Math.PI; // point down
+  group.add(cone);
+
+  group.userData.sphere = sphere;
+  group.userData.isAbove = isAbove;
+  return group;
+}
+
+function makeGapLabel() {
+  const group = new THREE.Group();
+  const mat = new THREE.SpriteMaterial({ transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(2.6, 1.1, 1);
+  sprite.renderOrder = 8;
+  group.add(sprite);
+  group.userData.sprite = sprite;
+  group.userData.material = mat;
+  group.visible = false;
+  return group;
+}
+
+function setGapLabel(group, text) {
+  if (group.userData.material.map) group.userData.material.map.dispose();
+  const tex = makeDigitTexture(text, {
+    font: '700 75px -apple-system, BlinkMacSystemFont, sans-serif',
+    color: '#fde68a',
+  });
+  group.userData.material.map = tex;
+  group.userData.material.needsUpdate = true;
+}
+
+function makeRowLabel(text, x, y, colorInt) {
+  const hex = '#' + colorInt.toString(16).padStart(6, '0');
+  const tex = makeDigitTexture(text, {
+    font: '700 75px -apple-system, BlinkMacSystemFont, sans-serif',
+    color: hex,
+  });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(2.4, 0.9, 1);
+  sprite.position.set(x, y, 0);
+  sprite.renderOrder = 5;
+  return sprite;
+}
+
+function makeSkipArrowGroup() {
+  // Empty group; children rebuilt per frame via setSkipArrow.
+  return new THREE.Group();
+}
+
+function setSkipArrow(group, fromX, toX, color) {
+  while (group.children.length) {
+    const c = group.children[0];
+    group.remove(c);
+    if (c.geometry) c.geometry.dispose();
+    if (c.material) c.material.dispose();
+  }
+  if (toX <= fromX) return;
+  const startY = 0.85;
+  const arcHeight = 1.7;
+  const curve = new THREE.CubicBezierCurve3(
+    new THREE.Vector3(fromX, startY, 0.6),
+    new THREE.Vector3(fromX + 0.4, startY + arcHeight, 0.6),
+    new THREE.Vector3(toX - 0.4, startY + arcHeight, 0.6),
+    new THREE.Vector3(toX, startY, 0.6)
+  );
+  const tubeGeo = new THREE.TubeGeometry(curve, 40, 0.07, 8, false);
+  const mat = new THREE.MeshBasicMaterial({ color });
+  const tube = new THREE.Mesh(tubeGeo, mat);
+  group.add(tube);
+  // Arrowhead at end pointing +X; cone tip lands at toX
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.4, 14), mat);
+  cone.position.set(toX - 0.2, startY, 0.6);
+  cone.rotation.z = -Math.PI / 2;
+  group.add(cone);
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function nodeX(idx) {
+  // -1 = dummy, 0..length-1 = real nodes, length = null terminator
+  return idx * SPACING_X;
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const v = State.values;
+
+  // Row label, well left of the dummy
+  const labelX = -SPACING_X * 2.0;
+  Scene.root.add(makeRowLabel('list', labelX, ROW_Y, COLORS.node));
+
+  // Dummy
+  Scene.dummy = makeNode(COLORS.dummy, COLORS.dummyEdge);
+  Scene.dummy.position.set(-SPACING_X, ROW_Y, 0);
+  setNodeDigit(Scene.dummy, 'D', '#cbd5e1', 0.75);
+  Scene.root.add(Scene.dummy);
+
+  // Dummy -> node 0 arrow
+  Scene.dummyArrow = makeArrow(COLORS.dummyEdge);
+  Scene.dummyArrow.position.set(-SPACING_X + NODE_W / 2 + 0.15, ROW_Y, 0.4);
+  Scene.root.add(Scene.dummyArrow);
+
+  // Real nodes + inter-node arrows
+  Scene.nodes = [];
+  Scene.arrows = [];
+  for (let i = 0; i < v.length; i++) {
+    const node = makeNode(COLORS.node, COLORS.nodeEdge);
+    node.position.set(i * SPACING_X, ROW_Y, 0);
+    setNodeDigit(node, String(v[i]), '#ffffff');
+    Scene.root.add(node);
+    Scene.nodes.push(node);
+
+    if (i > 0) {
+      const arrow = makeArrow(COLORS.nodeEdge);
+      arrow.position.set((i - 1) * SPACING_X + NODE_W / 2 + 0.15, ROW_Y, 0.4);
+      Scene.root.add(arrow);
+      Scene.arrows.push(arrow);
+    }
+  }
+
+  // Null terminator (last node -> null arrow + null box)
+  Scene.nullNode = makeNode(COLORS.nullNode, COLORS.nullEdge, { opacity: 0.55 });
+  Scene.nullNode.position.set(v.length * SPACING_X, ROW_Y, 0);
+  setNodeDigit(Scene.nullNode, 'null', '#94a3b8', 0.6);
+  Scene.root.add(Scene.nullNode);
+
+  if (v.length > 0) {
+    Scene.lastArrow = makeArrow(COLORS.nodeEdge, { opacity: 0.6 });
+    Scene.lastArrow.position.set((v.length - 1) * SPACING_X + NODE_W / 2 + 0.15, ROW_Y, 0.4);
+    Scene.root.add(Scene.lastArrow);
+  } else {
+    Scene.lastArrow = null;
+  }
+
+  // Highlights behind nodes
+  Scene.slowHL = makeHighlightPlane(COLORS.slow);
+  Scene.slowHL.position.z = -0.3;
+  Scene.root.add(Scene.slowHL);
+  Scene.fastHL = makeHighlightPlane(COLORS.fast);
+  Scene.fastHL.position.z = -0.3;
+  Scene.root.add(Scene.fastHL);
+  Scene.targetHL = makeHighlightPlane(COLORS.target);
+  Scene.targetHL.position.z = -0.3;
+  Scene.root.add(Scene.targetHL);
+
+  // Markers
+  Scene.slowMarker = makeMarker(COLORS.slow, 'slow', false);
+  Scene.root.add(Scene.slowMarker);
+  Scene.fastMarker = makeMarker(COLORS.fast, 'fast', true);
+  Scene.root.add(Scene.fastMarker);
+
+  // Gap annotation sprite
+  Scene.gapLabel = makeGapLabel();
+  Scene.root.add(Scene.gapLabel);
+
+  // Skip arrow group
+  Scene.skipArrow = makeSkipArrowGroup();
+  Scene.root.add(Scene.skipArrow);
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const v = State.values;
+  const minX = -SPACING_X * 2.6;
+  const maxX = (v.length + 1) * SPACING_X;
+  const midX = (minX + maxX) / 2;
+  const width = maxX - minX;
+  const dist = Math.max(15, width * 0.85);
+  controls.target.set(midX, 0, 0);
+  camera.position.set(midX, 1.5, dist);
+  controls.update();
+}
+
+/* ============ APPLY FRAME ============ */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+  const v = State.values;
+  const length = v.length;
+
+  // Restore all real nodes to default color & position
+  for (let i = 0; i < Scene.nodes.length; i++) {
+    Scene.nodes[i].position.y = ROW_Y;
+    Scene.nodes[i].userData.mesh.material.color.setHex(COLORS.node);
+  }
+  // Restore all arrow opacities
+  resetArrowOpacity(Scene.dummyArrow);
+  for (const a of Scene.arrows) resetArrowOpacity(a);
+  if (Scene.lastArrow) resetArrowOpacity(Scene.lastArrow);
+
+  // Drop & grey the removed node, if any
+  if (typeof f.removedIdx === 'number' && Scene.nodes[f.removedIdx]) {
+    const node = Scene.nodes[f.removedIdx];
+    node.position.y = ROW_Y - 1.8;
+    node.userData.mesh.material.color.setHex(COLORS.removed);
+  }
+
+  // Marker positions (hide both during done)
+  const showMarkers = (f.phase !== 'done');
+  Scene.slowMarker.visible = showMarkers;
+  Scene.fastMarker.visible = showMarkers;
+  if (showMarkers) {
+    Scene.slowMarker.position.set(nodeX(f.slowIdx), ROW_Y - 2.0, 0);
+    Scene.fastMarker.position.set(nodeX(f.fastIdx), ROW_Y + 2.0, 0);
+  }
+
+  // Slow / fast highlight planes (under the node they currently point at)
+  Scene.slowHL.visible = showMarkers;
+  Scene.fastHL.visible = showMarkers;
+  if (showMarkers) {
+    Scene.slowHL.position.set(nodeX(f.slowIdx), ROW_Y, -0.3);
+    Scene.fastHL.position.set(nodeX(f.fastIdx), ROW_Y, -0.3);
+  }
+
+  // Gap annotation between slow and fast
+  const showGap = (f.phase === 'advance-fast') ||
+                  (f.phase === 'advance-both') ||
+                  (f.phase === 'remove-pre');
+  if (showGap) {
+    const gap = f.fastIdx - f.slowIdx;
+    setGapLabel(Scene.gapLabel, `gap = ${gap}`);
+    const midIdx = (f.slowIdx + f.fastIdx) / 2;
+    Scene.gapLabel.position.set(midIdx * SPACING_X, ROW_Y + 1.25, 0.7);
+    Scene.gapLabel.visible = true;
+  } else {
+    Scene.gapLabel.visible = false;
+  }
+
+  // Target highlight (the about-to-be-removed node)
+  if (typeof f.targetIdx === 'number') {
+    Scene.targetHL.position.set(nodeX(f.targetIdx), ROW_Y, -0.3);
+    Scene.targetHL.visible = true;
+  } else {
+    Scene.targetHL.visible = false;
+  }
+
+  // Dim the arrow from slow to target during remove / done (it's been re-routed)
+  if ((f.phase === 'remove' || f.phase === 'done') && typeof f.targetIdx === 'number') {
+    if (f.targetIdx === 0) {
+      Scene.dummyArrow.userData.material.opacity = 0.2;
+    } else if (Scene.arrows[f.targetIdx - 1]) {
+      Scene.arrows[f.targetIdx - 1].userData.material.opacity = 0.2;
+    }
+  }
+
+  // Skip arrow during remove / done: arcs from slow node's right edge to newNext's left edge
+  if (f.phase === 'remove' || f.phase === 'done') {
+    const slowRightX = nodeX(f.slowIdx) + NODE_W / 2 + 0.1;
+    const newNextLeftX = nodeX(f.newNextIdx) - NODE_W / 2 - 0.1;
+    setSkipArrow(Scene.skipArrow, slowRightX, newNextLeftX, COLORS.skipArrow);
+    Scene.skipArrow.visible = true;
+  } else {
+    Scene.skipArrow.visible = false;
+  }
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function fmtIdx(idx, values) {
+  if (idx === -1) return '-1 (dummy)';
+  if (idx >= values.length) return `${idx} (null)`;
+  return `${idx} (val ${values[idx]})`;
+}
+
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+
+  const phaseNames = {
+    'init': 'INIT',
+    'advance-fast': 'ADVANCE FAST',
+    'advance-both': 'ADVANCE BOTH',
+    'remove-pre': 'REMOVE (PRE)',
+    'remove': 'REMOVE',
+    'done': 'DONE',
+  };
+  $('s-phase').textContent = phaseNames[f.phase] || f.phase;
+
+  $('s-length').textContent = State.values.length;
+  $('s-n').textContent = State.n;
+  $('s-slow').textContent = fmtIdx(f.slowIdx, State.values);
+  $('s-fast').textContent = fmtIdx(f.fastIdx, State.values);
+  $('s-gap').textContent = f.fastIdx - f.slowIdx;
+
+  if (typeof f.targetIdx === 'number') {
+    $('s-target').textContent = `${f.targetIdx} (val ${State.values[f.targetIdx]})`;
+  } else {
+    $('s-target').textContent = '\u2014';
+  }
+  if (typeof f.removedIdx === 'number') {
+    $('s-removed').textContent = String(State.values[f.removedIdx]);
+  } else {
+    $('s-removed').textContent = '\u2014';
+  }
+
+  $('s-message').innerHTML = f.message;
+}
+
+/* ============ INPUT PARSING ============ */
+function parseValues(s) {
+  return s.split(',').map(t => t.trim()).filter(t => t !== '').map(t => parseInt(t, 10));
+}
+function validateValues(arr) {
+  if (arr.length < 1) return 'List must have at least 1 node.';
+  if (arr.length > 10) return 'List must have at most 10 nodes.';
+  for (const x of arr) {
+    if (!Number.isInteger(x) || x < -100 || x > 100) {
+      return `Each value must be an integer in -100..100 (got "${x}").`;
+    }
+  }
+  return null;
+}
+function applyInputs(v, n) {
+  State.values = v;
+  State.n = n;
+  State.frames = runAlgorithm(v, n);
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ============ TRANSPORT ============ */
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 1100;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next();
+      schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick  = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick  = () => { pause(); next(); };
+document.getElementById('play-btn').onclick  = togglePlay;
+
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = () => {
+  const vals = parseValues(document.getElementById('vals-input').value);
+  const nRaw = parseInt(document.getElementById('n-input').value, 10);
+  const errEl = document.getElementById('err');
+  let err = validateValues(vals);
+  if (!err) {
+    if (!Number.isInteger(nRaw)) err = 'n must be an integer.';
+    else if (nRaw < 1 || nRaw > vals.length) err = `n must be in [1, ${vals.length}].`;
+  }
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(vals, nRaw);
+};
+
+document.getElementById('reset-btn').onclick = () => fitCamera();
+
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    const [a, b] = btn.dataset.preset.split('|');
+    document.getElementById('vals-input').value = a;
+    document.getElementById('n-input').value = b;
+    document.getElementById('err').textContent = '';
+    applyInputs(parseValues(a), parseInt(b, 10));
+  };
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  // Pulse marker spheres (subtle)
+  if (Scene.slowMarker && Scene.slowMarker.visible) {
+    const s = 1.0 + 0.07 * Math.sin(t * 3);
+    Scene.slowMarker.userData.sphere.scale.setScalar(s);
+  }
+  if (Scene.fastMarker && Scene.fastMarker.visible) {
+    const s = 1.0 + 0.07 * Math.sin(t * 3 + 1.2);
+    Scene.fastMarker.userData.sphere.scale.setScalar(s);
+  }
+  // Pulse target highlight
+  if (Scene.targetHL && Scene.targetHL.visible) {
+    Scene.targetHL.material.opacity = Scene.targetHL.userData.baseOpacity + 0.18 * Math.abs(Math.sin(t * 3));
+  }
+  // Bob the removed node gently
+  if (Scene.nodes) {
+    const f = State.frames[State.frameIndex];
+    if (f && typeof f.removedIdx === 'number' && Scene.nodes[f.removedIdx]) {
+      Scene.nodes[f.removedIdx].position.y = (ROW_Y - 1.8) + 0.08 * Math.sin(t * 2.2);
+    }
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.values, State.n);
+animate();
+</script>
+</body>
+</html>
