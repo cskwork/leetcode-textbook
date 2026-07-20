@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Longest Repeating Character Replacement - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 280px; }
+  #status { top: 16px; right: 16px; width: 330px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 24px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Longest Repeating Character Replacement</h1>
+  <div class="sub">sliding window &middot; frequency counter &middot; interactive 3D</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Inputs <span class="light">(string + budget)</span></h3>
+  <div class="row"><label>s</label><input id="s-input" type="text" value="AABABBA" autocomplete="off" spellcheck="false"></div>
+  <div class="row"><label>k</label><input id="k-input" type="text" value="1" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="ABAB|2">"ABAB" k=2 &rarr; 4</button>
+    <button class="preset" data-preset="AABABBA|1">"AABABBA" k=1 &rarr; 4</button>
+    <button class="preset" data-preset="AAAA|0">"AAAA" k=0 &rarr; 4</button>
+    <button class="preset" data-preset="ABCD|1">"ABCD" k=1 &rarr; 2</button>
+    <button class="preset" data-preset="AABABBA|2">"AABABBA" k=2 &rarr; 5</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Uppercase A-Z, length 1-15. k = max replacements allowed (0 to s.length).</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">INIT</span></div>
+  <div class="status-line"><span class="status-label">right</span><span class="status-value" id="s-right">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">s[right]</span><span class="status-value" id="s-char">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">left</span><span class="status-value" id="s-left">0</span></div>
+  <div class="status-line"><span class="status-label">Window</span><span class="status-value" id="s-window">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Length</span><span class="status-value" id="s-wlen">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Most freq char</span><span class="status-value ok" id="s-maxchar">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">maxCount</span><span class="status-value ok" id="s-maxcount">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Replacements</span><span class="status-value write" id="s-repl">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">k budget</span><span class="status-value" id="s-k">1</span></div>
+  <div class="status-line"><span class="status-label">Within k?</span><span class="status-value" id="s-valid">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">best</span><span class="status-value accent" id="s-best">0</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> or <b>Play</b> to begin.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const SPACING_X = 1.7;
+const CHAR_W = 1.2, CHAR_H = 1.4, CHAR_D = 0.5;
+const FREQ_W = 1.0, FREQ_H = 1.0, FREQ_D = 0.4;
+const FREQ_SPACING = 1.3;
+const ROW_Y = { chars: 0, freq: -3.4 };
+
+const COLORS = {
+  charDefault:   0x4b6080, charDefaultEdge:  0x1e293b,
+  charMax:       0x10b981, charMaxEdge:      0x047857,
+  charMinority:  0xef4444, charMinorityEdge: 0x991b1b,
+  markerLeft:    0x3b82f6, markerRight:      0xf43f5e,
+  windowPlane:   0xfbbf24,
+  freqBase:      0x475569, freqBaseEdge:     0x1e293b,
+  freqMax:       0x10b981, freqMaxEdge:      0x047857,
+};
+
+/* ============ STATE ============ */
+const State = {
+  str: 'AABABBA',
+  k: 1,
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+};
+
+/* ============ ALGORITHM (pre-computes frames for a deterministic walk) ============ */
+function distinctLetters(s) { return [...new Set(s)].sort(); }
+function emptyFreq(s) {
+  const f = {};
+  for (const c of distinctLetters(s)) f[c] = 0;
+  return f;
+}
+function snapshot(freq) {
+  const c = {};
+  for (const k in freq) c[k] = freq[k];
+  return c;
+}
+function computeMax(freq) {
+  // Pick the alphabetically-first letter with the highest count (deterministic on ties).
+  let best = 0, bestChar = null;
+  for (const c of Object.keys(freq).sort()) {
+    if (freq[c] > best) { best = freq[c]; bestChar = c; }
+  }
+  return { count: best, char: bestChar };
+}
+function computeAnswer(s, k) {
+  const freq = emptyFreq(s);
+  let left = 0, best = 0;
+  for (let right = 0; right < s.length; right++) {
+    freq[s[right]]++;
+    while ((right - left + 1) - computeMax(freq).count > k) {
+      freq[s[left]]--;
+      left++;
+    }
+    best = Math.max(best, right - left + 1);
+  }
+  return best;
+}
+function runAlgorithm(s, k) {
+  const frames = [];
+  const n = s.length;
+  const freq = emptyFreq(s);
+  let left = 0;
+  let best = 0;
+
+  frames.push({
+    phase: 'init',
+    right: -1, left: 0, best: 0,
+    freq: snapshot(freq),
+    maxCount: 0, maxChar: null,
+    windowLen: 0, replacements: 0, overK: false,
+    expandedChar: null, droppedChar: null, droppedIndex: null,
+    improved: false,
+    message: `Initialize: freq all zero, left = 0, best = 0. The window is empty. Press <b>Next</b> to start expanding <b>right</b> from index 0.`,
+  });
+
+  for (let right = 0; right < n; right++) {
+    const c = s[right];
+
+    // ---- EXPAND: include s[right] in the window, bump its frequency ----
+    freq[c]++;
+    const m1 = computeMax(freq);
+    const wlen1 = right - left + 1;
+    frames.push({
+      phase: 'expand',
+      right, left, best,
+      expandedChar: c,
+      freq: snapshot(freq),
+      maxCount: m1.count, maxChar: m1.char,
+      windowLen: wlen1,
+      replacements: wlen1 - m1.count,
+      overK: (wlen1 - m1.count) > k,
+      droppedChar: null, droppedIndex: null, improved: false,
+      message: `<b>Expand</b>: right &rarr; ${right}. Add s[${right}] = '<b>${c}</b>'. freq['${c}'] becomes ${freq[c]}.`,
+    });
+
+    // ---- COMPUTE-REPLACEMENTS: window length - maxCount ----
+    const m2 = computeMax(freq);
+    const wlen2 = right - left + 1;
+    const reps = wlen2 - m2.count;
+    frames.push({
+      phase: 'compute',
+      right, left, best,
+      freq: snapshot(freq),
+      maxCount: m2.count, maxChar: m2.char,
+      windowLen: wlen2, replacements: reps, overK: reps > k,
+      expandedChar: null, droppedChar: null, droppedIndex: null, improved: false,
+      message: `Window [<b>${left}</b>..${right}] length <b>${wlen2}</b>. Most frequent letter: '<b>${m2.char}</b>' (&times; ${m2.count}). Replacements needed = ${wlen2} &minus; ${m2.count} = <b>${reps}</b>.`,
+    });
+
+    // ---- CHECK-K: is the cost within budget? ----
+    const over = reps > k;
+    frames.push({
+      phase: 'check',
+      right, left, best,
+      freq: snapshot(freq),
+      maxCount: m2.count, maxChar: m2.char,
+      windowLen: wlen2, replacements: reps, overK: over,
+      expandedChar: null, droppedChar: null, droppedIndex: null, improved: false,
+      message: over
+        ? `<b>Over budget</b>: ${reps} &gt; k = ${k}. The window is invalid &mdash; must shrink from the left.`
+        : `<b>Within budget</b>: ${reps} &le; k = ${k}. The window is valid.`,
+    });
+
+    // ---- SHRINK: drop s[left] while the cost exceeds k ----
+    let curReps = reps;
+    let curMax = m2;
+    while (curReps > k) {
+      const dropChar = s[left];
+      const dropIdx = left;
+      freq[dropChar]--;
+      left++;
+      const wl = right - left + 1;
+      const m3 = computeMax(freq);
+      const r3 = wl - m3.count;
+      const stillOver = r3 > k;
+      frames.push({
+        phase: 'shrink',
+        right, left, best,
+        droppedChar: dropChar, droppedIndex: dropIdx,
+        freq: snapshot(freq),
+        maxCount: m3.count, maxChar: m3.char,
+        windowLen: wl, replacements: r3, overK: stillOver,
+        expandedChar: null, improved: false,
+        message: `<b>Shrink</b>: drop s[${dropIdx}] = '<b>${dropChar}</b>'. freq['${dropChar}'] becomes ${freq[dropChar]}. left &rarr; ${left}. Window [${left}..${right}] length ${wl}; replacements = ${wl} &minus; ${m3.count} = <b>${r3}</b>.${stillOver ? ' Still over budget &mdash; shrink again.' : ' Back within budget.'}`,
+      });
+      curReps = r3;
+      curMax = m3;
+    }
+
+    // ---- RECORD: window is valid; update best ----
+    const finalW = right - left + 1;
+    const oldBest = best;
+    best = Math.max(best, finalW);
+    const improved = best > oldBest;
+    frames.push({
+      phase: 'record',
+      right, left, best,
+      freq: snapshot(freq),
+      maxCount: curMax.count, maxChar: curMax.char,
+      windowLen: finalW,
+      replacements: finalW - curMax.count,
+      overK: false,
+      expandedChar: null, droppedChar: null, droppedIndex: null,
+      improved,
+      message: improved
+        ? `Record: best = max(${oldBest}, ${finalW}) = <b>${best}</b>. New longest valid window!`
+        : `Record: best = max(${oldBest}, ${finalW}) = ${best}. No improvement.`,
+    });
+  }
+
+  frames.push({
+    phase: 'done',
+    right: n - 1, left, best,
+    freq: snapshot(freq),
+    maxCount: 0, maxChar: null,
+    windowLen: 0, replacements: 0, overK: false,
+    expandedChar: null, droppedChar: null, droppedIndex: null, improved: false,
+    message: `Loop ends. The longest window we ever recorded has length <b>${best}</b>. Return <b>${best}</b>.`,
+  });
+
+  return frames;
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 22, 60);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(5, 3, 16);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 60;
+controls.target.set(5, -0.5, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+dirLight.position.set(5, 10, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.4);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(80, 40, 0x1e293b, 0x1e293b);
+grid.position.y = -5.6;
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+
+/* ============ TEXTURE / SPRITE HELPERS ============ */
+function makeTextTexture(text, opts = {}) {
+  const { font = '700 110px -apple-system, BlinkMacSystemFont, sans-serif', color = '#ffffff' } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeWideTextTexture(text, opts = {}) {
+  const { font = '700 80px ui-monospace, "SF Mono", Menlo, monospace', color = '#fde68a' } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 512, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeSprite(text, opts = {}) {
+  const { color = '#ffffff', size = 1.0, font } = opts;
+  const tex = makeTextTexture(text, { color, font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sp = new THREE.Sprite(mat);
+  sp.scale.set(1.1 * size, 1.1 * size, 1);
+  sp.renderOrder = 10;
+  return sp;
+}
+
+function setSpriteText(sprite, text, color = '#ffffff', font) {
+  if (sprite.material.map) sprite.material.map.dispose();
+  sprite.material.map = makeTextTexture(text, { color, font });
+  sprite.material.needsUpdate = true;
+}
+
+function setWideSpriteText(sprite, text, color = '#fde68a', font) {
+  if (sprite.material.map) sprite.material.map.dispose();
+  sprite.material.map = makeWideTextTexture(text, { color, font });
+  sprite.material.needsUpdate = true;
+}
+
+/* ============ FACTORIES ============ */
+function makeCharBox(char) {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(CHAR_W, CHAR_H, CHAR_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.charDefault, metalness: 0.25, roughness: 0.55,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.charDefaultEdge, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  const sprite = makeSprite(char, { color: '#ffffff', size: 0.95 });
+  sprite.position.set(0, 0, CHAR_D / 2 + 0.02);
+  group.add(sprite);
+  group.userData = { face: mesh, edges, charSprite: sprite, pulse: 0 };
+  return group;
+}
+
+function makeMarker(color, label) {
+  const group = new THREE.Group();
+  const cone = new THREE.Mesh(
+    new THREE.ConeGeometry(0.35, 0.7, 14),
+    new THREE.MeshStandardMaterial({
+      color, emissive: color, emissiveIntensity: 0.5,
+      metalness: 0.3, roughness: 0.35,
+    })
+  );
+  cone.rotation.x = Math.PI;
+  cone.position.y = -0.2;
+  group.add(cone);
+  const labelSp = makeSprite(label, {
+    color: '#ffffff', size: 0.55,
+    font: '700 90px -apple-system, BlinkMacSystemFont, sans-serif',
+  });
+  labelSp.position.set(0, 0.55, 0);
+  group.add(labelSp);
+  return group;
+}
+
+function makeWindowPlane() {
+  // Unit-width plane; we scale X to match the window length on the fly.
+  const geo = new THREE.PlaneGeometry(1, CHAR_H + 0.4);
+  const mat = new THREE.MeshBasicMaterial({
+    color: COLORS.windowPlane, transparent: true, opacity: 0.18,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
+function makeFreqBox(letter) {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(FREQ_W, FREQ_H, FREQ_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.freqBase, metalness: 0.25, roughness: 0.55,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.freqBaseEdge, transparent: true, opacity: 0.85 })
+  );
+  group.add(edges);
+  // Letter label (top)
+  const letterSp = makeSprite(letter, {
+    color: '#ffffff', size: 0.55,
+    font: '700 100px -apple-system, BlinkMacSystemFont, sans-serif',
+  });
+  letterSp.position.set(0, 0.2, FREQ_D / 2 + 0.02);
+  group.add(letterSp);
+  // Count label (bottom, updates per frame)
+  const countSp = makeSprite('0', {
+    color: '#fde68a', size: 0.65,
+    font: '700 110px ui-monospace, "SF Mono", Menlo, monospace',
+  });
+  countSp.position.set(0, -0.22, FREQ_D / 2 + 0.02);
+  group.add(countSp);
+  group.userData = { face: mesh, edges, countSp, pulse: 0 };
+  return group;
+}
+
+function makeIndexLabel(i) {
+  return makeSprite(String(i), {
+    color: '#64748b', size: 0.45,
+    font: '700 80px ui-monospace, "SF Mono", Menlo, monospace',
+  });
+}
+
+function makeReplLabel() {
+  // Wide sprite so the equation "Repl = W - M = R" doesn't squish.
+  const tex = makeWideTextTexture('Repl = 0', { color: '#fde68a' });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sp = new THREE.Sprite(mat);
+  sp.scale.set(4.4, 1.1, 1);
+  sp.renderOrder = 10;
+  const group = new THREE.Group();
+  group.add(sp);
+  group.userData = { sprite: sp, overK: false };
+  return group;
+}
+
+function makeBestBanner() {
+  const sp = makeSprite('best = 0', {
+    color: '#a5b4fc', size: 1.5,
+    font: '700 90px -apple-system, BlinkMacSystemFont, sans-serif',
+  });
+  sp.scale.set(3.0, 1.1, 1);
+  const group = new THREE.Group();
+  group.add(sp);
+  group.userData = { sprite: sp, pulse: 0 };
+  return group;
+}
+
+function makeRowLabel(text, x, y, colorInt) {
+  const hex = '#' + colorInt.toString(16).padStart(6, '0');
+  const sp = makeSprite(text, {
+    color: hex, size: 1.0,
+    font: '700 100px -apple-system, BlinkMacSystemFont, sans-serif',
+  });
+  sp.position.set(x, y, 0);
+  sp.scale.set(2.4, 0.9, 1);
+  return sp;
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const s = State.str;
+  const n = s.length;
+  const letters = distinctLetters(s);
+  const stringMidX = ((n - 1) * SPACING_X) / 2;
+
+  // Row labels (well left of the first box)
+  const labelX = -SPACING_X * 1.1;
+  Scene.root.add(makeRowLabel('s', labelX, ROW_Y.chars, 0x60a5fa));
+  Scene.root.add(makeRowLabel('freq', labelX - 0.2, ROW_Y.freq, 0xfbbf24));
+
+  // ---- Char boxes + index labels ----
+  Scene.charBoxes = [];
+  Scene.indexLabels = [];
+  for (let i = 0; i < n; i++) {
+    const box = makeCharBox(s[i]);
+    box.position.set(i * SPACING_X, ROW_Y.chars, 0);
+    Scene.root.add(box);
+    Scene.charBoxes.push(box);
+
+    const idx = makeIndexLabel(i);
+    idx.position.set(i * SPACING_X, ROW_Y.chars - CHAR_H / 2 - 0.45, 0);
+    Scene.root.add(idx);
+    Scene.indexLabels.push(idx);
+  }
+
+  // ---- Frequency boxes (centered under the char row) ----
+  Scene.freqBoxes = {};
+  const freqTotalWidth = (letters.length - 1) * FREQ_SPACING;
+  const freqStartX = stringMidX - freqTotalWidth / 2;
+  for (let i = 0; i < letters.length; i++) {
+    const c = letters[i];
+    const fb = makeFreqBox(c);
+    fb.position.set(freqStartX + i * FREQ_SPACING, ROW_Y.freq, 0);
+    Scene.root.add(fb);
+    Scene.freqBoxes[c] = fb;
+  }
+
+  // ---- Window highlight plane (amber, behind boxes) ----
+  Scene.windowPlane = makeWindowPlane();
+  Scene.windowPlane.position.z = -0.3;
+  Scene.windowPlane.visible = false;
+  Scene.root.add(Scene.windowPlane);
+
+  // ---- Markers (L = blue, R = red) ----
+  Scene.leftMarker = makeMarker(COLORS.markerLeft, 'L');
+  Scene.leftMarker.position.set(0, ROW_Y.chars + CHAR_H / 2 + 0.9, 0);
+  Scene.leftMarker.visible = false;
+  Scene.root.add(Scene.leftMarker);
+
+  Scene.rightMarker = makeMarker(COLORS.markerRight, 'R');
+  Scene.rightMarker.position.set(0, ROW_Y.chars + CHAR_H / 2 + 0.9, 0);
+  Scene.rightMarker.visible = false;
+  Scene.root.add(Scene.rightMarker);
+
+  // ---- Floating "Repl = ..." label above the window ----
+  Scene.replLabel = makeReplLabel();
+  Scene.replLabel.position.set(0, ROW_Y.chars + CHAR_H / 2 + 2.3, 0);
+  Scene.replLabel.visible = false;
+  Scene.root.add(Scene.replLabel);
+
+  // ---- Best banner (top-right of the scene) ----
+  Scene.bestBanner = makeBestBanner();
+  Scene.bestBanner.position.set(stringMidX, ROW_Y.chars + CHAR_H / 2 + 4.0, 0);
+  Scene.root.add(Scene.bestBanner);
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const n = State.str.length;
+  const minX = -SPACING_X * 2.4;
+  const maxX = (n - 1) * SPACING_X + SPACING_X * 1.2;
+  const midX = (minX + maxX) / 2;
+  const width = maxX - minX;
+  const dist = Math.max(13, width * 0.85);
+  controls.target.set(midX, -0.5, 0);
+  camera.position.set(midX, 1.5, dist);
+  controls.update();
+}
+
+/* ============ APPLY FRAME ============ */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+  const s = State.str;
+
+  // Reset pulse flags (set freshly below for the active phase).
+  for (const box of Scene.charBoxes) box.userData.pulse = 0;
+  for (const c in Scene.freqBoxes) Scene.freqBoxes[c].userData.pulse = 0;
+  Scene.bestBanner.userData.pulse = 0;
+
+  const isLoopPhase = (f.phase !== 'init' && f.phase !== 'done');
+
+  // Window plane + markers
+  if (isLoopPhase) {
+    const l = f.left, r = f.right;
+    const wUnits = (r - l + 1) * SPACING_X;
+    Scene.windowPlane.scale.x = wUnits + 0.3;
+    Scene.windowPlane.position.set(((l + r) / 2) * SPACING_X, ROW_Y.chars, -0.3);
+    Scene.windowPlane.visible = true;
+    Scene.leftMarker.position.x = l * SPACING_X;
+    Scene.rightMarker.position.x = r * SPACING_X;
+    Scene.leftMarker.visible = true;
+    Scene.rightMarker.visible = true;
+  } else {
+    Scene.windowPlane.visible = false;
+    Scene.leftMarker.visible = false;
+    Scene.rightMarker.visible = false;
+  }
+
+  // Char box colours: blue (out), green (in window & is max char), red (in window & minority).
+  for (let i = 0; i < Scene.charBoxes.length; i++) {
+    const box = Scene.charBoxes[i];
+    const inWin = isLoopPhase && (i >= f.left && i <= f.right);
+    let faceColor, edgeColor;
+    if (inWin) {
+      const ch = s[i];
+      if (ch === f.maxChar) { faceColor = COLORS.charMax;      edgeColor = COLORS.charMaxEdge; }
+      else                  { faceColor = COLORS.charMinority; edgeColor = COLORS.charMinorityEdge; }
+    } else {
+      faceColor = COLORS.charDefault; edgeColor = COLORS.charDefaultEdge;
+    }
+    box.userData.face.material.color.setHex(faceColor);
+    box.userData.edges.material.color.setHex(edgeColor);
+
+    // Pulse newly-added (expand) or just-dropped (shrink) boxes.
+    if (f.phase === 'expand' && i === f.right) box.userData.pulse = 1;
+    if (f.phase === 'shrink' && i === f.droppedIndex) box.userData.pulse = 1;
+  }
+
+  // Frequency boxes: update count text + highlight the max one.
+  const countFont = '700 110px ui-monospace, "SF Mono", Menlo, monospace';
+  for (const c in Scene.freqBoxes) {
+    const fb = Scene.freqBoxes[c];
+    const count = (f.freq[c] !== undefined) ? f.freq[c] : 0;
+    setSpriteText(fb.userData.countSp, String(count), '#fde68a', countFont);
+    const isMax = (c === f.maxChar) && count > 0;
+    fb.userData.face.material.color.setHex(isMax ? COLORS.freqMax : COLORS.freqBase);
+    fb.userData.edges.material.color.setHex(isMax ? COLORS.freqMaxEdge : COLORS.freqBaseEdge);
+    if (f.phase === 'expand' && c === f.expandedChar) fb.userData.pulse = 1;
+    if (f.phase === 'shrink' && c === f.droppedChar) fb.userData.pulse = 1;
+  }
+
+  // Floating "Repl = W - M = R" label above the window.
+  if (isLoopPhase) {
+    Scene.replLabel.visible = true;
+    Scene.replLabel.position.x = ((f.left + f.right) / 2) * SPACING_X;
+    const txt = `Repl = ${f.windowLen} \u2212 ${f.maxCount} = ${f.replacements}`;
+    const col = f.overK ? '#fca5a5' : '#86efac';
+    setWideSpriteText(Scene.replLabel.userData.sprite, txt, col,
+      '700 80px ui-monospace, "SF Mono", Menlo, monospace');
+    Scene.replLabel.userData.overK = f.overK;
+  } else {
+    Scene.replLabel.visible = false;
+  }
+
+  // Best banner
+  setSpriteText(Scene.bestBanner.userData.sprite, `best = ${f.best}`, '#a5b4fc',
+    '700 100px -apple-system, BlinkMacSystemFont, sans-serif');
+  if (f.phase === 'record' && f.improved) Scene.bestBanner.userData.pulse = 1;
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+
+  const phaseNames = {
+    init: 'INIT', expand: 'EXPAND', compute: 'COMPUTE',
+    check: 'CHECK-K', shrink: 'SHRINK', record: 'RECORD', done: 'DONE',
+  };
+  $('s-phase').textContent = phaseNames[f.phase] || f.phase;
+  $('s-k').textContent = State.k;
+
+  const dash = '\u2014';
+  if (f.phase === 'init') {
+    $('s-right').textContent   = dash;
+    $('s-char').textContent    = dash;
+    $('s-left').textContent    = '0';
+    $('s-window').textContent  = dash;
+    $('s-wlen').textContent    = dash;
+    $('s-maxchar').textContent = dash;
+    $('s-maxcount').textContent= dash;
+    $('s-repl').textContent    = dash;
+    $('s-valid').textContent   = dash;
+    $('s-valid').className     = 'status-value';
+    $('s-best').textContent    = '0';
+  } else if (f.phase === 'done') {
+    $('s-right').textContent   = `${f.right} (end)`;
+    $('s-char').textContent    = dash;
+    $('s-left').textContent    = f.left;
+    $('s-window').textContent  = dash;
+    $('s-wlen').textContent    = dash;
+    $('s-maxchar').textContent = dash;
+    $('s-maxcount').textContent= dash;
+    $('s-repl').textContent    = dash;
+    $('s-valid').textContent   = 'returned';
+    $('s-valid').className     = 'status-value ok';
+    $('s-best').textContent    = f.best;
+  } else {
+    $('s-right').textContent   = f.right;
+    $('s-char').textContent    = State.str[f.right];
+    $('s-left').textContent    = f.left;
+    $('s-window').textContent  = `[${f.left}..${f.right}]`;
+    $('s-wlen').textContent    = f.windowLen;
+    $('s-maxchar').textContent = f.maxChar != null ? f.maxChar : dash;
+    $('s-maxcount').textContent= f.maxCount;
+    $('s-repl').textContent    = `${f.windowLen} \u2212 ${f.maxCount} = ${f.replacements}`;
+    const valid = !f.overK;
+    $('s-valid').textContent = valid
+      ? `YES (${f.replacements} \u2264 ${State.k})`
+      : `NO (${f.replacements} > ${State.k})`;
+    $('s-valid').className = 'status-value ' + (valid ? 'ok' : 'danger');
+    $('s-best').textContent = f.best;
+  }
+
+  $('s-message').innerHTML = f.message;
+}
+
+/* ============ INPUT PARSING ============ */
+function validateInputs(str, k) {
+  if (!/^[A-Z]+$/.test(str)) return 's must contain only uppercase letters A-Z.';
+  if (str.length < 1) return 's must have at least 1 character.';
+  if (str.length > 15) return 's must have at most 15 characters (for display).';
+  if (!Number.isInteger(k) || k < 0) return 'k must be a non-negative integer.';
+  if (k > str.length) return `k must be at most s.length (${str.length}).`;
+  return null;
+}
+function applyInputs(str, k) {
+  State.str = str;
+  State.k = k;
+  State.frames = runAlgorithm(str, k);
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 1050;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next(); schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick = () => { pause(); next(); };
+document.getElementById('play-btn').onclick = togglePlay;
+
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = () => {
+  const rawStr = document.getElementById('s-input').value.trim().toUpperCase();
+  const kRaw = document.getElementById('k-input').value.trim();
+  const k = parseInt(kRaw, 10);
+  const err = validateInputs(rawStr, k);
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  document.getElementById('s-input').value = rawStr;
+  document.getElementById('k-input').value = String(k);
+  applyInputs(rawStr, k);
+};
+
+document.getElementById('reset-btn').onclick = () => fitCamera();
+
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    const [ps, pk] = btn.dataset.preset.split('|');
+    document.getElementById('s-input').value = ps;
+    document.getElementById('k-input').value = pk;
+    document.getElementById('err').textContent = '';
+    applyInputs(ps, parseInt(pk, 10));
+  };
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  if (Scene.charBoxes) {
+    for (const box of Scene.charBoxes) {
+      if (box.userData.pulse !== 0) {
+        const sc = 1.0 + 0.12 * Math.sin(t * 7);
+        box.scale.setScalar(sc);
+      } else {
+        box.scale.setScalar(1);
+      }
+    }
+  }
+  if (Scene.freqBoxes) {
+    for (const c in Scene.freqBoxes) {
+      const fb = Scene.freqBoxes[c];
+      if (fb.userData.pulse !== 0) {
+        const sc = 1.0 + 0.1 * Math.sin(t * 7);
+        fb.scale.setScalar(sc);
+      } else {
+        fb.scale.setScalar(1);
+      }
+    }
+  }
+  if (Scene.bestBanner) {
+    if (Scene.bestBanner.userData.pulse) {
+      const sc = 1.0 + 0.1 * Math.sin(t * 5);
+      Scene.bestBanner.scale.setScalar(sc);
+    } else {
+      Scene.bestBanner.scale.setScalar(1);
+    }
+  }
+  if (Scene.replLabel && Scene.replLabel.visible && Scene.replLabel.userData.overK) {
+    const sc = 1.0 + 0.06 * Math.sin(t * 9);
+    Scene.replLabel.scale.setScalar(sc);
+  } else if (Scene.replLabel) {
+    Scene.replLabel.scale.set(4.4, 1.1, 1);
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.str, State.k);
+animate();
+</script>
+</body>
+</html>
