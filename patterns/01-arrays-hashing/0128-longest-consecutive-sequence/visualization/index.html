@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Longest Consecutive Sequence - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 280px; }
+  #status { top: 16px; right: 16px; width: 320px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  #best-display {
+    position: fixed; top: 62px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(253,224,71,0.14), rgba(251,191,36,0.06));
+    border: 1px solid rgba(253,224,71,0.35);
+    border-radius: 14px; padding: 6px 22px; text-align: center;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 2;
+  }
+  .best-label {
+    font-size: 10px; color: #fde047; letter-spacing: 0.14em;
+    text-transform: uppercase; font-weight: 700;
+  }
+  .best-value {
+    font-size: 28px; font-weight: 800; color: #fde047;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; line-height: 1.1;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 38px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar, #best-display { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Longest Consecutive Sequence</h1>
+  <div class="sub">hash set &middot; start-guard streak walk &middot; interactive 3D</div>
+</div>
+
+<div id="best-display">
+  <div class="best-label">Longest streak</div>
+  <div class="best-value" id="best-value">0</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Inputs</h3>
+  <div class="row"><label>nums</label><input id="nums-input" type="text" value="100,4,200,1,3,2" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="100,4,200,1,3,2">[100,4,200,1,3,2] &rarr; 4</button>
+    <button class="preset" data-preset="0,3,7,2,5,8,4,6,0,1">[0,3,7,2,5,8,4,6,0,1] &rarr; 9</button>
+    <button class="preset" data-preset="1,2,3,4,5">[1,2,3,4,5] &rarr; 5</button>
+    <button class="preset" data-preset="9,8,7,6,5,4,3,2,1,0">[9,8,...,0] &rarr; 10</button>
+    <button class="preset" data-preset="1,3,5,7">[1,3,5,7] &rarr; 1</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Comma-separated integers. 1-15 values, each between -99 and 99. Below the input row, the hash set is laid out by value so consecutive values appear adjacent and streaks become visible.</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">init</span></div>
+  <div class="status-line"><span class="status-label">Input index</span><span class="status-value" id="s-idx">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Value x</span><span class="status-value" id="s-val">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">x &minus; 1 in set?</span><span class="status-value" id="s-query">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Streak length</span><span class="status-value write" id="s-streak">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Best so far</span><span class="status-value ok" id="s-best">0</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> to walk one phase, or <b>Play</b> to auto-advance.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const INPUT_Y = 3.4;
+const SET_Y = 0;
+const SPACING_INPUT = 1.6;
+const INTRA_STREAK_STEP = 1.0;   // gap between consecutive values
+const INTER_STREAK_STEP = 2.5;   // gap between non-consecutive values
+const INPUT_W = 1.4, INPUT_H = 1.2, INPUT_D = 0.6;
+const SET_W = 0.85, SET_H = 0.85, SET_D = 0.5;
+
+const COLORS = {
+  input:        0x60a5fa, inputEdge:   0x1d4ed8,   // blue
+  set:          0x34d399, setEdge:     0x047857,   // green
+  current:      0xfbbf24, currentEdge: 0xb45309,   // amber (active streak)
+  best:         0xfde047, bestEdge:    0xa16207,   // gold  (longest so far)
+  missing:      0xef4444, missingEdge: 0x991b1b,   // red   (x-1 absent)
+};
+
+/* ============ STATE ============ */
+const State = {
+  nums: [100, 4, 200, 1, 3, 2],
+  setPositions: new Map(),
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+};
+
+/* ============ ALGORITHM ============
+ * Pour every value into a hash set. For each value x:
+ *   - if x-1 is in the set, skip (x is not a chain start).
+ *   - else walk x, x+1, x+2, ... while in the set, counting the streak.
+ * Track the longest streak. The start-guard keeps total work O(n).
+ */
+function computePositions(nums) {
+  // Lay the set out on the x-axis by value, so consecutive values sit adjacent.
+  // Non-consecutive jumps get a wider gap so streaks are visually obvious.
+  const sorted = Array.from(new Set(nums)).sort((a, b) => a - b);
+  const positions = new Map();
+  if (sorted.length === 0) return positions;
+  positions.set(sorted[0], 0);
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1], curr = sorted[i];
+    const step = (curr - prev === 1) ? INTRA_STREAK_STEP : INTER_STREAK_STEP;
+    positions.set(curr, positions.get(prev) + step);
+  }
+  return positions;
+}
+
+function runAlgorithm(nums) {
+  const set = new Set(nums);
+  const frames = [];
+  let best = 0;
+  let bestValues = [];
+  const seen = new Set();
+
+  frames.push({
+    phase: 'init',
+    inputIdx: -1,
+    setMembers: Array.from(set),
+    walkedValues: [],
+    bestValues: [],
+    best: 0,
+    message: `Pour all <b>${nums.length}</b> value${nums.length === 1 ? '' : 's'} of <b>nums</b> into a hash set. Duplicates collapse; the set now holds <b>${set.size}</b> distinct value${set.size === 1 ? '' : 's'}.`,
+  });
+
+  for (let i = 0; i < nums.length; i++) {
+    const x = nums[i];
+
+    if (seen.has(x)) {
+      frames.push({
+        phase: 'skip-dup',
+        inputIdx: i,
+        value: x,
+        walkedValues: [],
+        bestValues: [...bestValues],
+        best,
+        message: `<b>${x}</b> appears again &mdash; duplicate. The set already holds it; skip.`,
+      });
+      continue;
+    }
+    seen.add(x);
+
+    const queryInSet = set.has(x - 1);
+    frames.push({
+      phase: 'check-start',
+      inputIdx: i,
+      value: x,
+      queryValue: x - 1,
+      queryInSet,
+      walkedValues: [],
+      bestValues: [...bestValues],
+      best,
+      message: queryInSet
+        ? `Is <b>${x - 1}</b> (predecessor of <b>${x}</b>) in the set? <b>Yes</b>. So ${x} is NOT a chain start &mdash; it belongs to a chain that begins further left. Skip.`
+        : `Is <b>${x - 1}</b> (predecessor of <b>${x}</b>) in the set? <b>No</b>. So ${x} IS a chain start &mdash; walk upward.`,
+    });
+
+    if (queryInSet) {
+      frames.push({
+        phase: 'skip',
+        inputIdx: i,
+        value: x,
+        walkedValues: [],
+        bestValues: [...bestValues],
+        best,
+        message: `Skip <b>${x}</b>. The start-guard kept us from re-walking a chain that already includes ${x}.`,
+      });
+      continue;
+    }
+
+    // walk-streak: x is a chain start
+    const walked = [x];
+    frames.push({
+      phase: 'walk-step',
+      inputIdx: i,
+      value: x,
+      current: x,
+      streakLength: 1,
+      walkedValues: [...walked],
+      bestValues: [...bestValues],
+      best,
+      message: `Start walking from <b>${x}</b>. Streak length = <b>1</b>.`,
+    });
+
+    let next = x + 1;
+    while (set.has(next)) {
+      walked.push(next);
+      frames.push({
+        phase: 'walk-step',
+        inputIdx: i,
+        value: x,
+        current: next,
+        streakLength: walked.length,
+        walkedValues: [...walked],
+        bestValues: [...bestValues],
+        best,
+        message: `<b>${next}</b> is in the set &mdash; extend the streak. Length = <b>${walked.length}</b>.`,
+      });
+      next++;
+    }
+
+    const length = walked.length;
+    const isBest = length > best;
+    if (isBest) {
+      best = length;
+      bestValues = [...walked];
+    }
+    frames.push({
+      phase: 'walk-end',
+      inputIdx: i,
+      value: x,
+      streakLength: length,
+      isBest,
+      walkedValues: [...walked],
+      bestValues: [...bestValues],
+      best,
+      message: `<b>${next}</b> is NOT in the set &mdash; streak ends at length <b>${length}</b>.` +
+        (isBest ? ` New best = <b>${best}</b>!` : ` Best stays <b>${best}</b>.`),
+    });
+  }
+
+  const bestLo = bestValues.length ? bestValues[0] : null;
+  const bestHi = bestValues.length ? bestValues[bestValues.length - 1] : null;
+  frames.push({
+    phase: 'done',
+    inputIdx: -1,
+    walkedValues: [],
+    bestValues: [...bestValues],
+    best,
+    message: bestValues.length === 0
+      ? `Done. Empty input &mdash; longest streak = <b>0</b>.`
+      : `Done. Longest consecutive sequence has length <b>${best}</b> (${bestLo}..${bestHi}).`,
+  });
+
+  return frames;
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 25, 90);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 400);
+camera.position.set(8, 6, 22);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 200;
+controls.target.set(8, 1.5, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(5, 10, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.45);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(200, 100, 0x1e293b, 0x1e293b);
+grid.position.y = -2.4;
+grid.material.transparent = true;
+grid.material.opacity = 0.3;
+scene.add(grid);
+
+/* ============ FACTORIES ============ */
+function makeLabelTexture(text, opts = {}) {
+  const { font = '700 100px -apple-system, BlinkMacSystemFont, sans-serif', color = '#ffffff' } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeLabelSprite(text, opts = {}) {
+  const { color = '#ffffff', scale = 1.0, font } = opts;
+  const tex = makeLabelTexture(text, { color, font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.1 * scale, 1.1 * scale, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+function makeBox(colorHex, edgeHex, w, h, d) {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(w, h, d);
+  const mat = new THREE.MeshStandardMaterial({
+    color: colorHex, metalness: 0.25, roughness: 0.55,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: edgeHex, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  group.userData.mesh = mesh;
+  group.userData.edges = edges;
+  group.userData.label = null;
+  group.userData.depth = d;
+  group.userData.isCurrent = false;
+  group.userData.state = 'set';
+  return group;
+}
+
+function setBoxLabel(group, text, color = '#ffffff', labelScale = 1.0) {
+  if (group.userData.label) {
+    group.remove(group.userData.label);
+    const m = group.userData.label.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+  }
+  const sprite = makeLabelSprite(text, { color, scale: labelScale });
+  sprite.position.set(0, 0, group.userData.depth / 2 + 0.02);
+  group.add(sprite);
+  group.userData.label = sprite;
+}
+
+function setNodeColor(group, colorHex, edgeHex) {
+  group.userData.mesh.material.color.setHex(colorHex);
+  if (edgeHex !== undefined) group.userData.edges.material.color.setHex(edgeHex);
+}
+
+function makeHighlightPlane(colorHex, w, h) {
+  const geo = new THREE.PlaneGeometry(w, h);
+  const mat = new THREE.MeshBasicMaterial({
+    color: colorHex, transparent: true, opacity: 0.28,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
+function makeMissingIndicator() {
+  // Ghost outline shown at the (empty) position where x-1 would sit.
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(SET_W * 0.95, SET_H * 0.95, SET_D * 0.5);
+  const mat = new THREE.MeshBasicMaterial({
+    color: COLORS.missing, transparent: true, opacity: 0.22, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.missingEdge, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  group.visible = false;
+  group.userData.mesh = mesh;
+  group.userData.edges = edges;
+  group.userData.depth = SET_D * 0.5;
+  group.userData.label = null;
+  return group;
+}
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const nums = State.nums;
+  const positions = State.setPositions;
+  const setArr = Array.from(new Set(nums)).sort((a, b) => a - b);
+
+  // ---- input row ----
+  Scene.inputNodes = [];
+  const inputLabel = makeLabelSprite('input', {
+    color: '#60a5fa', scale: 0.9, font: '700 72px -apple-system, sans-serif',
+  });
+  inputLabel.position.set(-SPACING_INPUT * 1.0, INPUT_Y, 0);
+  Scene.root.add(inputLabel);
+
+  for (let i = 0; i < nums.length; i++) {
+    const node = makeBox(COLORS.input, COLORS.inputEdge, INPUT_W, INPUT_H, INPUT_D);
+    node.position.set(i * SPACING_INPUT, INPUT_Y, 0);
+    setBoxLabel(node, String(nums[i]), '#ffffff');
+    Scene.root.add(node);
+    Scene.inputNodes.push(node);
+
+    const idxLabel = makeLabelSprite(String(i), {
+      color: '#64748b', scale: 0.5, font: '700 72px -apple-system, sans-serif',
+    });
+    idxLabel.position.set(i * SPACING_INPUT, INPUT_Y - (INPUT_H / 2) - 0.45, 0);
+    Scene.root.add(idxLabel);
+  }
+
+  // ---- set row (laid out by value) ----
+  Scene.setNodes = [];
+  Scene.setValueMap = new Map();
+  const setLabel = makeLabelSprite('set (by value)', {
+    color: '#34d399', scale: 0.9, font: '700 72px -apple-system, sans-serif',
+  });
+  const minSetX = setArr.length > 0 ? positions.get(setArr[0]) : 0;
+  setLabel.position.set(minSetX - 1.8, SET_Y, 0);
+  Scene.root.add(setLabel);
+
+  for (const v of setArr) {
+    const node = makeBox(COLORS.set, COLORS.setEdge, SET_W, SET_H, SET_D);
+    node.position.set(positions.get(v), SET_Y, 0);
+    setBoxLabel(node, String(v), '#ffffff', 0.85);
+    Scene.root.add(node);
+    Scene.setNodes.push(node);
+    Scene.setValueMap.set(v, node);
+  }
+
+  // ---- highlight planes ----
+  Scene.inputHL = makeHighlightPlane(COLORS.input, INPUT_W + 0.4, INPUT_H + 0.4);
+  Scene.inputHL.position.z = -0.3;
+  Scene.root.add(Scene.inputHL);
+
+  Scene.cursorHL = makeHighlightPlane(COLORS.current, SET_W + 0.4, SET_H + 0.4);
+  Scene.cursorHL.position.z = -0.3;
+  Scene.root.add(Scene.cursorHL);
+
+  Scene.queryHL = makeHighlightPlane(0x34d399, SET_W + 0.5, SET_H + 0.5);
+  Scene.queryHL.position.z = -0.35;
+  Scene.root.add(Scene.queryHL);
+
+  // ---- missing-slot indicator (where x-1 would be) ----
+  Scene.missing = makeMissingIndicator();
+  Scene.root.add(Scene.missing);
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const nums = State.nums;
+  const positions = State.setPositions;
+  const setArr = Array.from(new Set(nums)).sort((a, b) => a - b);
+
+  let minX = -3, maxX = 3;
+  if (nums.length > 0) {
+    minX = Math.min(minX, -SPACING_INPUT * 0.5);
+    maxX = Math.max(maxX, (nums.length - 1) * SPACING_INPUT + SPACING_INPUT * 0.5);
+  }
+  if (setArr.length > 0) {
+    const lo = positions.get(setArr[0]);
+    const hi = positions.get(setArr[setArr.length - 1]);
+    minX = Math.min(minX, lo - 1.5);
+    maxX = Math.max(maxX, hi + 1.5);
+  }
+  const midX = (minX + maxX) / 2;
+  const width = maxX - minX;
+  const dist = Math.max(14, width * 0.62);
+  controls.target.set(midX, 1.5, 0);
+  camera.position.set(midX, 3.5, dist);
+  controls.update();
+}
+
+/* ============ APPLY FRAME ============ */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+
+  // reset current flag
+  for (const node of Scene.setNodes) node.userData.isCurrent = false;
+
+  // Color each set box: gold (best) > amber (walked) > green (default)
+  const bestSet = new Set(f.bestValues || []);
+  const walkedSet = new Set(f.walkedValues || []);
+  for (const [v, node] of Scene.setValueMap) {
+    if (bestSet.has(v)) {
+      setNodeColor(node, COLORS.best, COLORS.bestEdge);
+      node.userData.state = 'best';
+    } else if (walkedSet.has(v)) {
+      setNodeColor(node, COLORS.current, COLORS.currentEdge);
+      node.userData.state = 'walked';
+    } else {
+      setNodeColor(node, COLORS.set, COLORS.setEdge);
+      node.userData.state = 'set';
+    }
+  }
+
+  // input cursor
+  if (f.inputIdx >= 0 && f.inputIdx < Scene.inputNodes.length) {
+    Scene.inputHL.position.set(f.inputIdx * SPACING_INPUT, INPUT_Y, -0.3);
+    Scene.inputHL.visible = true;
+  } else {
+    Scene.inputHL.visible = false;
+  }
+
+  // set cursor on current value being processed
+  let cursorValue = null;
+  if (f.phase === 'walk-step') cursorValue = f.current;
+  else if (f.phase === 'check-start' || f.phase === 'skip' || f.phase === 'skip-dup') cursorValue = f.value;
+
+  if (cursorValue !== null && Scene.setValueMap.has(cursorValue)) {
+    const xpos = State.setPositions.get(cursorValue);
+    Scene.cursorHL.position.set(xpos, SET_Y, -0.3);
+    const isWalking = (f.phase === 'walk-step');
+    Scene.cursorHL.material.color.setHex(isWalking ? COLORS.current : COLORS.input);
+    Scene.cursorHL.material.opacity = isWalking ? 0.32 : 0.28;
+    Scene.cursorHL.visible = true;
+    Scene.setValueMap.get(cursorValue).userData.isCurrent = true;
+  } else {
+    Scene.cursorHL.visible = false;
+  }
+
+  // query (x-1) highlight + missing indicator
+  if (f.phase === 'check-start') {
+    const qv = f.queryValue;
+    if (Scene.setValueMap.has(qv)) {
+      // x-1 is in the set: highlight that green box
+      const qx = State.setPositions.get(qv);
+      Scene.queryHL.position.set(qx, SET_Y, -0.35);
+      Scene.queryHL.material.color.setHex(0x34d399);
+      Scene.queryHL.material.opacity = 0.32;
+      Scene.queryHL.visible = true;
+      Scene.missing.visible = false;
+    } else {
+      // x-1 absent: red ghost just left of x
+      const xpos = State.setPositions.get(f.value);
+      const ghostX = xpos - INTRA_STREAK_STEP;
+      Scene.queryHL.position.set(ghostX, SET_Y, -0.35);
+      Scene.queryHL.material.color.setHex(COLORS.missing);
+      Scene.queryHL.material.opacity = 0.28;
+      Scene.queryHL.visible = true;
+      Scene.missing.position.set(ghostX, SET_Y, 0);
+      setBoxLabel(Scene.missing, String(qv), '#fca5a5', 0.7);
+      Scene.missing.visible = true;
+    }
+  } else {
+    Scene.queryHL.visible = false;
+    Scene.missing.visible = false;
+  }
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+
+  const phaseNames = {
+    'init': 'INIT',
+    'check-start': 'CHECK-START',
+    'skip': 'SKIP',
+    'skip-dup': 'SKIP (DUP)',
+    'walk-step': 'WALK-STEP',
+    'walk-end': 'WALK-END',
+    'done': 'DONE',
+  };
+  $('s-phase').textContent = phaseNames[f.phase] || f.phase;
+  $('s-idx').textContent = (f.inputIdx >= 0) ? f.inputIdx : '\u2014';
+  $('s-val').textContent = (f.value !== undefined) ? f.value : '\u2014';
+
+  if (f.phase === 'check-start') {
+    $('s-query').textContent = f.queryInSet ? `yes (${f.queryValue})` : `no (${f.queryValue} absent)`;
+    $('s-query').className = 'status-value ' + (f.queryInSet ? 'ok' : 'danger');
+  } else {
+    $('s-query').textContent = '\u2014';
+    $('s-query').className = 'status-value';
+  }
+
+  if (f.streakLength !== undefined) {
+    $('s-streak').textContent = f.streakLength;
+  } else {
+    $('s-streak').textContent = '\u2014';
+  }
+
+  $('s-best').textContent = f.best;
+  $('best-value').textContent = f.best;
+  $('s-message').innerHTML = f.message;
+}
+
+/* ============ INPUT PARSING ============ */
+function parseNums(s) {
+  return s.split(',').map(t => t.trim()).filter(t => t !== '').map(t => parseInt(t, 10));
+}
+function validateNums(arr) {
+  if (arr.length < 1) return 'Need at least 1 value.';
+  if (arr.length > 15) return 'At most 15 values for clear visualization.';
+  for (const v of arr) {
+    if (!Number.isInteger(v) || v < -99 || v > 99) return `Each value must be an integer in -99..99 (got "${v}").`;
+  }
+  return null;
+}
+function applyInputs(nums) {
+  State.nums = nums;
+  State.setPositions = computePositions(nums);
+  State.frames = runAlgorithm(nums);
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ============ TRANSPORT ============ */
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 850;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next();
+      schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick = () => { pause(); next(); };
+document.getElementById('play-btn').onclick = togglePlay;
+
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = () => {
+  const nums = parseNums(document.getElementById('nums-input').value);
+  const err = validateNums(nums);
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(nums);
+};
+
+document.getElementById('reset-btn').onclick = () => fitCamera();
+
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    const s = btn.dataset.preset;
+    document.getElementById('nums-input').value = s;
+    document.getElementById('err').textContent = '';
+    applyInputs(parseNums(s));
+  };
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  if (Scene.setNodes) {
+    for (const node of Scene.setNodes) {
+      if (node.userData.isCurrent) {
+        node.scale.setScalar(1.0 + 0.10 * Math.sin(t * 5));
+      } else if (node.userData.state === 'best') {
+        node.scale.setScalar(1.0 + 0.05 * Math.sin(t * 2.5));
+      } else {
+        node.scale.setScalar(1);
+      }
+    }
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.nums);
+animate();
+</script>
+</body>
+</html>
