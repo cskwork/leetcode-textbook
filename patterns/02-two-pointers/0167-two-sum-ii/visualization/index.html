@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Two Sum II - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 300px; }
+  #status { top: 16px; right: 16px; width: 320px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 48px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Two Sum II &mdash; Input Array Is Sorted</h1>
+  <div class="sub">opposite-end two pointers &middot; sorted array &middot; interactive 3D</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Inputs <span class="light">(sorted, 1-indexed)</span></h3>
+  <div class="row"><label>nums</label><input id="nums-input" type="text" value="2,7,11,15" autocomplete="off" spellcheck="false"></div>
+  <div class="row"><label>target</label><input id="target-input" type="text" value="9" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="2,7,11,15|9">[2,7,11,15] t=9</button>
+    <button class="preset" data-preset="2,3,4|6">[2,3,4] t=6</button>
+    <button class="preset" data-preset="-1,0|-1">[-1,0] t=-1</button>
+    <button class="preset" data-preset="1,2,3,4,4,9,56,90|8">[1,2,3,4,4,9,56,90] t=8</button>
+    <button class="preset" data-preset="1,2,3,4,5,6,7,8,9,10|19">long: t=19</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Comma-separated integers in non-decreasing order. 2-12 numbers, each in [-99, 99]. Target in [-198, 198].</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">init</span></div>
+  <div class="status-line"><span class="status-label">Iteration</span><span class="status-value" id="s-iter">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">left (1-based)</span><span class="status-value" id="s-left">1</span></div>
+  <div class="status-line"><span class="status-label">right (1-based)</span><span class="status-value" id="s-right">4</span></div>
+  <div class="status-line"><span class="status-label">numbers[left]</span><span class="status-value" id="s-vl">2</span></div>
+  <div class="status-line"><span class="status-label">numbers[right]</span><span class="status-value" id="s-vr">15</span></div>
+  <div class="status-line"><span class="status-label">Target</span><span class="status-value write" id="s-target">9</span></div>
+  <div class="status-line"><span class="status-label">Sum</span><span class="status-value" id="s-sum">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Compare</span><span class="status-value" id="s-cmp">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Action</span><span class="status-value" id="s-action">&mdash;</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> to walk one phase, or <b>Play</b> to auto-advance.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const BOX_W = 1.4, BOX_H = 1.4, BOX_D = 0.7;
+const SPACING_X = 1.9;
+const PTR_Y = BOX_H / 2 + 0.95;
+const SUM_Y = BOX_H / 2 + 2.3;
+
+const COLORS = {
+  box:           0x3b82f6, boxEdge:      0x1e3a8a,
+  leftPtr:       0x60a5fa, rightPtr:     0xef4444,
+  currentPair:   0xfbbf24, pairEdge:     0xb45309,
+  found:         0x22c55e, foundEdge:    0x14532d,
+};
+
+/* ============ STATE ============ */
+const State = {
+  nums: [2, 7, 11, 15],
+  target: 9,
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+  xOffset: 0,
+};
+
+/* ============ ALGORITHM (pre-computes frames) ============ */
+function runAlgorithm(nums, target) {
+  const frames = [];
+  let left = 0, right = nums.length - 1;
+  let iter = 0;
+  const n = nums.length;
+
+  frames.push({
+    phase: 'init',
+    left, right, target, n,
+    message: `Array of <b>${n}</b> numbers, 1-indexed 1..${n}. Place <b>left = 1</b> (value ${nums[0]}) and <b>right = ${n}</b> (value ${nums[n - 1]}). Loop while left &lt; right. Target = <b>${target}</b>.`,
+  });
+
+  while (left < right) {
+    const vl = nums[left], vr = nums[right];
+    const sum = vl + vr;
+
+    frames.push({
+      phase: 'compute-sum',
+      left, right, iter, vl, vr, sum, target,
+      message: `Iter ${iter + 1}: read numbers[${left + 1}] = <b>${vl}</b> and numbers[${right + 1}] = <b>${vr}</b>. Sum = <b>${vl} + ${vr} = ${sum}</b>.`,
+    });
+
+    let comparison, action;
+    if (sum === target)        { comparison = 'equal';    action = 'found';  }
+    else if (sum < target)     { comparison = 'less';     action = 'left++'; }
+    else                       { comparison = 'greater';  action = 'right--'; }
+
+    frames.push({
+      phase: 'compare',
+      left, right, iter, vl, vr, sum, target, comparison, action,
+      message: comparison === 'equal'
+        ? `<b>${sum} == ${target}</b> &mdash; match! The pair sums exactly to target.`
+        : comparison === 'less'
+          ? `<b>${sum} &lt; ${target}</b> &mdash; sum too small. The array is sorted, so advancing <b>left</b> (toward larger values) can only raise the sum.`
+          : `<b>${sum} &gt; ${target}</b> &mdash; sum too big. The array is sorted, so moving <b>right</b> back (toward smaller values) can only lower the sum.`,
+    });
+
+    if (sum === target) {
+      frames.push({
+        phase: 'found',
+        left, right, iter, vl, vr, sum, target,
+        returnLeft: left + 1, returnRight: right + 1,
+        message: `Return <b>[${left + 1}, ${right + 1}]</b> &mdash; the 1-based indices. Solved in ${iter + 1} iteration${iter === 0 ? '' : 's'}.`,
+      });
+      return frames;
+    }
+
+    const oldLeft = left, oldRight = right;
+    if (sum < target) left++;
+    else right--;
+
+    frames.push({
+      phase: 'move-pointer',
+      iter, oldLeft, oldRight, newLeft: left, newRight: right,
+      left, right, comparison, action, sum, target,
+      oldVl: nums[oldLeft], oldVr: nums[oldRight],
+      newVl: nums[left], newVr: nums[right],
+      message: action === 'left++'
+        ? `Advance <b>left</b>: index ${oldLeft + 1} &rarr; <b>${left + 1}</b> (value ${nums[left]}).`
+        : `Move <b>right</b> back: index ${oldRight + 1} &rarr; <b>${right + 1}</b> (value ${nums[right]}).`,
+    });
+
+    iter++;
+  }
+
+  frames.push({
+    phase: 'done',
+    left, right, target,
+    message: `Pointers crossed (left ${left + 1} &ge; right ${right + 1}). No valid pair &mdash; the problem guarantees one, so this branch is unreachable.`,
+  });
+  return frames;
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 22, 55);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 3, 14);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 50;
+controls.target.set(0, 0, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(5, 10, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.45);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(80, 40, 0x1e293b, 0x1e293b);
+grid.position.y = -BOX_H / 2 - 0.3;
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+
+/* ============ FACTORIES ============ */
+function valueFontFor(text) {
+  const len = String(text).length;
+  if (len <= 2) return '700 130px -apple-system, BlinkMacSystemFont, sans-serif';
+  if (len === 3) return '700 100px -apple-system, BlinkMacSystemFont, sans-serif';
+  return '700 80px -apple-system, BlinkMacSystemFont, sans-serif';
+}
+
+function makeTexture(text, opts = {}) {
+  const {
+    color = '#ffffff',
+    font = '700 130px -apple-system, BlinkMacSystemFont, sans-serif',
+  } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeSprite(text, opts = {}) {
+  const { color = '#ffffff', scale = 1.0, font } = opts;
+  const tex = makeTexture(text, { color, font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.2 * scale, 1.2 * scale, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+function makeBox(value, index1) {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(BOX_W, BOX_H, BOX_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.box, metalness: 0.25, roughness: 0.55,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.boxEdge, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  const valueLabel = makeSprite(String(value), { color: '#ffffff', scale: 0.9, font: valueFontFor(value) });
+  valueLabel.position.set(0, 0, BOX_D / 2 + 0.02);
+  group.add(valueLabel);
+  const idxLabel = makeSprite(String(index1), { color: '#94a3b8', scale: 0.42, font: '700 100px -apple-system, sans-serif' });
+  idxLabel.position.set(0, BOX_H / 2 + 0.45, 0);
+  group.add(idxLabel);
+  group.userData.mesh = mesh;
+  group.userData.edges = edges;
+  group.userData.tint = 'default';
+  return group;
+}
+
+function setBoxTint(box, tint) {
+  if (box.userData.tint === tint) return;
+  box.userData.tint = tint;
+  const mesh = box.userData.mesh;
+  const edges = box.userData.edges;
+  if (tint === 'pair') {
+    mesh.material.color.setHex(COLORS.currentPair);
+    mesh.material.emissive.setHex(0x4d3a0a);
+    mesh.material.emissiveIntensity = 0.45;
+    edges.material.color.setHex(COLORS.pairEdge);
+  } else if (tint === 'found') {
+    mesh.material.color.setHex(COLORS.found);
+    mesh.material.emissive.setHex(0x14532d);
+    mesh.material.emissiveIntensity = 0.65;
+    edges.material.color.setHex(COLORS.foundEdge);
+  } else {
+    mesh.material.color.setHex(COLORS.box);
+    mesh.material.emissive.setHex(0x000000);
+    mesh.material.emissiveIntensity = 0;
+    edges.material.color.setHex(COLORS.boxEdge);
+  }
+}
+
+function makePointer(colorInt, labelText) {
+  const group = new THREE.Group();
+  const cone = new THREE.Mesh(
+    new THREE.ConeGeometry(0.42, 0.85, 4),
+    new THREE.MeshStandardMaterial({
+      color: colorInt, emissive: colorInt, emissiveIntensity: 0.4,
+      metalness: 0.3, roughness: 0.4,
+    })
+  );
+  cone.rotation.x = Math.PI;
+  cone.position.y = -0.15;
+  group.add(cone);
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.08, 0.55, 12),
+    new THREE.MeshStandardMaterial({ color: colorInt, metalness: 0.3, roughness: 0.4 })
+  );
+  stem.position.y = 0.5;
+  group.add(stem);
+  const label = makeSprite(labelText, { color: '#ffffff', scale: 0.55, font: '700 100px -apple-system, sans-serif' });
+  label.position.set(0, 1.15, 0);
+  group.add(label);
+  return group;
+}
+
+function makeSumLabel() {
+  const group = new THREE.Group();
+  group.userData.sprite = null;
+  group.visible = false;
+  return group;
+}
+
+function setSumLabel(group, text, color) {
+  if (group.userData.sprite) {
+    group.remove(group.userData.sprite);
+    const m = group.userData.sprite.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+    group.userData.sprite = null;
+  }
+  if (text) {
+    const sprite = makeSprite(text, { color: color || '#fde68a', scale: 1.0, font: '700 90px -apple-system, BlinkMacSystemFont, sans-serif' });
+    group.add(sprite);
+    group.userData.sprite = sprite;
+    group.visible = true;
+  } else {
+    group.visible = false;
+  }
+}
+
+function makeTargetLabel(text) {
+  return makeSprite(text, { color: '#fde68a', scale: 1.3, font: '700 80px -apple-system, BlinkMacSystemFont, sans-serif' });
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function boxX(i) {
+  return State.xOffset + i * SPACING_X;
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const nums = State.nums;
+  const n = nums.length;
+  State.xOffset = -(n - 1) / 2 * SPACING_X;
+
+  Scene.boxes = [];
+  for (let i = 0; i < n; i++) {
+    const box = makeBox(nums[i], i + 1);
+    box.position.set(boxX(i), 0, 0);
+    Scene.root.add(box);
+    Scene.boxes.push(box);
+  }
+
+  Scene.leftPtr = makePointer(COLORS.leftPtr, 'left');
+  Scene.leftPtr.position.set(boxX(0), PTR_Y, 0);
+  Scene.root.add(Scene.leftPtr);
+  Scene.leftPtrTargetX = boxX(0);
+  Scene.leftPtrCurrentX = boxX(0);
+
+  Scene.rightPtr = makePointer(COLORS.rightPtr, 'right');
+  Scene.rightPtr.position.set(boxX(n - 1), PTR_Y, 0);
+  Scene.root.add(Scene.rightPtr);
+  Scene.rightPtrTargetX = boxX(n - 1);
+  Scene.rightPtrCurrentX = boxX(n - 1);
+
+  Scene.sumLabel = makeSumLabel();
+  Scene.root.add(Scene.sumLabel);
+
+  Scene.targetLabel = makeTargetLabel(`target = ${State.target}`);
+  Scene.targetLabel.position.set(boxX(n - 1) + BOX_W * 1.2, SUM_Y + 0.7, 0);
+  Scene.root.add(Scene.targetLabel);
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const n = State.nums.length;
+  const width = n * SPACING_X + 5;
+  const dist = Math.max(9, width * 0.72);
+  controls.target.set(0, 0.5, 0);
+  camera.position.set(0, 2.6, dist);
+  controls.update();
+}
+
+/* ============ APPLY FRAME ============ */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+
+  for (const box of Scene.boxes) setBoxTint(box, 'default');
+
+  let pairLeft = null, pairRight = null, ptrLeft, ptrRight;
+  if (f.phase === 'init') {
+    ptrLeft = f.left; ptrRight = f.right;
+  } else if (f.phase === 'move-pointer') {
+    pairLeft = f.oldLeft; pairRight = f.oldRight;
+    ptrLeft = f.newLeft; ptrRight = f.newRight;
+  } else if (f.phase === 'done') {
+    ptrLeft = f.left; ptrRight = f.right;
+  } else {
+    pairLeft = f.left; pairRight = f.right;
+    ptrLeft = f.left; ptrRight = f.right;
+  }
+
+  if (pairLeft !== null && pairRight !== null) {
+    const tint = (f.phase === 'found') ? 'found' : 'pair';
+    setBoxTint(Scene.boxes[pairLeft], tint);
+    setBoxTint(Scene.boxes[pairRight], tint);
+  }
+
+  Scene.leftPtrTargetX = boxX(ptrLeft);
+  Scene.rightPtrTargetX = boxX(ptrRight);
+
+  let sumText = null, sumColor = '#fde68a';
+  if (f.phase === 'compute-sum') {
+    sumText = `${f.vl} + ${f.vr} = ${f.sum}`;
+  } else if (f.phase === 'compare') {
+    const op = f.comparison === 'less' ? '<' : f.comparison === 'greater' ? '>' : '==';
+    sumText = `${f.sum} ${op} ${f.target}`;
+    sumColor = f.comparison === 'equal' ? '#86efac' : '#fca5a5';
+  } else if (f.phase === 'found') {
+    sumText = `${f.sum} = ${f.target}`;
+    sumColor = '#86efac';
+  }
+  setSumLabel(Scene.sumLabel, sumText, sumColor);
+  if (sumText) {
+    Scene.sumLabel.position.set((boxX(ptrLeft) + boxX(ptrRight)) / 2, SUM_Y, 0);
+  }
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+  $('s-target').textContent = f.target;
+
+  const phaseNames = {
+    'init': 'INIT',
+    'compute-sum': 'COMPUTE SUM',
+    'compare': 'COMPARE',
+    'move-pointer': 'MOVE POINTER',
+    'found': 'FOUND',
+    'done': 'DONE',
+  };
+  $('s-phase').textContent = phaseNames[f.phase] || f.phase;
+
+  if (f.phase === 'init' || f.phase === 'done') {
+    $('s-iter').textContent = '\u2014';
+    $('s-left').textContent = f.left + 1;
+    $('s-right').textContent = f.right + 1;
+    $('s-vl').textContent = State.nums[f.left];
+    $('s-vr').textContent = State.nums[f.right];
+    $('s-sum').textContent = '\u2014';
+    $('s-cmp').textContent = '\u2014';
+    $('s-cmp').className = 'status-value';
+    $('s-action').textContent = '\u2014';
+    $('s-action').className = 'status-value';
+  } else if (f.phase === 'move-pointer') {
+    $('s-iter').textContent = f.iter + 1;
+    $('s-left').textContent = `${f.oldLeft + 1} \u2192 ${f.newLeft + 1}`;
+    $('s-right').textContent = `${f.oldRight + 1} \u2192 ${f.newRight + 1}`;
+    $('s-vl').textContent = `${f.oldVl} \u2192 ${f.newVl}`;
+    $('s-vr').textContent = `${f.oldVr} \u2192 ${f.newVr}`;
+    $('s-sum').textContent = f.sum;
+    $('s-cmp').textContent = f.comparison === 'less' ? 'sum < target' : 'sum > target';
+    $('s-cmp').className = 'status-value danger';
+    $('s-action').textContent = f.action;
+    $('s-action').className = 'status-value accent';
+  } else {
+    $('s-iter').textContent = f.iter + 1;
+    $('s-left').textContent = f.left + 1;
+    $('s-right').textContent = f.right + 1;
+    $('s-vl').textContent = f.vl;
+    $('s-vr').textContent = f.vr;
+    $('s-sum').textContent = f.sum;
+    if (f.phase === 'compute-sum') {
+      $('s-cmp').textContent = '\u2014';
+      $('s-cmp').className = 'status-value';
+      $('s-action').textContent = '\u2014';
+      $('s-action').className = 'status-value';
+    } else {
+      const cmpText = f.comparison === 'equal' ? 'sum == target'
+                    : f.comparison === 'less'   ? 'sum < target'
+                                                : 'sum > target';
+      $('s-cmp').textContent = cmpText;
+      $('s-cmp').className = 'status-value ' + (f.comparison === 'equal' ? 'ok' : 'danger');
+      $('s-action').textContent = f.action || '\u2014';
+      $('s-action').className = 'status-value ' + (f.action === 'found' ? 'ok' : 'accent');
+    }
+  }
+
+  $('s-message').innerHTML = f.message;
+}
+
+/* ============ INPUT PARSING ============ */
+function parseNums(s) {
+  return s.split(',').map(t => t.trim()).filter(t => t !== '').map(t => parseInt(t, 10));
+}
+function parseTarget(s) {
+  return parseInt(s.trim(), 10);
+}
+function validateNums(arr) {
+  if (arr.length < 2) return 'Array must have at least 2 numbers.';
+  if (arr.length > 12) return 'Array must have at most 12 numbers.';
+  for (const v of arr) {
+    if (!Number.isInteger(v) || v < -99 || v > 99) return `Each number must be an integer in [-99, 99] (got "${v}").`;
+  }
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] < arr[i - 1]) return `Array must be sorted (non-decreasing). Index ${i + 1} (${arr[i]}) < index ${i} (${arr[i - 1]}).`;
+  }
+  return null;
+}
+function validateTarget(t) {
+  if (!Number.isInteger(t)) return 'Target must be an integer.';
+  if (t < -198 || t > 198) return 'Target must be in [-198, 198].';
+  return null;
+}
+function applyInputs(nums, target) {
+  State.nums = nums;
+  State.target = target;
+  State.frames = runAlgorithm(nums, target);
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ============ TRANSPORT ============ */
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 1100;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next();
+      schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick = () => { pause(); next(); };
+document.getElementById('play-btn').onclick = togglePlay;
+
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = () => {
+  const nums = parseNums(document.getElementById('nums-input').value);
+  const target = parseTarget(document.getElementById('target-input').value);
+  const err = validateNums(nums) || validateTarget(target);
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(nums, target);
+};
+
+document.getElementById('reset-btn').onclick = () => fitCamera();
+
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    const [n, t] = btn.dataset.preset.split('|');
+    document.getElementById('nums-input').value = n;
+    document.getElementById('target-input').value = t;
+    document.getElementById('err').textContent = '';
+    applyInputs(parseNums(n), parseTarget(t));
+  };
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+function lerp(a, b, t) { return a + (b - a) * t; }
+const clock = new THREE.Clock();
+
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  if (Scene.leftPtr) {
+    Scene.leftPtrCurrentX = lerp(Scene.leftPtrCurrentX, Scene.leftPtrTargetX, 0.18);
+    Scene.leftPtr.position.x = Scene.leftPtrCurrentX;
+    Scene.leftPtr.position.y = PTR_Y + 0.08 * Math.sin(t * 3);
+  }
+  if (Scene.rightPtr) {
+    Scene.rightPtrCurrentX = lerp(Scene.rightPtrCurrentX, Scene.rightPtrTargetX, 0.18);
+    Scene.rightPtr.position.x = Scene.rightPtrCurrentX;
+    Scene.rightPtr.position.y = PTR_Y + 0.08 * Math.sin(t * 3 + Math.PI);
+  }
+
+  if (Scene.boxes) {
+    const f = State.frames[State.frameIndex];
+    const isFound = f && f.phase === 'found';
+    for (const box of Scene.boxes) {
+      if (isFound && box.userData.tint === 'found') {
+        box.scale.setScalar(1.0 + 0.06 * Math.sin(t * 5));
+      } else {
+        box.scale.setScalar(1);
+      }
+    }
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.nums, State.target);
+animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Container With Most Water - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 280px; }
+  #status { top: 16px; right: 16px; width: 320px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 24px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Container With Most Water</h1>
+  <div class="sub">two pointers &middot; greedy &middot; interactive 3D</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Input <span class="light">(height array)</span></h3>
+  <div class="row"><label>h</label><input id="h-input" type="text" value="1,8,6,2,5,4,8,3,7" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="1,8,6,2,5,4,8,3,7">Main (49)</button>
+    <button class="preset" data-preset="1,1">[1,1]</button>
+    <button class="preset" data-preset="4,3,2,1,4">[4,3,2,1,4]</button>
+    <button class="preset" data-preset="1,2,1">[1,2,1]</button>
+    <button class="preset" data-preset="1,2,3,4,5,6,7,8,9,10">Increasing</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Comma-separated heights. 2 to 15 values, each an integer from 0 to 50. The answer updates live.</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">init</span></div>
+  <div class="status-line"><span class="status-label">left</span><span class="status-value" id="s-left">0</span></div>
+  <div class="status-line"><span class="status-label">right</span><span class="status-value" id="s-right">n-1</span></div>
+  <div class="status-line"><span class="status-label">height[left]</span><span class="status-value" id="s-hl">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">height[right]</span><span class="status-value" id="s-hr">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">min height</span><span class="status-value accent" id="s-min">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">width</span><span class="status-value" id="s-width">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">area</span><span class="status-value write" id="s-area">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">best area</span><span class="status-value ok" id="s-best">0</span></div>
+  <div class="status-line"><span class="status-label">move</span><span class="status-value danger" id="s-move">&mdash;</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> to walk one phase, or <b>Play</b> to auto-advance.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const SPACING_X = 2.0;
+const BAR_W = 0.9;
+const BAR_D = 0.9;
+const HEIGHT_SCALE = 0.55;
+
+const COLORS = {
+  bar:        0x3b82f6,
+  barEdge:    0x1e3a8a,
+  activeBar:  0xfbbf24,
+  activeEdge: 0x92400e,
+  pointer:    0xfbbf24,
+  water:      0x22d3ee,
+  bestWater:  0xfde047,
+  ground:     0x1e293b,
+  widthLine:  0x67e8f9,
+};
+
+/* ============ STATE ============ */
+const State = {
+  heights: [1, 8, 6, 2, 5, 4, 8, 3, 7],
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+  frameStartTime: 0,
+  moveAnim: null,
+};
+
+/* ============ ALGORITHM (pre-computes every step as a frame) ============ */
+function runAlgorithm(heights) {
+  const frames = [];
+  const n = heights.length;
+  let left = 0, right = n - 1;
+  let best = 0, bestLeft = -1, bestRight = -1;
+  let iter = 0;
+
+  frames.push({
+    phase: 'init', iter, left, right,
+    best, bestLeft, bestRight,
+    message: `Start <b>left = 0</b>, <b>right = ${n - 1}</b> (widest possible container). Track <b>best = 0</b>.`,
+  });
+
+  while (left < right) {
+    const hL = heights[left];
+    const hR = heights[right];
+    const h = Math.min(hL, hR);
+    const width = right - left;
+    const area = width * h;
+
+    frames.push({
+      phase: 'compute-area', iter, left, right, hL, hR, h, width, area,
+      best, bestLeft, bestRight,
+      message: `Area = width <b>${width}</b> &times; min(h[${left}] = ${hL}, h[${right}] = ${hR}) = <b>${width} &times; ${h} = ${area}</b>.`,
+    });
+
+    const prevBest = best;
+    const isRecord = area > prevBest;
+    if (isRecord) {
+      best = area;
+      bestLeft = left;
+      bestRight = right;
+    }
+    frames.push({
+      phase: 'compare-max', iter, left, right, hL, hR, h, width, area,
+      prevBest, isRecord, best, bestLeft, bestRight,
+      message: isRecord
+        ? `<b>${area}</b> &gt; best <b>${prevBest}</b>. Update best to <b>${best}</b>; remember pair (left = ${left}, right = ${right}).`
+        : `<b>${area}</b> &le; best <b>${prevBest}</b>. Best stays at <b>${best}</b>.`,
+    });
+
+    const tie = hL === hR;
+    const moveSide = hL < hR ? 'left' : 'right';
+    const newLeft = moveSide === 'left' ? left + 1 : left;
+    const newRight = moveSide === 'right' ? right - 1 : right;
+    frames.push({
+      phase: 'move-pointer', iter, left, right, newLeft, newRight, moveSide, tie, hL, hR,
+      best, bestLeft, bestRight,
+      message: moveSide === 'left'
+        ? `h[${left}] = ${hL} &lt; h[${right}] = ${hR}: the <b>shorter</b> side caps the area. Move <b>left++</b>.`
+        : (tie
+            ? `h[${left}] = ${hL} = h[${right}] = ${hR}: tie, either move is safe. Move <b>right--</b>.`
+            : `h[${right}] = ${hR} &lt; h[${left}] = ${hL}: the <b>shorter</b> side caps the area. Move <b>right--</b>.`),
+    });
+
+    left = newLeft;
+    right = newRight;
+    iter++;
+  }
+
+  frames.push({
+    phase: 'done', iter, best, bestLeft, bestRight, left, right,
+    message: `left == right (pointers met at ${left}). Loop ends. <b>Max area = ${best}</b> at pair (indices ${bestLeft}, ${bestRight}).`,
+  });
+
+  return frames;
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 30, 90);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(7, 9, 22);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 90;
+controls.target.set(7, 2, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+dirLight.position.set(6, 14, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.45);
+rimLight.position.set(-8, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(120, 60, COLORS.ground, COLORS.ground);
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+
+const clock = new THREE.Clock();
+
+/* ============ FACTORIES ============ */
+function makeTextTexture(text, opts = {}) {
+  const { font = '700 110px -apple-system, BlinkMacSystemFont, sans-serif', color = '#ffffff' } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeTextSprite(text, opts = {}) {
+  const { color = '#ffffff', scale = 1.0, font } = opts;
+  const tex = makeTextTexture(text, { color, font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.4 * scale, 1.4 * scale, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+function makeBar(heightValue) {
+  const group = new THREE.Group();
+  const h = Math.max(0.05, heightValue * HEIGHT_SCALE);
+  const geo = new THREE.BoxGeometry(BAR_W, h, BAR_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.bar, metalness: 0.2, roughness: 0.55,
+    emissive: 0x000000, emissiveIntensity: 1,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.y = h / 2;
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.barEdge, transparent: true, opacity: 0.7 })
+  );
+  edges.position.y = h / 2;
+  group.add(edges);
+  group.userData.mesh = mesh;
+  group.userData.edges = edges;
+  group.userData.edgeMat = edges.material;
+  group.userData.heightValue = heightValue;
+  group.userData.barHeight = h;
+  return group;
+}
+
+function makePointer(label, color) {
+  const group = new THREE.Group();
+  const cone = new THREE.Mesh(
+    new THREE.ConeGeometry(0.45, 0.9, 18),
+    new THREE.MeshStandardMaterial({
+      color, emissive: color, emissiveIntensity: 0.55,
+      metalness: 0.3, roughness: 0.35,
+    })
+  );
+  cone.rotation.x = Math.PI;
+  group.add(cone);
+  const lab = makeTextSprite(label, {
+    color: '#fef3c7', scale: 0.65,
+    font: '700 130px -apple-system, sans-serif',
+  });
+  lab.position.set(0, 1.3, 0);
+  group.add(lab);
+  group.userData.cone = cone;
+  return group;
+}
+
+function makeWaterBox(widthUnits, heightUnits, color, opacity) {
+  const w = Math.max(0.1, widthUnits);
+  const h = Math.max(0.05, heightUnits);
+  const geo = new THREE.BoxGeometry(w, h, BAR_D * 0.85);
+  const mat = new THREE.MeshStandardMaterial({
+    color, transparent: true, opacity,
+    metalness: 0.1, roughness: 0.25,
+    depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  return mesh;
+}
+
+function makeWidthLine() {
+  const group = new THREE.Group();
+  const line = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 0.07, 0.07),
+    new THREE.MeshBasicMaterial({ color: COLORS.widthLine })
+  );
+  group.add(line);
+  group.userData.line = line;
+  // Two end caps so the span reads clearly
+  const capGeo = new THREE.BoxGeometry(0.07, 0.5, 0.07);
+  const capMat = new THREE.MeshBasicMaterial({ color: COLORS.widthLine });
+  const cap1 = new THREE.Mesh(capGeo, capMat);
+  const cap2 = new THREE.Mesh(capGeo, capMat);
+  group.add(cap1); group.add(cap2);
+  group.userData.cap1 = cap1;
+  group.userData.cap2 = cap2;
+  return group;
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function disposeObj(o) {
+  if (!o) return;
+  o.traverse(n => {
+    if (n.geometry) n.geometry.dispose();
+    if (n.material) {
+      if (n.material.map) n.material.map.dispose();
+      if (Array.isArray(n.material)) n.material.forEach(m => m.dispose());
+      else n.material.dispose();
+    }
+  });
+}
+
+function clearTransient() {
+  for (const k of ['water', 'bestWater', 'areaLabel', 'widthLabel', 'bestLabel', 'maxLabel']) {
+    if (Scene[k]) {
+      Scene.root.remove(Scene[k]);
+      disposeObj(Scene[k]);
+      Scene[k] = null;
+    }
+  }
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeObj(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const h = State.heights;
+
+  Scene.bars = [];
+  for (let i = 0; i < h.length; i++) {
+    const bar = makeBar(h[i]);
+    bar.position.set(i * SPACING_X, 0, 0);
+    Scene.root.add(bar);
+    Scene.bars.push(bar);
+
+    const valLab = makeTextSprite(String(h[i]), {
+      color: '#cbd5e1', scale: 0.5,
+      font: '700 110px -apple-system, sans-serif',
+    });
+    valLab.position.set(i * SPACING_X, bar.userData.barHeight + 0.6, 0);
+    Scene.root.add(valLab);
+
+    const idxLab = makeTextSprite(String(i), {
+      color: '#64748b', scale: 0.45,
+      font: '600 110px -apple-system, sans-serif',
+    });
+    idxLab.position.set(i * SPACING_X, -0.6, 0);
+    Scene.root.add(idxLab);
+  }
+
+  Scene.leftPtr = makePointer('L', COLORS.pointer);
+  Scene.rightPtr = makePointer('R', COLORS.pointer);
+  Scene.leftPtr.visible = false;
+  Scene.rightPtr.visible = false;
+  Scene.root.add(Scene.leftPtr);
+  Scene.root.add(Scene.rightPtr);
+
+  Scene.widthGroup = makeWidthLine();
+  Scene.widthGroup.position.y = 0.04;
+  Scene.widthGroup.visible = false;
+  Scene.root.add(Scene.widthGroup);
+
+  Scene.water = null;
+  Scene.bestWater = null;
+  Scene.areaLabel = null;
+  Scene.widthLabel = null;
+  Scene.bestLabel = null;
+  Scene.maxLabel = null;
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const n = State.heights.length;
+  const minX = -SPACING_X;
+  const maxX = (n - 1) * SPACING_X + SPACING_X;
+  const midX = (minX + maxX) / 2;
+  const width = maxX - minX;
+  const maxBarH = Math.max(...State.heights, 1) * HEIGHT_SCALE;
+  const dist = Math.max(14, width * 0.95 + maxBarH * 0.6);
+  controls.target.set(midX - 0.5, maxBarH * 0.45, 0);
+  camera.position.set(midX - 0.5, maxBarH * 0.9 + 3.5, dist);
+  controls.update();
+}
+
+/* ============ BAR HIGHLIGHTING ============ */
+function resetBarColors() {
+  for (const bar of Scene.bars) {
+    bar.userData.mesh.material.color.setHex(COLORS.bar);
+    bar.userData.mesh.material.emissive.setHex(0x000000);
+    bar.userData.edgeMat.color.setHex(COLORS.barEdge);
+  }
+}
+
+function highlightBar(idx, color, edgeColor, emissive) {
+  const bar = Scene.bars[idx];
+  if (!bar) return;
+  bar.userData.mesh.material.color.setHex(color);
+  bar.userData.mesh.material.emissive.setHex(emissive);
+  bar.userData.edgeMat.color.setHex(edgeColor);
+}
+
+/* ============ APPLY FRAME ============ */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  State.frameStartTime = clock.getElapsedTime();
+  State.moveAnim = null;
+  const f = State.frames[idx];
+
+  clearTransient();
+  resetBarColors();
+
+  // Pointer visibility & default position
+  if (f.phase === 'done') {
+    Scene.leftPtr.visible = false;
+    Scene.rightPtr.visible = false;
+    Scene.widthGroup.visible = false;
+  } else {
+    Scene.leftPtr.visible = true;
+    Scene.rightPtr.visible = true;
+    placePointer(Scene.leftPtr, f.left);
+    placePointer(Scene.rightPtr, f.right);
+
+    if (f.phase === 'move-pointer') {
+      State.moveAnim = {
+        side: f.moveSide,
+        fromIdx: f.moveSide === 'left' ? f.left : f.right,
+        toIdx: f.moveSide === 'left' ? f.newLeft : f.newRight,
+      };
+    }
+  }
+
+  // Best container (gold) — show whenever we have a recorded best
+  if (f.bestLeft >= 0 && f.bestRight >= 0) {
+    const w = (f.bestRight - f.bestLeft) * SPACING_X;
+    const hgt = Math.min(State.heights[f.bestLeft], State.heights[f.bestRight]) * HEIGHT_SCALE;
+    Scene.bestWater = makeWaterBox(w, hgt, COLORS.bestWater, 0.22);
+    Scene.bestWater.position.set((f.bestLeft + f.bestRight) * SPACING_X / 2, hgt / 2, 0);
+    Scene.bestWater.renderOrder = 1;
+    Scene.root.add(Scene.bestWater);
+
+    Scene.bestLabel = makeTextSprite(`best = ${f.best}`, {
+      color: '#fde047', scale: 0.6,
+      font: '700 100px -apple-system, sans-serif',
+    });
+    Scene.bestLabel.position.set((f.bestLeft + f.bestRight) * SPACING_X / 2, hgt + 1.1, 0);
+    Scene.root.add(Scene.bestLabel);
+  }
+
+  // Current container (cyan), area label, width indicator
+  const showCurrent = f.phase === 'compute-area' || f.phase === 'compare-max' || f.phase === 'move-pointer';
+  if (showCurrent && f.left !== undefined && f.right !== undefined && f.left !== f.right) {
+    const hL = State.heights[f.left];
+    const hR = State.heights[f.right];
+    const w = (f.right - f.left) * SPACING_X;
+    const hgt = Math.min(hL, hR) * HEIGHT_SCALE;
+    Scene.water = makeWaterBox(w, hgt, COLORS.water, 0.40);
+    Scene.water.position.set((f.left + f.right) * SPACING_X / 2, hgt / 2, 0.1);
+    Scene.water.renderOrder = 2;
+    Scene.root.add(Scene.water);
+
+    if (f.area !== undefined) {
+      Scene.areaLabel = makeTextSprite(`area = ${f.area}`, {
+        color: '#a5f3fc', scale: 0.65,
+        font: '700 110px -apple-system, sans-serif',
+      });
+      Scene.areaLabel.position.set((f.left + f.right) * SPACING_X / 2, hgt + 0.55, 0.2);
+      Scene.root.add(Scene.areaLabel);
+    }
+
+    // Width line on the ground (only during compute-area for clarity)
+    if (f.phase === 'compute-area') {
+      Scene.widthGroup.visible = true;
+      const lineW = (f.right - f.left) * SPACING_X;
+      Scene.widthGroup.userData.line.scale.x = lineW;
+      Scene.widthGroup.userData.line.position.x = 0;
+      Scene.widthGroup.position.x = (f.left + f.right) * SPACING_X / 2;
+      Scene.widthGroup.userData.cap1.position.x = -lineW / 2;
+      Scene.widthGroup.userData.cap2.position.x = lineW / 2;
+
+      Scene.widthLabel = makeTextSprite(`width = ${f.right - f.left}`, {
+        color: '#67e8f9', scale: 0.5,
+        font: '700 100px -apple-system, sans-serif',
+      });
+      Scene.widthLabel.position.set((f.left + f.right) * SPACING_X / 2, 0.7, 0.2);
+      Scene.root.add(Scene.widthLabel);
+    } else {
+      Scene.widthGroup.visible = false;
+    }
+
+    // Highlight active bars amber
+    highlightBar(f.left, COLORS.activeBar, COLORS.activeEdge, 0x4a2a00);
+    highlightBar(f.right, COLORS.activeBar, COLORS.activeEdge, 0x4a2a00);
+  } else {
+    Scene.widthGroup.visible = false;
+  }
+
+  // Done phase: crown the best pair gold
+  if (f.phase === 'done' && f.bestLeft >= 0 && f.bestRight >= 0) {
+    highlightBar(f.bestLeft, COLORS.bestWater, 0x854d0e, 0x3a2a00);
+    highlightBar(f.bestRight, COLORS.bestWater, 0x854d0e, 0x3a2a00);
+    Scene.maxLabel = makeTextSprite(`MAX AREA = ${f.best}`, {
+      color: '#fde047', scale: 0.9,
+      font: '700 120px -apple-system, sans-serif',
+    });
+    const peakH = Math.max(State.heights[f.bestLeft], State.heights[f.bestRight]) * HEIGHT_SCALE;
+    Scene.maxLabel.position.set((f.bestLeft + f.bestRight) * SPACING_X / 2, peakH + 2.0, 0.3);
+    Scene.root.add(Scene.maxLabel);
+  }
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function placePointer(ptr, idx) {
+  const bar = Scene.bars[idx];
+  if (!bar) return;
+  ptr.position.x = idx * SPACING_X;
+  ptr.position.y = bar.userData.barHeight + 1.1;
+  ptr.position.z = 0;
+}
+
+/* ============ STATUS PANEL ============ */
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+
+  const phaseNames = {
+    init: 'INIT',
+    'compute-area': 'COMPUTE AREA',
+    'compare-max': 'COMPARE MAX',
+    'move-pointer': 'MOVE POINTER',
+    done: 'DONE',
+  };
+  $('s-phase').textContent = phaseNames[f.phase] || f.phase;
+
+  const DASH = '\u2014';
+
+  if (f.phase === 'init') {
+    $('s-left').textContent = f.left;
+    $('s-right').textContent = f.right;
+    $('s-hl').textContent = State.heights[f.left];
+    $('s-hr').textContent = State.heights[f.right];
+    $('s-min').textContent = DASH;
+    $('s-width').textContent = DASH;
+    $('s-area').textContent = DASH;
+    $('s-best').textContent = f.best;
+    $('s-best').className = 'status-value ok';
+    $('s-move').textContent = DASH;
+    $('s-move').className = 'status-value';
+  } else if (f.phase === 'done') {
+    $('s-left').textContent = DASH;
+    $('s-right').textContent = DASH;
+    $('s-hl').textContent = DASH;
+    $('s-hr').textContent = DASH;
+    $('s-min').textContent = DASH;
+    $('s-width').textContent = DASH;
+    $('s-area').textContent = DASH;
+    $('s-best').textContent = f.best;
+    $('s-best').className = 'status-value ok';
+    $('s-move').textContent = 'returned';
+    $('s-move').className = 'status-value ok';
+  } else if (f.phase === 'move-pointer') {
+    $('s-left').textContent = `${f.left} \u2192 ${f.newLeft}`;
+    $('s-right').textContent = `${f.right} \u2192 ${f.newRight}`;
+    $('s-hl').textContent = f.hL;
+    $('s-hr').textContent = f.hR;
+    $('s-min').textContent = DASH;
+    $('s-width').textContent = DASH;
+    $('s-area').textContent = DASH;
+    $('s-best').textContent = f.best;
+    $('s-best').className = 'status-value ok';
+    $('s-move').textContent = f.moveSide === 'left' ? 'left++' : 'right--';
+    $('s-move').className = 'status-value danger';
+  } else {
+    // compute-area or compare-max
+    $('s-left').textContent = f.left;
+    $('s-right').textContent = f.right;
+    $('s-hl').textContent = f.hL;
+    $('s-hr').textContent = f.hR;
+    $('s-min').textContent = f.h;
+    $('s-width').textContent = f.width;
+    $('s-area').textContent = f.area;
+    $('s-best').textContent = f.best;
+    $('s-best').className = 'status-value ok';
+    if (f.phase === 'compute-area') {
+      $('s-move').textContent = DASH;
+      $('s-move').className = 'status-value';
+    } else {
+      $('s-move').textContent = f.isRecord ? 'NEW BEST' : 'no update';
+      $('s-move').className = 'status-value ' + (f.isRecord ? 'ok' : '');
+    }
+  }
+
+  $('s-message').innerHTML = f.message;
+}
+
+/* ============ INPUT PARSING ============ */
+function parseHeights(s) {
+  return s.split(',').map(t => t.trim()).filter(t => t !== '').map(t => parseInt(t, 10));
+}
+function validateHeights(arr) {
+  if (arr.length < 2) return 'Need at least 2 heights.';
+  if (arr.length > 15) return 'At most 15 heights.';
+  for (const v of arr) {
+    if (!Number.isInteger(v) || v < 0 || v > 50) return `Each height must be an integer 0..50 (got "${v}").`;
+  }
+  return null;
+}
+function applyInputs(arr) {
+  State.heights = arr;
+  State.frames = runAlgorithm(arr);
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ============ TRANSPORT ============ */
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 1100;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next();
+      schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick = () => { pause(); next(); };
+document.getElementById('play-btn').onclick = togglePlay;
+
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = () => {
+  const arr = parseHeights(document.getElementById('h-input').value);
+  const err = validateHeights(arr);
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(arr);
+};
+
+document.getElementById('reset-btn').onclick = () => fitCamera();
+
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    const v = btn.dataset.preset;
+    document.getElementById('h-input').value = v;
+    document.getElementById('err').textContent = '';
+    applyInputs(parseHeights(v));
+  };
+});
+
+document.getElementById('h-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('apply-btn').click();
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+function easeInOutQuad(u) {
+  return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+}
+
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  // Pointer move animation during move-pointer phase
+  if (State.moveAnim && Scene.leftPtr.visible) {
+    const duration = Math.min(0.6, (1.1 / State.speed) * 0.55);
+    const u = Math.min(1, (t - State.frameStartTime) / duration);
+    const eased = easeInOutQuad(u);
+    const ma = State.moveAnim;
+    const idx = ma.fromIdx + (ma.toIdx - ma.fromIdx) * eased;
+    const ptr = ma.side === 'left' ? Scene.leftPtr : Scene.rightPtr;
+    ptr.position.x = idx * SPACING_X;
+    const targetBar = Scene.bars[ma.toIdx];
+    if (targetBar) {
+      ptr.position.y = targetBar.userData.barHeight + 1.1;
+    }
+  }
+
+  // Gentle pointer cone pulse
+  if (Scene.leftPtr && Scene.leftPtr.visible) {
+    Scene.leftPtr.userData.cone.scale.setScalar(1.0 + 0.06 * Math.sin(t * 4));
+  }
+  if (Scene.rightPtr && Scene.rightPtr.visible) {
+    Scene.rightPtr.userData.cone.scale.setScalar(1.0 + 0.06 * Math.sin(t * 4 + 1));
+  }
+
+  // Subtle breathing on the current water surface
+  if (Scene.water && Scene.water.material) {
+    Scene.water.material.opacity = 0.36 + 0.06 * Math.sin(t * 2.5);
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.heights);
+animate();
+</script>
+</body>
+</html>
