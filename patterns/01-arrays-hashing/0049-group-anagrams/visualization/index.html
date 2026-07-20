@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Group Anagrams - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 290px; }
+  #status { top: 16px; right: 16px; width: 320px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 28px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Group Anagrams</h1>
+  <div class="sub">sorting-key hash map &middot; arrays &amp; hashing &middot; interactive 3D</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Inputs <span class="light">(comma-separated)</span></h3>
+  <div class="row"><label>strs</label><input id="strs-input" type="text" value="eat,tea,tan,ate,nat,bat" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="eat,tea,tan,ate,nat,bat">eat tea tan ate nat bat</button>
+    <button class="preset" data-preset="">[""]</button>
+    <button class="preset" data-preset="a">["a"]</button>
+    <button class="preset" data-preset="dad,add,bad,dab">dad add bad dab</button>
+    <button class="preset" data-preset="abc,bca,cab">abc bca cab</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Comma-separated strings. Lowercase a-z (or empty). 1-12 strings, each up to 8 chars.</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">visit</span></div>
+  <div class="status-line"><span class="status-label">Word index</span><span class="status-value" id="s-index">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Word</span><span class="status-value" id="s-word">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Sorted key</span><span class="status-value write" id="s-key">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Lookup</span><span class="status-value" id="s-lookup">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Map size</span><span class="status-value" id="s-mapsize">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Total groups</span><span class="status-value ok" id="s-group">&mdash;</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> to walk one phase, or <b>Play</b> to auto-advance.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const INPUT_Y = 4.8;
+const KEY_Y = 1.6;
+const MAP_TOP_Y = -1.9;
+const INPUT_SPACING_X = 2.7;
+const MAP_SPACING_X = 3.5;
+const ITEM_SPACING_Y = 1.4;
+const BOX_W = 2.2, BOX_H = 1.1, BOX_D = 0.6;
+
+const GROUP_PALETTE = [
+  { fill: 0x34d399, edge: 0x047857 },
+  { fill: 0x10b981, edge: 0x065f46 },
+  { fill: 0x4ade80, edge: 0x166534 },
+  { fill: 0x65a30d, edge: 0x3f6212 },
+  { fill: 0x14b8a6, edge: 0x115e59 },
+  { fill: 0x22c55e, edge: 0x14532d },
+  { fill: 0x84cc16, edge: 0x365314 },
+  { fill: 0xa3e635, edge: 0x4d7c0f },
+];
+
+const COLORS = {
+  input:          0x60a5fa, inputEdge: 0x1d4ed8,
+  key:            0xfbbf24, keyEdge:   0xb45309,
+  highlightInput: 0x60a5fa,
+  highlightKey:   0xfbbf24,
+};
+
+const phaseNames = {
+  visit: 'VISIT',
+  'compute-key': 'SORT KEY',
+  lookup: 'LOOKUP',
+  insert: 'NEW GROUP',
+  append: 'APPEND',
+  done: 'DONE',
+};
+
+function centeredX(i, n, spacing) {
+  return (i - (n - 1) / 2) * spacing;
+}
+
+/* ============ STATE ============ */
+const State = {
+  words: ['eat','tea','tan','ate','nat','bat'],
+  frames: [],
+  frameIndex: 0,
+  finalSnapshot: [],
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+};
+
+/* ============ ALGORITHM (pre-computes frames and final state) ============ */
+function snapshotOf(map, order) {
+  return order.map(k => ({ key: k, items: [...map.get(k)] }));
+}
+
+function runAlgorithm(words) {
+  const frames = [];
+  const map = new Map();
+  const order = [];
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+
+    frames.push({
+      phase: 'visit', iter: i, word,
+      mapSnapshot: snapshotOf(map, order),
+      message: `Visit word <b>"${word}"</b> at index ${i}.`,
+    });
+
+    const chars = word.split('');
+    const sortedChars = [...chars].sort();
+    const key = sortedChars.join('');
+    frames.push({
+      phase: 'compute-key', iter: i, word, chars, sortedChars, key,
+      mapSnapshot: snapshotOf(map, order),
+      message: chars.length === 0
+        ? `Empty string has no letters; signature = <b>""</b>.`
+        : `Sort the letters of <b>"${word}"</b>: [${chars.join(',')}] &rarr; [${sortedChars.join(',')}] = signature <b>"${key}"</b>.`,
+    });
+
+    const isFound = map.has(key);
+    frames.push({
+      phase: 'lookup', iter: i, word, key, isFound,
+      mapSnapshot: snapshotOf(map, order),
+      message: isFound
+        ? `Look up <b>"${key}"</b> &rarr; <b>FOUND</b>. Will append to that group.`
+        : `Look up <b>"${key}"</b> &rarr; <b>NOT FOUND</b>. Will create a new group.`,
+    });
+
+    if (isFound) {
+      map.get(key).push(word);
+      frames.push({
+        phase: 'append', iter: i, word, key,
+        mapSnapshot: snapshotOf(map, order),
+        message: `Append <b>"${word}"</b> to group <b>"${key}"</b>.`,
+      });
+    } else {
+      map.set(key, [word]);
+      order.push(key);
+      frames.push({
+        phase: 'insert', iter: i, word, key,
+        mapSnapshot: snapshotOf(map, order),
+        message: `Create new group <b>"${key}"</b>: [<b>"${word}"</b>].`,
+      });
+    }
+  }
+
+  const groups = order.map(k => [...map.get(k)]);
+  const fmt = groups.map(g => '[' + g.map(w => `"${w}"`).join(', ') + ']').join(', ');
+  frames.push({
+    phase: 'done',
+    mapSnapshot: snapshotOf(map, order),
+    message: groups.length === 0
+      ? `Empty input &rarr; no groups.`
+      : `Done. Return map.values(): [${fmt}].`,
+  });
+
+  return { frames, finalSnapshot: snapshotOf(map, order) };
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 30, 75);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 2, 22);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 80;
+controls.target.set(0, 1.5, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(5, 10, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.45);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(80, 40, 0x1e293b, 0x1e293b);
+grid.position.y = -7.5;
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+
+/* ============ FACTORIES ============ */
+function makeLabelTexture(text, opts = {}) {
+  const { color = '#ffffff', bold = true, mono = true } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  const display = text === '' ? '(empty)' : text;
+  const len = Math.max(1, display.length);
+  const fontSize = Math.max(38, 150 - (len - 1) * 13);
+  const family = mono ? 'ui-monospace, "SF Mono", Menlo, monospace' : '-apple-system, BlinkMacSystemFont, sans-serif';
+  const weight = bold ? '700' : '500';
+  ctx.font = `${weight} ${fontSize}px ${family}`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(display, 256, 138);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeLabelSprite(text, opts = {}) {
+  const { color = '#ffffff', scaleW = 1.9, mono = true, bold = true } = opts;
+  const tex = makeLabelTexture(text, { color, bold, mono });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(scaleW, 1.0, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+function makeRowLabel(text, x, y, colorInt, scaleW = 2.6) {
+  const hex = '#' + colorInt.toString(16).padStart(6, '0');
+  const tex = makeLabelTexture(text, { color: hex, bold: true, mono: false });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(scaleW, 1.0, 1);
+  sprite.position.set(x, y, 0);
+  sprite.renderOrder = 5;
+  return sprite;
+}
+
+function makeBox(color, edgeColor) {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(BOX_W, BOX_H, BOX_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color, metalness: 0.25, roughness: 0.55,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: edgeColor, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  group.userData = { labelSprite: null, mesh, isNew: false };
+  return group;
+}
+
+function setBoxText(group, text, color = '#ffffff') {
+  if (group.userData.labelSprite) {
+    group.remove(group.userData.labelSprite);
+    const m = group.userData.labelSprite.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+  }
+  const sprite = makeLabelSprite(text, { color, scaleW: 1.9 });
+  sprite.position.set(0, 0, BOX_D / 2 + 0.02);
+  group.add(sprite);
+  group.userData.labelSprite = sprite;
+}
+
+function makeArrow(color, length = 1.4) {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color });
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, length, 10), mat);
+  shaft.rotation.z = -Math.PI / 2;
+  shaft.position.x = length / 2;
+  group.add(shaft);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.28, 14), mat);
+  tip.rotation.z = -Math.PI / 2;
+  tip.position.x = length + 0.13;
+  group.add(tip);
+  return group;
+}
+
+function makeHighlightPlane(color, w = BOX_W + 0.5, h = BOX_H + 0.5) {
+  const geo = new THREE.PlaneGeometry(w, h);
+  const mat = new THREE.MeshBasicMaterial({
+    color, transparent: true, opacity: 0.22,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const words = State.words;
+  const finalSnapshot = State.finalSnapshot;
+
+  /* ---- Input row ---- */
+  const inputLabelX = centeredX(0, words.length, INPUT_SPACING_X) - INPUT_SPACING_X * 1.5;
+  Scene.root.add(makeRowLabel('words', inputLabelX, INPUT_Y, COLORS.input, 2.0));
+
+  Scene.inputNodes = [];
+  for (let i = 0; i < words.length; i++) {
+    const node = makeBox(COLORS.input, COLORS.inputEdge);
+    node.position.set(centeredX(i, words.length, INPUT_SPACING_X), INPUT_Y, 0);
+    setBoxText(node, words[i], '#ffffff');
+    Scene.root.add(node);
+    Scene.inputNodes.push(node);
+  }
+
+  /* ---- Key indicator (transient) ---- */
+  Scene.keyIndicator = new THREE.Group();
+  Scene.keyIndicator.position.set(0, KEY_Y, 0);
+  Scene.keyIndicator.visible = false;
+
+  const kiWordBox = makeBox(COLORS.input, COLORS.inputEdge);
+  kiWordBox.position.set(-2, 0, 0);
+  Scene.keyIndicator.add(kiWordBox);
+
+  const kiWordLabel = makeLabelSprite('word', { color: '#94a3b8', scaleW: 1.4, mono: false });
+  kiWordLabel.position.set(-2, 0.95, 0);
+  Scene.keyIndicator.add(kiWordLabel);
+
+  const kiArrow = makeArrow(COLORS.keyEdge, 1.4);
+  kiArrow.position.set(-0.9, 0, 0.4);
+  Scene.keyIndicator.add(kiArrow);
+
+  const kiKeyBox = makeBox(COLORS.key, COLORS.keyEdge);
+  kiKeyBox.position.set(2, 0, 0);
+  Scene.keyIndicator.add(kiKeyBox);
+
+  const kiKeyLabel = makeLabelSprite('sorted key', { color: '#fde68a', scaleW: 1.6, mono: false });
+  kiKeyLabel.position.set(2, 0.95, 0);
+  Scene.keyIndicator.add(kiKeyLabel);
+
+  Scene.keyIndicator.userData = { wordBox: kiWordBox, arrow: kiArrow, keyBox: kiKeyBox };
+  Scene.root.add(Scene.keyIndicator);
+
+  /* ---- Map (pre-build all buckets; visibility toggled per frame) ---- */
+  const mapLabelX = centeredX(0, finalSnapshot.length, MAP_SPACING_X) - MAP_SPACING_X * 1.6;
+  Scene.root.add(makeRowLabel('groups (signature \u2192 list)', mapLabelX, MAP_TOP_Y, GROUP_PALETTE[0].fill, 3.6));
+
+  Scene.bucketsByKey = new Map();
+  Scene.bucketOrder = [];
+  for (let b = 0; b < finalSnapshot.length; b++) {
+    const bucket = finalSnapshot[b];
+    const palette = GROUP_PALETTE[b % GROUP_PALETTE.length];
+    const bucketGroup = new THREE.Group();
+    bucketGroup.position.set(centeredX(b, finalSnapshot.length, MAP_SPACING_X), MAP_TOP_Y, 0);
+
+    const keyBox = makeBox(COLORS.key, COLORS.keyEdge);
+    setBoxText(keyBox, bucket.key, '#ffffff');
+    bucketGroup.add(keyBox);
+
+    const items = [];
+    for (let j = 0; j < bucket.items.length; j++) {
+      const itemBox = makeBox(palette.fill, palette.edge);
+      itemBox.position.set(0, -(j + 1) * ITEM_SPACING_Y, 0);
+      setBoxText(itemBox, bucket.items[j], '#0b1020');
+      itemBox.visible = false;
+      bucketGroup.add(itemBox);
+      items.push(itemBox);
+    }
+
+    bucketGroup.visible = false;
+    bucketGroup.userData = { isNew: false };
+    Scene.root.add(bucketGroup);
+    const entry = { key: bucket.key, group: bucketGroup, items, keyBox, palette, index: b };
+    Scene.bucketsByKey.set(bucket.key, entry);
+    Scene.bucketOrder.push(entry);
+  }
+
+  /* ---- Highlights ---- */
+  Scene.inputHL = makeHighlightPlane(COLORS.highlightInput);
+  Scene.inputHL.position.z = -0.3;
+  Scene.inputHL.visible = false;
+  Scene.root.add(Scene.inputHL);
+
+  Scene.bucketHL = makeHighlightPlane(GROUP_PALETTE[0].fill);
+  Scene.bucketHL.position.z = -0.3;
+  Scene.bucketHL.visible = false;
+  Scene.root.add(Scene.bucketHL);
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const w = State.words.length;
+  const m = State.finalSnapshot.length;
+  const maxItems = Math.max(1, ...State.finalSnapshot.map(b => b.items.length));
+  const width = Math.max(w * INPUT_SPACING_X + 4, m * MAP_SPACING_X + 4, 10);
+  const height = maxItems * ITEM_SPACING_Y + 10;
+  const dist = Math.max(width * 0.9, height * 1.0, 14);
+  controls.target.set(0, 1.5, 0);
+  camera.position.set(0, 2, dist);
+  controls.update();
+}
+
+/* ============ APPLY FRAME ============ */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+
+  // Reset isNew flags
+  for (const entry of Scene.bucketOrder) {
+    entry.group.userData.isNew = false;
+    for (const it of entry.items) it.userData.isNew = false;
+  }
+
+  // Input highlight
+  if (f.phase === 'done') {
+    Scene.inputHL.visible = false;
+  } else {
+    Scene.inputHL.position.set(centeredX(f.iter, State.words.length, INPUT_SPACING_X), INPUT_Y, -0.3);
+    Scene.inputHL.visible = true;
+  }
+
+  // Map visibility per snapshot
+  const snapshotByKey = new Map(f.mapSnapshot.map(b => [b.key, b]));
+  for (const entry of Scene.bucketOrder) {
+    const snap = snapshotByKey.get(entry.key);
+    if (!snap) {
+      entry.group.visible = false;
+      continue;
+    }
+    entry.group.visible = true;
+    for (let j = 0; j < entry.items.length; j++) {
+      entry.items[j].visible = j < snap.items.length;
+    }
+  }
+
+  // Key indicator
+  if (f.phase === 'visit' || f.phase === 'done') {
+    Scene.keyIndicator.visible = false;
+  } else {
+    Scene.keyIndicator.visible = true;
+    setBoxText(Scene.keyIndicator.userData.wordBox, f.word, '#ffffff');
+    setBoxText(Scene.keyIndicator.userData.keyBox, f.key, '#ffffff');
+  }
+
+  // Bucket highlight + isNew flags
+  Scene.bucketHL.visible = false;
+  if (f.phase === 'lookup' || f.phase === 'insert' || f.phase === 'append') {
+    const entry = Scene.bucketsByKey.get(f.key);
+    if (entry && entry.group.visible) {
+      Scene.bucketHL.position.set(entry.group.position.x, entry.group.position.y, -0.3);
+      Scene.bucketHL.material.color.setHex(entry.palette.fill);
+      Scene.bucketHL.visible = true;
+
+      if (f.phase === 'insert' || f.phase === 'append') {
+        const snap = snapshotByKey.get(f.key);
+        const newIdx = snap.items.length - 1;
+        if (entry.items[newIdx]) entry.items[newIdx].userData.isNew = true;
+      }
+      if (f.phase === 'insert') {
+        entry.group.userData.isNew = true;
+      }
+    }
+  }
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = State.frameIndex + 1;
+  $('step-total').textContent = State.frames.length;
+
+  $('s-phase').textContent = phaseNames[f.phase] || f.phase;
+
+  if (f.phase === 'done') {
+    $('s-index').textContent = '\u2014';
+    $('s-word').textContent = '\u2014';
+    $('s-key').textContent = '\u2014';
+    $('s-lookup').textContent = '\u2014';
+    $('s-lookup').className = 'status-value';
+    $('s-mapsize').textContent = f.mapSnapshot.length;
+    $('s-group').textContent = `${f.mapSnapshot.length} group${f.mapSnapshot.length !== 1 ? 's' : ''}`;
+    $('s-group').className = 'status-value ok';
+  } else {
+    $('s-index').textContent = `${f.iter + 1} of ${State.words.length}`;
+    $('s-word').textContent = `"${f.word}"`;
+
+    if (f.phase === 'visit') {
+      $('s-key').textContent = '\u2014';
+      $('s-lookup').textContent = '\u2014';
+      $('s-lookup').className = 'status-value';
+      $('s-group').textContent = `${f.mapSnapshot.length} so far`;
+      $('s-group').className = 'status-value';
+    } else if (f.phase === 'compute-key') {
+      $('s-key').textContent = `"${f.key}"`;
+      $('s-lookup').textContent = '\u2014';
+      $('s-lookup').className = 'status-value';
+      $('s-group').textContent = `${f.mapSnapshot.length} so far`;
+      $('s-group').className = 'status-value';
+    } else if (f.phase === 'lookup') {
+      $('s-key').textContent = `"${f.key}"`;
+      $('s-lookup').textContent = f.isFound ? 'FOUND' : 'NOT FOUND';
+      $('s-lookup').className = 'status-value ' + (f.isFound ? 'ok' : 'danger');
+      $('s-group').textContent = `${f.mapSnapshot.length} so far`;
+      $('s-group').className = 'status-value';
+    } else {
+      $('s-key').textContent = `"${f.key}"`;
+      $('s-lookup').textContent = f.phase === 'insert' ? 'NEW KEY' : 'EXISTING';
+      $('s-lookup').className = 'status-value ' + (f.phase === 'insert' ? 'write' : 'ok');
+      $('s-group').textContent = `${f.mapSnapshot.length} group${f.mapSnapshot.length !== 1 ? 's' : ''}`;
+      $('s-group').className = 'status-value ok';
+    }
+    $('s-mapsize').textContent = f.mapSnapshot.length;
+  }
+
+  $('s-message').innerHTML = f.message;
+}
+
+/* ============ INPUT PARSING ============ */
+function parseStrings(s) {
+  // Split by comma, trim each piece. Empty input -> [''].
+  return s.split(',').map(t => t.trim());
+}
+function validateStrings(arr) {
+  if (arr.length < 1) return 'Need at least 1 string.';
+  if (arr.length > 12) return 'At most 12 strings.';
+  for (const w of arr) {
+    if (w.length > 8) return `String "${w}" too long (max 8 chars).`;
+    if (!/^[a-z]*$/.test(w)) return `String "${w}" must be empty or lowercase a-z only.`;
+  }
+  return null;
+}
+function applyInputs(words) {
+  State.words = words;
+  const { frames, finalSnapshot } = runAlgorithm(words);
+  State.frames = frames;
+  State.finalSnapshot = finalSnapshot;
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ============ TRANSPORT ============ */
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 1100;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next();
+      schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick = () => { pause(); next(); };
+document.getElementById('play-btn').onclick = togglePlay;
+
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = () => {
+  const val = document.getElementById('strs-input').value;
+  const arr = parseStrings(val);
+  const err = validateStrings(arr);
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(arr);
+};
+
+document.getElementById('reset-btn').onclick = () => fitCamera();
+
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    const val = btn.dataset.preset;
+    document.getElementById('strs-input').value = val;
+    document.getElementById('err').textContent = '';
+    applyInputs(parseStrings(val));
+  };
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  // Key indicator: tint the key box by lookup outcome
+  if (Scene.keyIndicator && Scene.keyIndicator.visible && State.frames[State.frameIndex]) {
+    const f = State.frames[State.frameIndex];
+    const keyMesh = Scene.keyIndicator.userData.keyBox.userData.mesh;
+    if (f.phase === 'lookup') {
+      keyMesh.material.emissive.setHex(f.isFound ? 0x166534 : 0x661a1a);
+      keyMesh.material.emissiveIntensity = 0.4 + 0.3 * Math.sin(t * 6);
+    } else {
+      keyMesh.material.emissive.setHex(0x000000);
+      keyMesh.material.emissiveIntensity = 0;
+    }
+  }
+
+  // Pulse new buckets and items
+  if (Scene.bucketOrder) {
+    for (const entry of Scene.bucketOrder) {
+      if (!entry.group.visible) continue;
+      if (entry.group.userData.isNew) {
+        entry.group.scale.setScalar(1.0 + 0.08 * Math.sin(t * 5));
+      } else {
+        entry.group.scale.setScalar(1);
+      }
+      for (const it of entry.items) {
+        if (!it.visible) continue;
+        if (it.userData.isNew) {
+          it.scale.setScalar(1.0 + 0.09 * Math.sin(t * 6));
+        } else {
+          it.scale.setScalar(1);
+        }
+      }
+    }
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.words);
+animate();
+</script>
+</body>
+</html>
