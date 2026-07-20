@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Best Time to Buy and Sell Stock - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 290px; }
+  #status { top: 16px; right: 16px; width: 320px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 24px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Best Time to Buy and Sell Stock</h1>
+  <div class="sub">single pass &middot; running minimum &middot; interactive 3D</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Input <span class="light">(daily prices)</span></h3>
+  <div class="row"><label>p</label><input id="prices-input" type="text" value="7,1,5,3,6,4" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="7,1,5,3,6,4">[7,1,5,3,6,4] = 5</button>
+    <button class="preset" data-preset="7,6,4,3,1">[7,6,4,3,1] = 0</button>
+    <button class="preset" data-preset="1,2,3,4,5">rising</button>
+    <button class="preset" data-preset="5">single day</button>
+    <button class="preset" data-preset="3,3,3,3">flat</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Comma-separated positive integers. 1-15 days, values 1-99. For each day we ask "if sold today at the best earlier buy, what profit?"</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">visit</span></div>
+  <div class="status-line"><span class="status-label">Day</span><span class="status-value" id="s-day">0</span></div>
+  <div class="status-line"><span class="status-label">Price today</span><span class="status-value" id="s-price">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">minPrice (running)</span><span class="status-value danger" id="s-min">+inf</span></div>
+  <div class="status-line"><span class="status-label">profit = p &minus; min</span><span class="status-value" id="s-profit">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">best (maxProfit)</span><span class="status-value ok" id="s-best">0</span></div>
+  <div class="status-line"><span class="status-label">Change this step</span><span class="status-value write" id="s-updated">&mdash;</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> to walk one phase, or <b>Play</b> to auto-advance.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const SPACING_X   = 1.4;
+const BAR_W       = 0.85;
+const BAR_D       = 0.85;
+const MAX_BAR_H   = 6.0;
+const PLANE_DEPTH = 1.6;
+
+const COLORS = {
+  bar:          0x3b82f6, barEdge:     0x1e3a8a,
+  current:      0xfbbf24, currentEdge: 0xb45309,
+  min:          0xef4444, // red   -- running minPrice (best buy level)
+  max:          0x10b981, // green -- minPrice + best (best sell level)
+  profit:       0xf59e0b, // gold  -- today's potential profit arrow
+  axis:         0x334155,
+  label:        0x94a3b8,
+};
+
+/* ============ STATE ============ */
+const State = {
+  prices: [7, 1, 5, 3, 6, 4],
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+  heightScale: 1,
+};
+
+/* ============ ALGORITHM (pre-computes frames for every sub-phase) ============ */
+function runAlgorithm(prices) {
+  const frames = [];
+  let minPrice = Infinity;
+  let best = 0;
+
+  frames.push({
+    phase: 'init',
+    minPriceBefore: minPrice, minPriceAfter: minPrice,
+    bestBefore: best, bestAfter: best,
+    message:
+      'Initialize <b>minPrice = +&infin;</b> and <b>best = 0</b>. ' +
+      'We scan left to right; at each day we ask ' +
+      '<i>"if I sold today, having bought at the cheapest earlier day, what would I make?"</i>',
+  });
+
+  for (let i = 0; i < prices.length; i++) {
+    const price = prices[i];
+    const minPriceBefore = minPrice;
+    const bestBefore = best;
+
+    // ---- visit ----
+    frames.push({
+      phase: 'visit', day: i, price,
+      minPriceBefore, minPriceAfter: minPriceBefore,
+      bestBefore, bestAfter: bestBefore,
+      profit: null,
+      message:
+        `Day <b>${i}</b>: visit price <b>${price}</b>. ` +
+        (minPriceBefore === Infinity
+          ? 'Nothing earlier to compare against.'
+          : `Running minimum so far is <b>${minPriceBefore}</b>.`),
+    });
+
+    // ---- compute-profit ----
+    let profit, profitStr;
+    if (minPriceBefore === Infinity) {
+      profit = -Infinity;
+      profitStr = '\u2212\u221e';
+    } else {
+      profit = price - minPriceBefore;
+      profitStr = String(profit);
+    }
+    frames.push({
+      phase: 'compute-profit', day: i, price,
+      minPriceBefore, minPriceAfter: minPriceBefore,
+      bestBefore, bestAfter: bestBefore,
+      profit, profitStr,
+      message:
+        minPriceBefore === Infinity
+          ? `No earlier day yet. <b>profit = ${price} &minus; &infin; = &minus;&infin;</b> -- skip.`
+          : `If sold today at <b>${price}</b> after buying at the running min <b>${minPriceBefore}</b>: ` +
+            `profit = <b>${profit}</b>.`,
+    });
+
+    // ---- update-max ----
+    const maxIncreased = (profit !== -Infinity) && (profit > best);
+    if (maxIncreased) best = profit;
+    frames.push({
+      phase: 'update-max', day: i, price,
+      minPriceBefore, minPriceAfter: minPriceBefore,
+      bestBefore, bestAfter: best,
+      profit, profitStr, maxIncreased,
+      message:
+        profit === -Infinity
+          ? `No real profit to consider. best stays <b>${best}</b>.`
+          : maxIncreased
+            ? `<b>${profit} &gt; ${bestBefore}</b> &rarr; raise best to <b>${best}</b>.`
+            : `<b>${profit} &le; ${bestBefore}</b> &rarr; best stays <b>${best}</b>.`,
+    });
+
+    // ---- update-min ----
+    const minLowered = price < minPrice;
+    if (minLowered) minPrice = price;
+    frames.push({
+      phase: 'update-min', day: i, price,
+      minPriceBefore, minPriceAfter: minPrice,
+      bestBefore, bestAfter: best,
+      profit, profitStr, minLowered,
+      message:
+        minLowered
+          ? (minPriceBefore === Infinity
+              ? `First day: set minPrice = <b>${price}</b>. Today becomes the buy candidate for future sells.`
+              : `<b>${price} &lt; ${minPriceBefore}</b> &rarr; lower minPrice to <b>${minPrice}</b>.`)
+          : `<b>${price} &ge; ${minPriceBefore}</b> &rarr; minPrice stays <b>${minPrice}</b>.`,
+    });
+  }
+
+  frames.push({
+    phase: 'done',
+    minPriceBefore: minPrice, minPriceAfter: minPrice,
+    bestBefore: best, bestAfter: best,
+    message:
+      `Scan complete. The largest one-pass profit achievable is <b>best = ${best}</b>. ` +
+      (best === 0
+        ? 'No profitable transaction exists, so we return 0.'
+        : `Return <b>${best}</b>.`),
+  });
+
+  return frames;
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 25, 70);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(4, 4, 16);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 5;
+controls.maxDistance = 60;
+controls.target.set(4, 2.5, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+dirLight.position.set(6, 12, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.4);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(80, 40, 0x1e293b, 0x1e293b);
+grid.position.y = -0.05;
+grid.material.transparent = true;
+grid.material.opacity = 0.3;
+scene.add(grid);
+
+/* ============ TEXTURE / SPRITE FACTORIES ============ */
+function makeTextTexture(text, opts = {}) {
+  const { font = '700 110px -apple-system, BlinkMacSystemFont, sans-serif', color = '#ffffff' } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeTextSprite(text, opts = {}) {
+  const { color = '#ffffff', size = 1.0, font } = opts;
+  const tex = makeTextTexture(text, { color, font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.1 * size, 1.1 * size, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+/* ============ GEOMETRY FACTORIES ============ */
+function makeBar(price, height, dayIdx) {
+  const group = new THREE.Group();
+  const h = Math.max(0.001, height);
+  const geo = new THREE.BoxGeometry(BAR_W, h, BAR_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.bar, metalness: 0.3, roughness: 0.5,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.y = h / 2;
+  group.add(mesh);
+
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.barEdge, transparent: true, opacity: 0.85 })
+  );
+  edges.position.y = h / 2;
+  group.add(edges);
+
+  // Price label on top of the bar
+  const priceLabel = makeTextSprite(String(price), { color: '#f1f5f9', size: 0.75 });
+  priceLabel.position.set(0, h + 0.5, 0);
+  group.add(priceLabel);
+
+  // Day index label at the base
+  const dayLabel = makeTextSprite(`d${dayIdx}`, {
+    color: '#94a3b8', size: 0.55,
+    font: '600 70px -apple-system, BlinkMacSystemFont, sans-serif',
+  });
+  dayLabel.position.set(0, -0.55, 0);
+  group.add(dayLabel);
+
+  group.userData.mesh = mesh;
+  group.userData.edges = edges;
+  group.userData.isCurrent = false;
+  group.userData.height = h;
+  return group;
+}
+
+function setBarColor(barGroup, colorInt, edgeInt) {
+  barGroup.userData.mesh.material.color.setHex(colorInt);
+  barGroup.userData.edges.material.color.setHex(edgeInt);
+}
+
+function makeLevelPlane(colorInt, width) {
+  const w = Math.max(3, width);
+  const geo = new THREE.BoxGeometry(w, 0.06, PLANE_DEPTH);
+  const mat = new THREE.MeshBasicMaterial({
+    color: colorInt, transparent: true, opacity: 0.55,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.userData.baseOpacity = 0.55;
+  mesh.userData.pulse = 0;
+  return mesh;
+}
+
+function makeBuyMarker(colorInt) {
+  const group = new THREE.Group();
+  const cone = new THREE.Mesh(
+    new THREE.ConeGeometry(0.22, 0.45, 4),
+    new THREE.MeshStandardMaterial({
+      color: colorInt, emissive: colorInt, emissiveIntensity: 0.5,
+      metalness: 0.3, roughness: 0.35,
+    })
+  );
+  cone.rotation.x = Math.PI; // point downward
+  cone.position.y = 0;
+  group.add(cone);
+
+  const label = makeTextSprite('buy', {
+    color: '#fca5a5', size: 0.55,
+    font: '700 80px -apple-system, BlinkMacSystemFont, sans-serif',
+  });
+  label.position.set(0, 0.55, 0);
+  group.add(label);
+
+  return group;
+}
+
+function makeProfitArrow() {
+  const group = new THREE.Group();
+  // Shaft: unit-length cylinder, scaled per-frame along Y
+  const shaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.07, 0.07, 1, 14),
+    new THREE.MeshStandardMaterial({
+      color: COLORS.profit, emissive: COLORS.profit, emissiveIntensity: 0.35,
+      metalness: 0.3, roughness: 0.4,
+    })
+  );
+  shaft.position.y = 0.5; // base at 0, top at 1
+  group.add(shaft);
+
+  const tip = new THREE.Mesh(
+    new THREE.ConeGeometry(0.2, 0.45, 16),
+    new THREE.MeshStandardMaterial({
+      color: COLORS.profit, emissive: COLORS.profit, emissiveIntensity: 0.55,
+      metalness: 0.3, roughness: 0.4,
+    })
+  );
+  group.add(tip);
+
+  group.userData.shaft = shaft;
+  group.userData.tip = tip;
+  return group;
+}
+
+function setProfitArrow(arrowGroup, x, yBase, yTop, zOffset) {
+  const length = yTop - yBase;
+  if (length <= 0.02) { arrowGroup.visible = false; return; }
+  arrowGroup.visible = true;
+  arrowGroup.position.set(x, yBase, zOffset);
+  const shaft = arrowGroup.userData.shaft;
+  const tip = arrowGroup.userData.tip;
+  shaft.scale.y = length;
+  shaft.position.y = length / 2;
+  tip.position.y = length + 0.225; // tip cone center, base at length
+}
+
+function makeLevelLabel(colorHex) {
+  const sprite = makeTextSprite('', { color: colorHex, size: 0.7,
+    font: '700 70px -apple-system, BlinkMacSystemFont, sans-serif' });
+  sprite.renderOrder = 8;
+  return sprite;
+}
+
+function setLevelLabel(sprite, text, x, y) {
+  if (sprite.material.map) sprite.material.map.dispose();
+  sprite.material.map = makeTextTexture(text, {
+    color: '#' + sprite.material.mapInitialColor || '#ffffff',
+    font: '700 70px -apple-system, BlinkMacSystemFont, sans-serif',
+  });
+  sprite.material.needsUpdate = true;
+  sprite.position.set(x, y, 0);
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const p = State.prices;
+  const maxV = Math.max(...p, 1);
+  State.heightScale = MAX_BAR_H / maxV;
+  const hs = State.heightScale;
+  const chartWidth = Math.max(1, (p.length - 1) * SPACING_X);
+  const centerX = (p.length - 1) * SPACING_X / 2;
+
+  // X axis line at y=0 spanning the chart
+  const axisGeo = new THREE.BoxGeometry(chartWidth + 2, 0.04, 0.04);
+  const axisMat = new THREE.MeshBasicMaterial({ color: COLORS.axis });
+  const xAxis = new THREE.Mesh(axisGeo, axisMat);
+  xAxis.position.set(centerX, 0, 0);
+  Scene.root.add(xAxis);
+
+  // Bars
+  Scene.bars = [];
+  for (let i = 0; i < p.length; i++) {
+    const h = p[i] * hs;
+    const bar = makeBar(p[i], h, i);
+    bar.position.set(i * SPACING_X, 0, 0);
+    Scene.root.add(bar);
+    Scene.bars.push(bar);
+  }
+
+  // Level planes: red (minPrice) and green (minPrice + best)
+  Scene.minPlane = makeLevelPlane(COLORS.min, chartWidth + 2);
+  Scene.minPlane.position.x = centerX;
+  Scene.minPlane.position.z = 0;
+  Scene.minPlane.visible = false;
+  Scene.root.add(Scene.minPlane);
+
+  Scene.maxPlane = makeLevelPlane(COLORS.max, chartWidth + 2);
+  Scene.maxPlane.position.x = centerX;
+  Scene.maxPlane.position.z = 0;
+  Scene.maxPlane.visible = false;
+  Scene.root.add(Scene.maxPlane);
+
+  // Level labels at the left edge of the chart
+  Scene.minLabel = makeLevelLabel('#fca5a5');
+  Scene.minLabel.visible = false;
+  Scene.root.add(Scene.minLabel);
+  Scene.maxLabel = makeLevelLabel('#6ee7b7');
+  Scene.maxLabel.visible = false;
+  Scene.root.add(Scene.maxLabel);
+  const labelX = centerX - (chartWidth + 2) / 2 - 1.0;
+
+  // Store for updates
+  Scene.labelX = labelX;
+
+  // Buy marker hovering over the bar that currently holds minPrice
+  Scene.buyMarker = makeBuyMarker(COLORS.min);
+  Scene.buyMarker.visible = false;
+  Scene.root.add(Scene.buyMarker);
+
+  // Profit arrow (gold) -- scaled and repositioned each frame
+  Scene.profitArrow = makeProfitArrow();
+  Scene.profitArrow.visible = false;
+  Scene.root.add(Scene.profitArrow);
+
+  // Tracks for pulse animation
+  Scene.maxPlane.userData.pulse = 0;
+  Scene.minPlane.userData.pulse = 0;
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const p = State.prices;
+  const width = Math.max(2, (p.length - 1) * SPACING_X + 3);
+  const height = MAX_BAR_H + 2.5;
+  const midX = (p.length - 1) * SPACING_X / 2;
+  const midY = MAX_BAR_H / 2;
+  const dist = Math.max(width * 1.0, height * 1.5, 9);
+  controls.target.set(midX, midY, 0);
+  camera.position.set(midX, midY + 2, dist);
+  controls.update();
+}
+
+/* ============ APPLY FRAME ============ */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+
+  const p = State.prices;
+  const hs = State.heightScale;
+
+  // Reset all bars to default blue
+  for (let i = 0; i < Scene.bars.length; i++) {
+    setBarColor(Scene.bars[i], COLORS.bar, COLORS.barEdge);
+    Scene.bars[i].userData.isCurrent = false;
+  }
+
+  // Highlight the current day's bar amber (except init/done)
+  const activePhases = ['visit', 'compute-profit', 'update-max', 'update-min'];
+  if (activePhases.includes(f.phase) && f.day >= 0 && f.day < Scene.bars.length) {
+    setBarColor(Scene.bars[f.day], COLORS.current, COLORS.currentEdge);
+    Scene.bars[f.day].userData.isCurrent = true;
+  }
+
+  // Red plane: y = minPriceAfter (if finite)
+  const minAfter = f.minPriceAfter;
+  if (minAfter !== Infinity) {
+    Scene.minPlane.position.y = minAfter * hs;
+    Scene.minPlane.visible = true;
+  } else {
+    Scene.minPlane.visible = false;
+  }
+
+  // Green plane: y = minPriceAfter + bestAfter (only when best > 0 to avoid overlap with red)
+  if (minAfter !== Infinity && f.bestAfter > 0) {
+    Scene.maxPlane.position.y = (minAfter + f.bestAfter) * hs;
+    Scene.maxPlane.visible = true;
+  } else {
+    Scene.maxPlane.visible = false;
+  }
+
+  // Pulse triggers: brief glow when a value just changed
+  Scene.minPlane.userData.pulse = (f.phase === 'update-min' && f.minLowered) ? 1 : 0;
+  Scene.maxPlane.userData.pulse = (f.phase === 'update-max' && f.maxIncreased) ? 1 : 0;
+
+  // Level labels
+  const labelX = Scene.labelX;
+  if (Scene.minPlane.visible) {
+    if (Scene.minLabel.material.map) Scene.minLabel.material.map.dispose();
+    Scene.minLabel.material.map = makeTextTexture(`min = ${minAfter}`, {
+      color: '#fca5a5', font: '700 70px -apple-system, BlinkMacSystemFont, sans-serif',
+    });
+    Scene.minLabel.material.needsUpdate = true;
+    Scene.minLabel.position.set(labelX, minAfter * hs, 0);
+    Scene.minLabel.visible = true;
+  } else {
+    Scene.minLabel.visible = false;
+  }
+  if (Scene.maxPlane.visible) {
+    const lvl = minAfter + f.bestAfter;
+    if (Scene.maxLabel.material.map) Scene.maxLabel.material.map.dispose();
+    Scene.maxLabel.material.map = makeTextTexture(`best @ ${lvl}`, {
+      color: '#6ee7b7', font: '700 70px -apple-system, BlinkMacSystemFont, sans-serif',
+    });
+    Scene.maxLabel.material.needsUpdate = true;
+    Scene.maxLabel.position.set(labelX, lvl * hs, 0);
+    Scene.maxLabel.visible = true;
+  } else {
+    Scene.maxLabel.visible = false;
+  }
+
+  // Buy marker over the bar that holds the running minPrice
+  if (minAfter !== Infinity) {
+    // Find the latest index <= f.day (or scan all if done) whose price equals minAfter
+    const upto = (f.phase === 'done' || f.phase === 'init') ? -1 : f.day;
+    let minIdx = -1;
+    for (let i = 0; i <= upto; i++) {
+      if (p[i] === minAfter) { minIdx = i; break; }
+    }
+    if (minIdx === -1 && f.phase === 'done') {
+      // after the loop the minPrice may have been set on any day; find the first match overall
+      for (let i = 0; i < p.length; i++) {
+        if (p[i] === minAfter) { minIdx = i; break; }
+      }
+    }
+    if (minIdx >= 0) {
+      Scene.buyMarker.position.set(
+        minIdx * SPACING_X,
+        p[minIdx] * hs + 0.9,
+        BAR_D / 2 + 0.15
+      );
+      Scene.buyMarker.visible = true;
+    } else {
+      Scene.buyMarker.visible = false;
+    }
+  } else {
+    Scene.buyMarker.visible = false;
+  }
+
+  // Gold profit arrow: from minPriceBefore plane up to current bar top.
+  // Visible during compute-profit / update-max / update-min when minPriceBefore is finite
+  // and the result is a real (finite) profit.
+  const arrowPhases = ['compute-profit', 'update-max', 'update-min'];
+  if (
+    arrowPhases.includes(f.phase) &&
+    f.minPriceBefore !== Infinity &&
+    f.profit !== null && f.profit !== -Infinity
+  ) {
+    const x = f.day * SPACING_X;
+    const yBase = f.minPriceBefore * hs;
+    const yTop = f.price * hs;
+    setProfitArrow(Scene.profitArrow, x, yBase, yTop, BAR_D / 2 + 0.25);
+  } else {
+    Scene.profitArrow.visible = false;
+  }
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+
+  const phaseNames = {
+    init: 'INIT',
+    visit: 'VISIT',
+    'compute-profit': 'COMPUTE PROFIT',
+    'update-max': 'UPDATE BEST',
+    'update-min': 'UPDATE MIN',
+    done: 'DONE',
+  };
+  $('s-phase').textContent = phaseNames[f.phase] || f.phase;
+
+  // Reset class for s-updated each frame
+  $('s-updated').className = 'status-value write';
+
+  if (f.phase === 'init') {
+    $('s-day').textContent = '\u2014';
+    $('s-price').textContent = '\u2014';
+    $('s-min').textContent = '+\u221e';
+    $('s-min').className = 'status-value danger';
+    $('s-profit').textContent = '\u2014';
+    $('s-best').textContent = '0';
+    $('s-best').className = 'status-value ok';
+    $('s-updated').textContent = 'setup';
+  } else if (f.phase === 'done') {
+    $('s-day').textContent = '\u2014';
+    $('s-price').textContent = '\u2014';
+    $('s-min').textContent = String(f.minPriceAfter);
+    $('s-min').className = 'status-value danger';
+    $('s-profit').textContent = '\u2014';
+    $('s-best').textContent = String(f.bestAfter);
+    $('s-best').className = 'status-value ok';
+    $('s-updated').textContent = `return ${f.bestAfter}`;
+    $('s-updated').className = 'status-value accent';
+  } else {
+    $('s-day').textContent = `${f.day} of ${State.prices.length - 1}`;
+    $('s-price').textContent = String(f.price);
+    $('s-min').textContent = (f.minPriceBefore === Infinity) ? '+\u221e' : String(f.minPriceBefore);
+    $('s-min').className = 'status-value danger';
+    $('s-profit').textContent =
+      (f.profit === undefined || f.profit === null) ? '\u2014' :
+      (f.profit === -Infinity) ? '\u2212\u221e' : String(f.profit);
+    $('s-best').textContent = String(f.bestBefore);
+    $('s-best').className = 'status-value ok';
+
+    if (f.phase === 'visit') {
+      $('s-updated').textContent = 'highlight day';
+    } else if (f.phase === 'compute-profit') {
+      $('s-updated').textContent = 'compute p \u2212 min';
+    } else if (f.phase === 'update-max') {
+      if (f.maxIncreased) {
+        $('s-updated').textContent = `best: ${f.bestBefore} \u2192 ${f.bestAfter}`;
+        $('s-updated').className = 'status-value ok';
+      } else {
+        $('s-updated').textContent = 'no change';
+      }
+    } else if (f.phase === 'update-min') {
+      if (f.minLowered) {
+        $('s-updated').textContent = `min: ${fmtMin(f.minPriceBefore)} \u2192 ${f.minPriceAfter}`;
+        $('s-updated').className = 'status-value danger';
+      } else {
+        $('s-updated').textContent = 'no change';
+      }
+    }
+  }
+
+  $('s-message').innerHTML = f.message;
+}
+
+function fmtMin(v) {
+  return v === Infinity ? '+\u221e' : String(v);
+}
+
+/* ============ INPUT PARSING ============ */
+function parsePrices(s) {
+  return s.split(',').map(t => t.trim()).filter(t => t !== '').map(t => parseInt(t, 10));
+}
+function validatePrices(arr, name) {
+  if (arr.length < 1) return `${name} must have at least 1 day.`;
+  if (arr.length > 15) return `${name} supports at most 15 days (for display).`;
+  for (const v of arr) {
+    if (!Number.isInteger(v) || v < 1 || v > 99) return `${name}: each price must be an integer 1-99 (got "${v}").`;
+  }
+  return null;
+}
+function applyInputs(arr) {
+  State.prices = arr;
+  State.frames = runAlgorithm(arr);
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ============ TRANSPORT ============ */
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 1000;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next();
+      schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick = () => { pause(); next(); };
+document.getElementById('play-btn').onclick = togglePlay;
+
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = () => {
+  const arr = parsePrices(document.getElementById('prices-input').value);
+  const err = validatePrices(arr, 'prices');
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(arr);
+};
+
+document.getElementById('reset-btn').onclick = () => fitCamera();
+
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    const a = btn.dataset.preset;
+    document.getElementById('prices-input').value = a;
+    document.getElementById('err').textContent = '';
+    applyInputs(parsePrices(a));
+  };
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  // Pulse current bar
+  if (Scene.bars) {
+    for (const bar of Scene.bars) {
+      if (bar.userData.isCurrent && bar.visible) {
+        bar.scale.setScalar(1.0 + 0.05 * Math.sin(t * 6));
+      } else if (bar.visible) {
+        bar.scale.setScalar(1);
+      }
+    }
+  }
+
+  // Pulse the buy marker
+  if (Scene.buyMarker && Scene.buyMarker.visible) {
+    Scene.buyMarker.children[0].rotation.y = t * 1.5;
+    const s = 1.0 + 0.08 * Math.sin(t * 4);
+    Scene.buyMarker.scale.setScalar(s);
+  }
+
+  // Decay pulse on planes (emissive-style opacity boost)
+  for (const plane of [Scene.minPlane, Scene.maxPlane]) {
+    if (!plane) continue;
+    if (plane.userData.pulse > 0) {
+      plane.userData.pulse = Math.max(0, plane.userData.pulse - 0.02);
+      plane.material.opacity = plane.userData.baseOpacity + 0.35 * plane.userData.pulse;
+    } else {
+      plane.material.opacity = plane.userData.baseOpacity;
+    }
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.prices);
+animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contains Duplicate II - Interactive 3D Lesson</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(ellipse at center, #1a2238 0%, #0b1020 100%);
+    color: #e5e9f0;
+  }
+  #scene { position: fixed; inset: 0; }
+  .panel {
+    position: fixed;
+    background: rgba(15, 21, 36, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  #inputs { top: 16px; left: 16px; width: 290px; }
+  #status { top: 16px; right: 16px; width: 320px; }
+  #transport {
+    bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+  }
+  #title-bar {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 1;
+  }
+  #title-bar h1 {
+    font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #a5b4fc, #f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #title-bar .sub {
+    font-size: 11px; color: #64748b; margin-top: 3px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  h3 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #94a3b8; margin-bottom: 12px; font-weight: 700;
+  }
+  h3 .light { color: #475569; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: #94a3b8; min-width: 38px; font-weight: 700; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  input[type=text] {
+    flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1);
+    color: #e5e9f0; padding: 7px 10px; border-radius: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px;
+  }
+  input[type=text]:focus { outline: none; border-color: #818cf8; }
+  button {
+    background: rgba(99, 102, 241, 0.15); color: #c7d2fe;
+    border: 1px solid rgba(99,102,241,0.35);
+    padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all 0.15s;
+  }
+  button:hover:not(:disabled) { background: rgba(99,102,241,0.3); transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.primary { background: #6366f1; color: white; border-color: #6366f1; }
+  button.primary:hover { background: #4f46e5; }
+  button.icon { padding: 7px 12px; font-size: 15px; line-height: 1; min-width: 38px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  button.preset {
+    padding: 5px 9px; font-size: 11px; font-weight: 500;
+    background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); color: #cbd5e1;
+  }
+  button.preset:hover { background: rgba(255,255,255,0.12); }
+  input[type=range] { accent-color: #818cf8; width: 110px; }
+  .speed-label { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  #speed-val { font-size: 12px; color: #c7d2fe; font-family: ui-monospace, monospace; min-width: 34px; }
+  .divider { width: 1px; height: 22px; background: rgba(255,255,255,0.12); }
+  .help { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.45; }
+  .err { color: #fca5a5; font-size: 11px; margin-top: 8px; min-height: 14px; }
+  .status-line {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px;
+  }
+  .status-line:last-of-type { border-bottom: none; }
+  .status-label { color: #94a3b8; }
+  .status-value { color: #e5e9f0; font-family: ui-monospace, "SF Mono", monospace; font-weight: 600; }
+  .status-value.accent { color: #a5b4fc; }
+  .status-value.write { color: #fde68a; }
+  .status-value.danger { color: #fca5a5; }
+  .status-value.ok { color: #86efac; }
+  .message {
+    margin-top: 12px; padding: 11px 12px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.08));
+    border-radius: 8px; font-size: 13px; line-height: 1.45;
+    border: 1px solid rgba(99,102,241,0.18);
+  }
+  .message b { color: #fde68a; font-weight: 700; }
+  #play-icon-play {
+    display: inline-block; width: 0; height: 0;
+    border-left: 9px solid currentColor;
+    border-top: 6px solid transparent; border-bottom: 6px solid transparent;
+    margin-left: 2px;
+  }
+  #play-icon-pause {
+    display: inline-block; width: 9px; height: 11px;
+    border-left: 3px solid currentColor; border-right: 3px solid currentColor;
+  }
+  .help-toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: #64748b; pointer-events: none;
+  }
+  .help-toast b { color: #cbd5e1; font-weight: 600; }
+  @media (max-width: 900px) {
+    #inputs, #status { width: calc(50vw - 24px); }
+    #title-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="scene"></div>
+
+<div id="title-bar">
+  <h1>Contains Duplicate II</h1>
+  <div class="sub">sliding hash map &middot; nearby-duplicate check &middot; interactive 3D</div>
+</div>
+
+<aside id="inputs" class="panel">
+  <h3>Inputs <span class="light">(value &rarr; last index)</span></h3>
+  <div class="row"><label>nums</label><input id="nums-input" type="text" value="1,2,3,1" autocomplete="off" spellcheck="false"></div>
+  <div class="row"><label>k</label><input id="k-input" type="text" value="3" autocomplete="off" spellcheck="false"></div>
+  <div class="row">
+    <button id="apply-btn" class="primary">Apply</button>
+    <button id="reset-btn">Reset view</button>
+  </div>
+  <div class="presets">
+    <button class="preset" data-preset="1,2,3,1|3">[1,2,3,1] k=3 (true)</button>
+    <button class="preset" data-preset="1,0,1,1|1">[1,0,1,1] k=1 (true)</button>
+    <button class="preset" data-preset="1,2,3,1,2,3|2">[1,2,3,1,2,3] k=2 (false)</button>
+    <button class="preset" data-preset="5|1">[5] k=1 (single)</button>
+    <button class="preset" data-preset="1,1,1,1|1">[1,1,1,1] k=1 (all-same)</button>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="help">Comma-separated integers for nums (1-12 values, each between -999 and 999). k is a non-negative integer up to 99.</div>
+</aside>
+
+<aside id="status" class="panel">
+  <h3>Step <span id="step-num">1</span> of <span id="step-total">1</span></h3>
+  <div class="status-line"><span class="status-label">Phase</span><span class="status-value accent" id="s-phase">visit</span></div>
+  <div class="status-line"><span class="status-label">Index i</span><span class="status-value" id="s-i">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">nums[i]</span><span class="status-value" id="s-v">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">k</span><span class="status-value" id="s-k">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">In map?</span><span class="status-value" id="s-inmap">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Last index</span><span class="status-value" id="s-lastidx">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Distance</span><span class="status-value" id="s-dist">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Map size</span><span class="status-value" id="s-mapsize">&mdash;</span></div>
+  <div class="status-line"><span class="status-label">Result</span><span class="status-value" id="s-result">&mdash;</span></div>
+  <div class="message" id="s-message">Press <b>Next</b> to walk one phase, or <b>Play</b> to auto-advance.</div>
+</aside>
+
+<nav id="transport" class="panel">
+  <button id="prev-btn" class="icon" title="Previous step (Left arrow)">&#9664;</button>
+  <button id="play-btn" class="primary icon" title="Play / Pause (Space)">
+    <span id="play-icon-play"></span>
+    <span id="play-icon-pause" style="display:none"></span>
+  </button>
+  <button id="next-btn" class="icon" title="Next step (Right arrow)">&#9654;</button>
+  <span class="divider"></span>
+  <span class="speed-label">Speed</span>
+  <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1">
+  <span id="speed-val">1.00x</span>
+</nav>
+
+<div class="help-toast">Drag to rotate &middot; Scroll to zoom &middot; <b>&larr;</b> <b>&rarr;</b> step &middot; <b>space</b> play/pause</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ============ CONSTANTS ============ */
+const SPACING_X = 2.0;
+const NODE_W = 1.5, NODE_H = 1.2, NODE_D = 0.6;
+const MAP_W = 1.7, MAP_H = 0.85, MAP_D = 0.4;
+const MAP_SPACING_Y = 1.15;
+
+const COLORS = {
+  array:        0x60a5fa, arrayEdge:   0x1d4ed8,
+  current:      0xfbbf24, currentEdge: 0xb45309,
+  map:          0x34d399, mapEdge:     0x047857,
+  mapHit:       0x6ee7b7,
+  closePair:    0xef4444, closeEdge:   0x991b1b,
+  lastIdx:      0xfb923c, lastIdxEdge: 0xc2410c,
+  nullNode:     0x1f2937, nullEdge:    0x0f172a,
+  window:       0xfbbf24,
+  distanceOk:   0x4ade80,
+  distanceFail: 0xfb923c,
+  distanceHit:  0xf87171,
+};
+
+/* ============ STATE ============ */
+const State = {
+  nums: [1, 2, 3, 1],
+  k: 3,
+  answer: null,
+  frames: [],
+  frameIndex: 0,
+  playing: false,
+  speed: 1.0,
+  playTimer: null,
+};
+
+/* ============ ALGORITHM (pre-computes answer and frames) ============ */
+function snapshotMap(map) {
+  return Array.from(map.entries()).map(([k, v]) => ({ key: k, value: v }));
+}
+
+function runAlgorithm(nums, k) {
+  const frames = [];
+  const map = new Map();
+
+  frames.push({
+    phase: 'start', k, mapSize: 0,
+    mapSnapshot: [],
+    i: null, v: null,
+    message: `Start. Walk <b>i</b> through <b>nums</b>. For each value, look it up in the map: if seen within the last <b>k</b> indices, return <b>true</b>; otherwise record its index.`,
+  });
+
+  for (let i = 0; i < nums.length; i++) {
+    const v = nums[i];
+
+    frames.push({
+      phase: 'visit', i, v, k, mapSize: map.size,
+      mapSnapshot: snapshotMap(map),
+      message: `Visit index <b>i=${i}</b>, value <b>nums[${i}] = ${v}</b>.`,
+    });
+
+    const inMap = map.has(v);
+    frames.push({
+      phase: 'lookup', i, v, k, inMap,
+      lastIdx: inMap ? map.get(v) : null,
+      mapSize: map.size, mapSnapshot: snapshotMap(map),
+      message: inMap
+        ? `Look up <b>${v}</b> in the map: <b>FOUND</b>, last seen at index <b>${map.get(v)}</b>.`
+        : `Look up <b>${v}</b> in the map: <b>not found</b>. No pair is possible &mdash; record this index.`,
+    });
+
+    if (inMap) {
+      const lastIdx = map.get(v);
+      const dist = i - lastIdx;
+      const close = dist <= k;
+      frames.push({
+        phase: 'check-distance', i, v, k, lastIdx, dist, close,
+        mapSize: map.size, mapSnapshot: snapshotMap(map),
+        message: `Distance = i &minus; lastIndex = <b>${i} &minus; ${lastIdx} = ${dist}</b>. Is <b>${dist} &le; k=${k}</b>? <b>${close ? 'YES' : 'NO'}</b>.`,
+      });
+
+      if (close) {
+        frames.push({
+          phase: 'return-true', i, v, k, lastIdx, dist,
+          mapSize: map.size, mapSnapshot: snapshotMap(map),
+          message: `Close pair found: indices <b>${lastIdx}</b> and <b>${i}</b> both hold <b>${v}</b>, distance ${dist} &le; ${k}. Return <b>true</b>.`,
+        });
+        return { frames, answer: true };
+      }
+
+      map.set(v, i);
+      frames.push({
+        phase: 'update-map', i, v, k, lastIdx, dist, overwritten: true,
+        mapSize: map.size, mapSnapshot: snapshotMap(map),
+        message: `Old index ${lastIdx} is too far (${dist} &gt; ${k}). Refresh the map: <b>${v} &rarr; ${i}</b> (overwrote ${lastIdx}).`,
+      });
+    } else {
+      map.set(v, i);
+      frames.push({
+        phase: 'update-map', i, v, k, inserted: true,
+        mapSize: map.size, mapSnapshot: snapshotMap(map),
+        message: `Insert new entry: <b>${v} &rarr; ${i}</b>.`,
+      });
+    }
+  }
+
+  frames.push({
+    phase: 'done', k, mapSize: map.size,
+    mapSnapshot: snapshotMap(map),
+    i: null, v: null,
+    message: `Loop finished with no close pair. Return <b>false</b>.`,
+  });
+  return { frames, answer: false };
+}
+
+/* ============ THREE.JS SCENE SETUP ============ */
+const container = document.getElementById('scene');
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0b1020, 25, 70);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(6, 2, 20);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 80;
+controls.target.set(4, 0, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(5, 10, 8);
+scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xa5b4fc, 0.45);
+rimLight.position.set(-6, 4, -8);
+scene.add(rimLight);
+
+const grid = new THREE.GridHelper(80, 40, 0x1e293b, 0x1e293b);
+grid.position.y = -5.6;
+grid.material.transparent = true;
+grid.material.opacity = 0.35;
+scene.add(grid);
+
+/* ============ FACTORIES ============ */
+function makeDigitTexture(text, opts = {}) {
+  const { font = '700 110px -apple-system, BlinkMacSystemFont, sans-serif', color = '#ffffff' } = opts;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 140);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeDigitSprite(text, opts = {}) {
+  const { color = '#ffffff', size = 1.0, font } = opts;
+  const tex = makeDigitTexture(text, { color, font });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.1 * size, 1.1 * size, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+
+function makeArrayNode() {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(NODE_W, NODE_H, NODE_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.array, metalness: 0.25, roughness: 0.55,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.arrayEdge, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  group.userData.mesh = mesh;
+  group.userData.edges = edges;
+  group.userData.baseColor = COLORS.array;
+  group.userData.baseEdge = COLORS.arrayEdge;
+  group.userData.labelSprite = null;
+  return group;
+}
+
+function setArrayNodeText(group, text) {
+  if (group.userData.labelSprite) {
+    group.remove(group.userData.labelSprite);
+    const m = group.userData.labelSprite.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+  }
+  const sprite = makeDigitSprite(text, { color: '#ffffff', size: 1.0 });
+  sprite.position.set(0, 0, NODE_D / 2 + 0.02);
+  group.add(sprite);
+  group.userData.labelSprite = sprite;
+}
+
+function setArrayNodeColor(group, colorInt, edgeInt) {
+  group.userData.mesh.material.color.setHex(colorInt);
+  group.userData.edges.material.color.setHex(edgeInt);
+  group.userData.baseColor = colorInt;
+  group.userData.baseEdge = edgeInt;
+}
+
+function makeMapNode() {
+  const group = new THREE.Group();
+  const geo = new THREE.BoxGeometry(MAP_W, MAP_H, MAP_D);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.map, metalness: 0.25, roughness: 0.55,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  group.add(mesh);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({ color: COLORS.mapEdge, transparent: true, opacity: 0.9 })
+  );
+  group.add(edges);
+  group.userData.mesh = mesh;
+  group.userData.edges = edges;
+  group.userData.labelSprite = null;
+  group.userData.key = null;
+  group.userData.value = null;
+  group.visible = false;
+  return group;
+}
+
+function setMapNodeEntry(group, key, value, text) {
+  if (group.userData.labelSprite) {
+    group.remove(group.userData.labelSprite);
+    const m = group.userData.labelSprite.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+  }
+  const sprite = makeDigitSprite(text, {
+    color: '#ffffff', size: 0.7,
+    font: '700 75px ui-monospace, "SF Mono", Menlo, monospace',
+  });
+  sprite.position.set(0, 0, MAP_D / 2 + 0.02);
+  group.add(sprite);
+  group.userData.labelSprite = sprite;
+  group.userData.key = key;
+  group.userData.value = value;
+}
+
+function setMapNodeColor(group, colorInt, edgeInt) {
+  group.userData.mesh.material.color.setHex(colorInt);
+  group.userData.edges.material.color.setHex(edgeInt);
+}
+
+function makeHighlightPlane(color) {
+  const geo = new THREE.PlaneGeometry(1, 1.6);
+  const mat = new THREE.MeshBasicMaterial({
+    color, transparent: true, opacity: 0.22,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
+function makeWindowPlane() {
+  const geo = new THREE.PlaneGeometry(1, 1.9);
+  const mat = new THREE.MeshBasicMaterial({
+    color: COLORS.window, transparent: true, opacity: 0.16,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 0;
+  return mesh;
+}
+
+function makeConnector() {
+  const group = new THREE.Group();
+  const cylGeo = new THREE.CylinderGeometry(0.08, 0.08, 1, 14);
+  const cylMat = new THREE.MeshBasicMaterial({ color: COLORS.distanceOk });
+  const cyl = new THREE.Mesh(cylGeo, cylMat);
+  group.add(cyl);
+  group.userData.cyl = cyl;
+  group.userData.label = null;
+  group.visible = false;
+  return group;
+}
+
+function setConnector(group, fromX, toX, y, z, colorInt, labelText, labelColor) {
+  const cyl = group.userData.cyl;
+  const a = new THREE.Vector3(fromX, y, z);
+  const b = new THREE.Vector3(toX, y, z);
+  const dir = new THREE.Vector3().subVectors(b, a);
+  const len = dir.length();
+  const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+  cyl.position.copy(mid);
+  cyl.scale.set(1, len, 1);
+  cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+  cyl.material.color.setHex(colorInt);
+
+  if (group.userData.label) {
+    group.remove(group.userData.label);
+    const m = group.userData.label.material;
+    if (m.map) m.map.dispose();
+    m.dispose();
+  }
+  const label = makeDigitSprite(labelText, {
+    color: labelColor, size: 0.55,
+    font: '700 75px ui-monospace, "SF Mono", Menlo, monospace',
+  });
+  label.position.set(mid.x, y + 0.85, z);
+  group.add(label);
+  group.userData.label = label;
+
+  group.visible = true;
+}
+
+function makeRowLabel(text, x, y, colorInt) {
+  const hex = '#' + colorInt.toString(16).padStart(6, '0');
+  const tex = makeDigitTexture(text, {
+    font: '700 80px -apple-system, BlinkMacSystemFont, sans-serif',
+    color: hex,
+  });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(2.4, 0.9, 1);
+  sprite.position.set(x, y, 0);
+  sprite.renderOrder = 5;
+  return sprite;
+}
+
+/* ============ SCENE BUILD ============ */
+const Scene = { root: null };
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      if (o.material.map) o.material.map.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function buildScene() {
+  if (Scene.root) {
+    scene.remove(Scene.root);
+    disposeGroup(Scene.root);
+  }
+  Scene.root = new THREE.Group();
+  scene.add(Scene.root);
+
+  const nums = State.nums;
+  const n = nums.length;
+
+  // ---- array row ----
+  Scene.arrayNodes = [];
+  for (let i = 0; i < n; i++) {
+    const node = makeArrayNode();
+    node.position.set(i * SPACING_X, 0, 0);
+    setArrayNodeText(node, String(nums[i]));
+    Scene.root.add(node);
+    Scene.arrayNodes.push(node);
+  }
+
+  // array row label (left of index 0)
+  Scene.root.add(makeRowLabel('nums', -SPACING_X * 0.9, 0, COLORS.array));
+
+  // index labels under each box
+  Scene.indexLabels = [];
+  for (let i = 0; i < n; i++) {
+    const tex = makeDigitTexture(String(i), {
+      font: '700 70px ui-monospace, "SF Mono", Menlo, monospace',
+      color: '#64748b',
+    });
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(0.8, 0.5, 1);
+    sprite.position.set(i * SPACING_X, -1.1, 0);
+    sprite.renderOrder = 5;
+    Scene.root.add(sprite);
+    Scene.indexLabels.push(sprite);
+  }
+
+  // ---- map column (vertical, to the right of nums) ----
+  const mapX = n * SPACING_X + 1.8;
+  const topSlotY = ((n - 1) / 2) * MAP_SPACING_Y;
+  Scene.mapX = mapX;
+  Scene.mapSlots = [];
+  for (let j = 0; j < n; j++) {
+    const node = makeMapNode();
+    node.position.set(mapX, topSlotY - j * MAP_SPACING_Y, 0);
+    Scene.root.add(node);
+    Scene.mapSlots.push(node);
+  }
+
+  // map header label
+  Scene.root.add(makeRowLabel('map', mapX, topSlotY + 1.1, COLORS.map));
+  const subFont = '700 55px ui-monospace, "SF Mono", Menlo, monospace';
+  const subTex = makeDigitTexture('value : index', { font: subFont, color: '#475569' });
+  const subMat = new THREE.SpriteMaterial({ map: subTex, transparent: true, depthTest: false });
+  const subSprite = new THREE.Sprite(subMat);
+  subSprite.scale.set(2.4, 0.55, 1);
+  subSprite.position.set(mapX, topSlotY + 0.45, 0);
+  subSprite.renderOrder = 5;
+  Scene.root.add(subSprite);
+
+  // ---- highlights ----
+  Scene.currentHL = makeHighlightPlane(COLORS.current);
+  Scene.currentHL.position.z = -0.35;
+  Scene.root.add(Scene.currentHL);
+
+  Scene.lastIdxHL = makeHighlightPlane(COLORS.lastIdx);
+  Scene.lastIdxHL.position.z = -0.35;
+  Scene.root.add(Scene.lastIdxHL);
+
+  // ---- window plane (valid look-back range) ----
+  Scene.windowPlane = makeWindowPlane();
+  Scene.windowPlane.position.set(0, 0, -0.5);
+  Scene.root.add(Scene.windowPlane);
+
+  // ---- connector (distance line) ----
+  Scene.connector = makeConnector();
+  Scene.root.add(Scene.connector);
+
+  // ---- "window range" label ----
+  const wlTex = makeDigitTexture('valid look-back (i-k .. i)', {
+    font: '700 55px ui-monospace, "SF Mono", Menlo, monospace',
+    color: '#fbbf24',
+  });
+  const wlMat = new THREE.SpriteMaterial({ map: wlTex, transparent: true, depthTest: false, opacity: 0.85 });
+  Scene.windowLabel = new THREE.Sprite(wlMat);
+  Scene.windowLabel.scale.set(3.2, 0.55, 1);
+  Scene.windowLabel.position.set(0, 1.4, -0.4);
+  Scene.windowLabel.renderOrder = 5;
+  Scene.root.add(Scene.windowLabel);
+
+  fitCamera();
+}
+
+function fitCamera() {
+  const n = State.nums.length;
+  const mapX = n * SPACING_X + 1.8;
+  const minX = -SPACING_X * 1.6;
+  const maxX = mapX + MAP_W * 1.2;
+  const midX = (minX + maxX) / 2;
+  const width = maxX - minX;
+  const dist = Math.max(13, width * 0.95);
+  controls.target.set(midX, 0, 0);
+  camera.position.set(midX, 1.5, dist);
+  controls.update();
+}
+
+/* ============ APPLY FRAME ============ */
+function applyFrame(idx) {
+  if (idx < 0 || idx >= State.frames.length) return;
+  State.frameIndex = idx;
+  const f = State.frames[idx];
+
+  // Reset transient pulse flags on array nodes
+  for (const node of Scene.arrayNodes) node.userData.isCurrent = false;
+
+  // Reset all array node colors to base blue
+  for (const node of Scene.arrayNodes) {
+    setArrayNodeColor(node, COLORS.array, COLORS.arrayEdge);
+  }
+
+  // Reset all map slots: hide, then re-populate from snapshot
+  for (const slot of Scene.mapSlots) {
+    slot.visible = false;
+    slot.userData.isHit = false;
+    slot.userData.isUpdated = false;
+  }
+
+  // ---- map slots ----
+  const snap = f.mapSnapshot || [];
+  for (let j = 0; j < snap.length && j < Scene.mapSlots.length; j++) {
+    const slot = Scene.mapSlots[j];
+    const entry = snap[j];
+    setMapNodeEntry(slot, entry.key, entry.value, `${entry.key}:${entry.value}`);
+    setMapNodeColor(slot, COLORS.map, COLORS.mapEdge);
+    slot.visible = true;
+  }
+
+  // ---- window plane (valid look-back range, only during iteration phases) ----
+  const showWindow = (f.phase === 'visit' || f.phase === 'lookup' ||
+                      f.phase === 'check-distance' || f.phase === 'update-map');
+  if (showWindow && f.i != null) {
+    const left = Math.max(0, f.i - f.k);
+    const right = f.i;
+    const leftX = left * SPACING_X - SPACING_X / 2;
+    const rightX = right * SPACING_X + SPACING_X / 2;
+    const centerX = (leftX + rightX) / 2;
+    const width = Math.max(SPACING_X, rightX - leftX);
+    Scene.windowPlane.position.set(centerX, 0, -0.5);
+    Scene.windowPlane.scale.set(width, 1, 1);
+    Scene.windowPlane.visible = true;
+    Scene.windowLabel.position.set(centerX, 1.4, -0.4);
+    Scene.windowLabel.visible = true;
+  } else {
+    Scene.windowPlane.visible = false;
+    Scene.windowLabel.visible = false;
+  }
+
+  // ---- current index highlight ----
+  Scene.currentHL.visible = false;
+  Scene.lastIdxHL.visible = false;
+  Scene.connector.visible = false;
+
+  if (f.i != null) {
+    const cur = Scene.arrayNodes[f.i];
+    if (cur) {
+      cur.userData.isCurrent = true;
+      Scene.currentHL.position.set(f.i * SPACING_X, 0, -0.35);
+      Scene.currentHL.visible = true;
+    }
+  }
+
+  // ---- phase-specific visuals ----
+  if (f.phase === 'lookup') {
+    if (f.inMap) {
+      // highlight matching map slot
+      for (const slot of Scene.mapSlots) {
+        if (slot.visible && slot.userData.key === f.v) {
+          setMapNodeColor(slot, COLORS.mapHit, COLORS.mapEdge);
+          slot.userData.isHit = true;
+        }
+      }
+    }
+  } else if (f.phase === 'check-distance') {
+    // highlight last index in array
+    const lastNode = Scene.arrayNodes[f.lastIdx];
+    if (lastNode) {
+      setArrayNodeColor(lastNode, COLORS.lastIdx, COLORS.lastIdxEdge);
+      Scene.lastIdxHL.position.set(f.lastIdx * SPACING_X, 0, -0.35);
+      Scene.lastIdxHL.visible = true;
+    }
+    // highlight matching map slot
+    for (const slot of Scene.mapSlots) {
+      if (slot.visible && slot.userData.key === f.v) {
+        setMapNodeColor(slot, COLORS.mapHit, COLORS.mapEdge);
+        slot.userData.isHit = true;
+      }
+    }
+    // distance connector
+    const fromX = f.lastIdx * SPACING_X;
+    const toX = f.i * SPACING_X;
+    const color = f.close ? COLORS.distanceOk : COLORS.distanceFail;
+    setConnector(Scene.connector, fromX, toX, 0, 0.45,
+      color, `dist=${f.dist}`, f.close ? '#bbf7d0' : '#fed7aa');
+  } else if (f.phase === 'return-true') {
+    // turn both pair boxes red, dim the rest
+    for (let idx = 0; idx < Scene.arrayNodes.length; idx++) {
+      const node = Scene.arrayNodes[idx];
+      if (idx === f.lastIdx || idx === f.i) {
+        setArrayNodeColor(node, COLORS.closePair, COLORS.closeEdge);
+        node.userData.isCurrent = false;
+      } else {
+        // dim
+        node.userData.mesh.material.color.setHex(0x1e3a5f);
+        node.userData.edges.material.opacity = 0.35;
+      }
+    }
+    Scene.currentHL.visible = false;
+    // red map entry
+    for (const slot of Scene.mapSlots) {
+      if (slot.visible && slot.userData.key === f.v) {
+        setMapNodeColor(slot, COLORS.closePair, COLORS.closeEdge);
+        slot.userData.isHit = true;
+      }
+    }
+    // red connector
+    const fromX = f.lastIdx * SPACING_X;
+    const toX = f.i * SPACING_X;
+    setConnector(Scene.connector, fromX, toX, 0, 0.45,
+      COLORS.distanceHit, `${f.dist} <= ${f.k}`, '#fecaca');
+  } else if (f.phase === 'update-map') {
+    // highlight the just-updated map slot
+    for (const slot of Scene.mapSlots) {
+      if (slot.visible && slot.userData.key === f.v) {
+        setMapNodeColor(slot, COLORS.mapHit, COLORS.mapEdge);
+        slot.userData.isUpdated = true;
+      }
+    }
+  } else if (f.phase === 'done') {
+    // dim all array nodes
+    for (const node of Scene.arrayNodes) {
+      node.userData.mesh.material.color.setHex(0x1e3a5f);
+      node.userData.edges.material.opacity = 0.35;
+    }
+    Scene.currentHL.visible = false;
+  }
+
+  updateStatusPanel(f);
+
+  document.getElementById('prev-btn').disabled = (idx === 0);
+  document.getElementById('next-btn').disabled = (idx === State.frames.length - 1);
+}
+
+function updateStatusPanel(f) {
+  const $ = id => document.getElementById(id);
+  $('step-num').textContent = (State.frameIndex + 1);
+  $('step-total').textContent = State.frames.length;
+
+  const phaseNames = {
+    start: 'START', visit: 'VISIT', lookup: 'LOOKUP',
+    'check-distance': 'CHECK-DIST', 'return-true': 'RETURN-TRUE',
+    'update-map': 'UPDATE-MAP', done: 'DONE',
+  };
+  $('s-phase').textContent = phaseNames[f.phase] || f.phase;
+
+  if (f.phase === 'start') {
+    $('s-i').textContent = '\u2014';
+    $('s-v').textContent = '\u2014';
+    $('s-k').textContent = f.k;
+    $('s-inmap').textContent = '\u2014';
+    $('s-lastidx').textContent = '\u2014';
+    $('s-dist').textContent = '\u2014';
+    $('s-mapsize').textContent = '0';
+    $('s-result').textContent = '\u2014';
+    $('s-result').className = 'status-value';
+  } else if (f.phase === 'done') {
+    $('s-i').textContent = '\u2014';
+    $('s-v').textContent = '\u2014';
+    $('s-k').textContent = f.k;
+    $('s-inmap').textContent = '\u2014';
+    $('s-lastidx').textContent = '\u2014';
+    $('s-dist').textContent = '\u2014';
+    $('s-mapsize').textContent = f.mapSize;
+    $('s-result').textContent = 'false';
+    $('s-result').className = 'status-value danger';
+  } else {
+    $('s-i').textContent = f.i;
+    $('s-v').textContent = f.v;
+    $('s-k').textContent = f.k;
+    $('s-inmap').textContent = (f.phase === 'visit') ? '?' : (f.inMap ? 'yes' : 'no');
+    $('s-inmap').className = 'status-value ' + (f.inMap ? 'ok' : '');
+    $('s-lastidx').textContent = (f.lastIdx != null) ? f.lastIdx : '\u2014';
+    $('s-dist').textContent = (f.dist != null) ? `${f.dist} vs k=${f.k}` : '\u2014';
+
+    if (f.phase === 'return-true') {
+      $('s-dist').className = 'status-value danger';
+    } else if (f.dist != null) {
+      $('s-dist').className = 'status-value ' + (f.dist <= f.k ? 'ok' : 'danger');
+    } else {
+      $('s-dist').className = 'status-value';
+    }
+
+    $('s-mapsize').textContent = f.mapSize;
+    if (f.phase === 'return-true') {
+      $('s-result').textContent = 'true';
+      $('s-result').className = 'status-value ok';
+    } else {
+      $('s-result').textContent = '\u2014';
+      $('s-result').className = 'status-value';
+    }
+  }
+
+  $('s-message').innerHTML = f.message;
+}
+
+/* ============ INPUT PARSING ============ */
+function parseNums(s) {
+  return s.split(',').map(t => t.trim()).filter(t => t !== '').map(t => parseInt(t, 10));
+}
+function validateNums(arr) {
+  if (arr.length < 1) return 'nums must have at least 1 value.';
+  if (arr.length > 12) return 'nums must have at most 12 values.';
+  for (const v of arr) {
+    if (!Number.isInteger(v) || v < -999 || v > 999) return `each value must be an integer in [-999, 999] (got "${v}").`;
+  }
+  return null;
+}
+function validateK(k) {
+  if (!Number.isInteger(k) || k < 0 || k > 99) return 'k must be a non-negative integer up to 99.';
+  return null;
+}
+function applyInputs(nums, k) {
+  State.nums = nums;
+  State.k = k;
+  const { frames, answer } = runAlgorithm(nums, k);
+  State.frames = frames;
+  State.answer = answer;
+  State.frameIndex = 0;
+  buildScene();
+  applyFrame(0);
+  pause();
+}
+
+/* ============ TRANSPORT ============ */
+function next() {
+  if (State.frameIndex < State.frames.length - 1) applyFrame(State.frameIndex + 1);
+  else pause();
+}
+function prev() {
+  if (State.frameIndex > 0) applyFrame(State.frameIndex - 1);
+}
+function play() {
+  if (State.frameIndex >= State.frames.length - 1) applyFrame(0);
+  State.playing = true;
+  document.getElementById('play-icon-play').style.display = 'none';
+  document.getElementById('play-icon-pause').style.display = '';
+  schedulePlay();
+}
+function pause() {
+  State.playing = false;
+  if (State.playTimer) { clearTimeout(State.playTimer); State.playTimer = null; }
+  document.getElementById('play-icon-play').style.display = '';
+  document.getElementById('play-icon-pause').style.display = 'none';
+}
+function schedulePlay() {
+  if (!State.playing) return;
+  const baseMs = 1100;
+  const ms = baseMs / State.speed;
+  State.playTimer = setTimeout(() => {
+    if (!State.playing) return;
+    if (State.frameIndex < State.frames.length - 1) {
+      next();
+      schedulePlay();
+    } else {
+      pause();
+    }
+  }, ms);
+}
+function togglePlay() { State.playing ? pause() : play(); }
+
+/* ============ EVENTS ============ */
+document.getElementById('prev-btn').onclick  = () => { pause(); prev(); };
+document.getElementById('next-btn').onclick  = () => { pause(); next(); };
+document.getElementById('play-btn').onclick  = togglePlay;
+
+document.getElementById('speed').oninput = (e) => {
+  State.speed = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = State.speed.toFixed(2) + 'x';
+};
+
+document.getElementById('apply-btn').onclick = () => {
+  const nums = parseNums(document.getElementById('nums-input').value);
+  const k = parseInt(document.getElementById('k-input').value, 10);
+  const err = validateNums(nums) || validateK(k);
+  const errEl = document.getElementById('err');
+  if (err) { errEl.textContent = err; return; }
+  errEl.textContent = '';
+  applyInputs(nums, k);
+};
+
+document.getElementById('reset-btn').onclick = () => fitCamera();
+
+document.querySelectorAll('button.preset').forEach(btn => {
+  btn.onclick = () => {
+    const [a, b] = btn.dataset.preset.split('|');
+    document.getElementById('nums-input').value = a;
+    document.getElementById('k-input').value = b;
+    document.getElementById('err').textContent = '';
+    applyInputs(parseNums(a), parseInt(b, 10));
+  };
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { pause(); next(); }
+  else if (e.key === 'ArrowLeft') { pause(); prev(); }
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============ ANIMATION LOOP ============ */
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  controls.update();
+
+  // pulse current array node
+  if (Scene.arrayNodes) {
+    for (const node of Scene.arrayNodes) {
+      if (node.userData.isCurrent && node.visible) {
+        const s = 1.0 + 0.08 * Math.sin(t * 6);
+        node.scale.setScalar(s);
+      } else if (node.visible) {
+        node.scale.setScalar(1);
+      }
+    }
+  }
+  // pulse hit / updated map slots
+  if (Scene.mapSlots) {
+    for (const slot of Scene.mapSlots) {
+      if (!slot.visible) continue;
+      if (slot.userData.isHit || slot.userData.isUpdated) {
+        const s = 1.0 + 0.10 * Math.sin(t * 6);
+        slot.scale.setScalar(s);
+      } else {
+        slot.scale.setScalar(1);
+      }
+    }
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+/* ============ INIT ============ */
+applyInputs(State.nums, State.k);
+animate();
+</script>
+</body>
+</html>
