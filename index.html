@@ -633,8 +633,6 @@
       },
       plugins: [
         // canvas-ui GlyphRain on the cover page only.
-        // ponytail: one pre-compiled canvas-ui component (assets/glyph-rain.js),
-        // scoped to the cover so content pages stay static and the repo stays build-less.
         function glyphRainEffect(hook) {
           var instance = null;
           var canvas = null;
@@ -670,22 +668,65 @@
                   layers: 2
                 }
               );
-              if (!instance) {
-                console.warn('[glyphRain] createGlyphRain returned null (WebGL2 unavailable?)');
-                teardown();
-              }
-            } catch (e) {
-              console.warn('[glyphRain] init failed:', e);
-              teardown();
-            }
+              if (!instance) { teardown(); }
+            } catch (e) { teardown(); }
           }
 
           hook.doneEach(function () {
             var cover = document.querySelector('.cover');
             var isCoverVisible = !!(cover && cover.classList.contains('show'));
             if (!isCoverVisible) { teardown(); return; }
-            // init synchronously; if it bailed (e.g. GlyphRain not yet loaded),
-            // retry once on the next animation frame.
+            init();
+            if (!instance && !canvas) {
+              requestAnimationFrame(init);
+              setTimeout(init, 250);
+            }
+          });
+
+          window.addEventListener('beforeunload', teardown);
+        },
+        // canvas-ui Liquid fluid simulation on the cover page.
+        function liquidEffect(hook) {
+          var instance = null;
+          var canvas = null;
+
+          function teardown() {
+            if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }
+            if (canvas) { canvas.remove(); canvas = null; }
+          }
+
+          function init() {
+            if (instance || canvas) return;
+            if (typeof window.Liquid === 'undefined' || !window.Liquid.createLiquid) return;
+            var cover = document.querySelector('.cover');
+            if (!cover) return;
+            canvas = document.createElement('canvas');
+            canvas.className = 'cover-liquid-canvas';
+            canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:-2;pointer-events:none;';
+            cover.insertBefore(canvas, cover.firstChild);
+            var dummySource = document.createElement('canvas');
+            var content = cover.querySelector('.cover-main') || cover;
+            try {
+              instance = window.Liquid.createLiquid(
+                { source: dummySource, content: content, output: canvas },
+                {
+                  rainbow: true,
+                  intensity: 1.5,
+                  distortion: 0.3,
+                  blend: 3,
+                  densityDissipation: 0.97,
+                  radius: 0.25,
+                  force: 0.8
+                }
+              );
+              if (!instance) { teardown(); }
+            } catch (e) { teardown(); }
+          }
+
+          hook.doneEach(function () {
+            var cover = document.querySelector('.cover');
+            var isCoverVisible = !!(cover && cover.classList.contains('show'));
+            if (!isCoverVisible) { teardown(); return; }
             init();
             if (!instance && !canvas) {
               requestAnimationFrame(init);
@@ -779,8 +820,11 @@
   <!-- Docsify core -->
   <script src="https://cdn.jsdelivr.net/npm/docsify@4.13.0/lib/docsify.min.js"></script>
 
-  <!-- canvas-ui GlyphRain (pre-compiled vanilla; only runs on the cover page) -->
+  <!-- canvas-ui GlyphRain (pre-compiled vanilla) -->
   <script src="assets/glyph-rain.js"></script>
+
+  <!-- canvas-ui Liquid (pre-compiled vanilla) -->
+  <script src="assets/liquid.js"></script>
 
   <!-- Search plugin -->
   <script src="https://cdn.jsdelivr.net/npm/docsify@4.13.0/plugins/search.min.js"></script>
