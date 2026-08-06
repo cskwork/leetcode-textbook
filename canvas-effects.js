@@ -262,27 +262,49 @@
   class PageReveal {
     constructor() {
       this.observer = null;
+      this.safetyTimer = 0;
     }
 
-    observe() {
+    // `enabled === false` (effects off, or prefers-reduced-motion) means show
+    // everything at once — the reveal must never be the reason content is hidden.
+    observe(enabled) {
       if (this.observer) this.observer.disconnect();
+      clearTimeout(this.safetyTimer);
 
+      const section = document.querySelector('.markdown-section');
+      if (!section) return;
+      const children = Array.from(section.children);
+
+      if (!enabled) {
+        children.forEach((child) => child.classList.remove('canvas-reveal'));
+        return;
+      }
+
+      // threshold 0, not 0.05: a zero-area child (empty <p>, collapsed wrapper)
+      // can never reach a positive ratio and would stay at opacity 0 forever.
       this.observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('canvas-revealed');
+            this.observer.unobserve(entry.target);
           }
         });
-      }, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+      }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
 
-      // Observe all direct children of markdown-section
-      const section = document.querySelector('.markdown-section');
-      if (!section) return;
-      const children = section.children;
-      for (const child of children) {
+      children.forEach((child) => {
         child.classList.add('canvas-reveal');
         this.observer.observe(child);
-      }
+      });
+
+      // Safety net for anything already on screen that the observer missed
+      // (late layout, font swap). Below-the-fold items keep revealing on scroll.
+      this.safetyTimer = setTimeout(() => {
+        children.forEach((child) => {
+          if (child.getBoundingClientRect().top < window.innerHeight) {
+            child.classList.add('canvas-revealed');
+          }
+        });
+      }, 1200);
     }
   }
 
@@ -470,9 +492,17 @@
           this.particleTrail.start();
         }
 
-        // Page reveal
-        this.pageReveal = new PageReveal();
-        setTimeout(() => this.pageReveal.observe(), 100);
+        // Page reveal. Reuse one instance: a fresh one per route would leak an
+        // IntersectionObserver on every navigation (the old one is never seen
+        // by its own disconnect() guard).
+        if (!this.pageReveal) {
+          this.pageReveal = new PageReveal();
+        }
+        clearTimeout(this._revealTimer);
+        this._revealTimer = setTimeout(
+          () => this.pageReveal.observe(this.effectsEnabled),
+          100
+        );
 
         // Code block glow
         if (!this.codeGlow) {
@@ -480,8 +510,12 @@
         }
         this.codeGlow.attach();
 
-        // Reading progress
-        this.readingProgress = new ReadingProgress();
+        // Reading progress. Also a singleton — ensure() only guards against a
+        // duplicate bar on the *same* instance, so a new one per route stacked
+        // up another #reading-progress element each time.
+        if (!this.readingProgress) {
+          this.readingProgress = new ReadingProgress();
+        }
         this.readingProgress.ensure();
       };
 
