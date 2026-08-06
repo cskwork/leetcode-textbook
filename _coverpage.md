@@ -7,10 +7,8 @@
 > Easy → Medium, every problem taught the same way:
 > **Intuition → Pseudocode → Java → Complexity → Dry-run**
 
-[🔍 Start Reading](#/00-how-to-use-this-book)
+<!-- Raw HTML on purpose: docsify's markdown link compiler rewrites `[x](#/route)`
+     into `#/?id=...`, which breaks the CTA. A literal href is a real docsify route. -->
+<p class="cover-cta"><a href="#/00-how-to-use-this-book">🔍 Start Reading</a></p>
 
-<span style="color: rgba(255,255,255,0.7); font-size: 0.85em">
-
-✅ 100/100 problems compile and pass all tests (679 test cases)
-
-</span>
+<p class="cover-badge">✅ 100/100 problems compile and pass all tests (679 test cases)</p>
