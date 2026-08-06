@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LeetCode Textbook (Java) - 100 Problems, 16 Patterns</title>
+  <meta name="description" content="A pattern-first, beginner-friendly guide to 100 LeetCode problems from Easy to Medium. Every problem is taught the same way: Intuition → Pseudocode → Java → Complexity → Dry-run.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+
+  <!-- Theme color -->
+  <meta name="theme-color" content="#0969da">
+
+  <!-- Docsify styles -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@4.0.0/css/theme.css">
+
+  <!-- Prism syntax highlighting theme -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+
+  <!-- Custom theme styles -->
+  <style>
+    :root {
+      /* Base */
+      --base-font-size: 16px;
+      --base-line-height: 1.7;
+      --base-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --heading-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --mono-font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+
+      /* Light theme colors */
+      --theme-color: #0969da;
+      --theme-color-dark: #0550ae;
+      --theme-color-light: #ddf4ff;
+
+      --text-color: #1f2328;
+      --text-color-light: #656d76;
+      --heading-color: #1f2328;
+      --heading-h1-border-color: #d0d7de;
+      --heading-h2-border-color: #d8dee4;
+
+      --background-color: #ffffff;
+      --sidebar-background: #f6f8fa;
+      --sidebar-border-color: #d0d7de;
+      --sidebar-item-color: #1f2328;
+      --sidebar-item-active-color: #0969da;
+      --sidebar-item-active-background: #ddf4ff;
+
+      --code-inline-background: #eff1f3;
+      --code-inline-color: #1f2328;
+      --code-block-background: #1e1e2e;
+      --code-block-border-color: #313244;
+
+      --table-row-odd-background: #f6f8fa;
+      --table-border-color: #d0d7de;
+
+      --blockquote-border-color: #0969da;
+      --blockquote-background: #ddf4ff;
+      --blockquote-color: #1f2328;
+
+      --search-input-border-color: #d0d7de;
+      --search-input-background: #ffffff;
+      --search-result-background: #ffffff;
+      --search-highlight-color: #0969da;
+
+      --cover-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+      --link-color: #0969da;
+      --link-color--hover: #0550ae;
+    }
+
+    /* Dark mode */
+    html.dark-mode {
+      --theme-color: #58a6ff;
+      --theme-color-dark: #79c0ff;
+      --theme-color-light: #0d2240;
+
+      --text-color: #e6edf3;
+      --text-color-light: #8b949e;
+      --heading-color: #e6edf3;
+      --heading-h1-border-color: #30363d;
+      --heading-h2-border-color: #21262d;
+
+      --background-color: #0d1117;
+      --sidebar-background: #010409;
+      --sidebar-border-color: #21262d;
+      --sidebar-item-color: #e6edf3;
+      --sidebar-item-active-color: #58a6ff;
+      --sidebar-item-active-background: #161b22;
+
+      --code-inline-background: #161b22;
+      --code-inline-color: #e6edf3;
+
+      --table-row-odd-background: #161b22;
+      --table-border-color: #30363d;
+
+      --blockquote-border-color: #58a6ff;
+      --blockquote-background: #0d2240;
+      --blockquote-color: #e6edf3;
+
+      --search-input-border-color: #30363d;
+      --search-input-background: #0d1117;
+      --search-result-background: #161b22;
+      --search-highlight-color: #58a6ff;
+
+      --link-color: #58a6ff;
+      --link-color--hover: #79c0ff;
+    }
+
+    /* === Base === */
+    body {
+      font-family: var(--base-font-family);
+      font-size: var(--base-font-size);
+      line-height: var(--base-line-height);
+      color: var(--text-color);
+      background-color: var(--background-color);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* === Headings === */
+    .markdown-section h1, .markdown-section h2, .markdown-section h3,
+    .markdown-section h4, .markdown-section h5, .markdown-section h6 {
+      font-family: var(--heading-font-family);
+      color: var(--heading-color);
+      font-weight: 650;
+      margin-top: 2em;
+      margin-bottom: 0.8em;
+    }
+
+    .markdown-section h1 {
+      font-size: 2em;
+      padding-bottom: 0.3em;
+      border-bottom: 2px solid var(--heading-h1-border-color);
+      letter-spacing: -0.02em;
+    }
+
+    .markdown-section h2 {
+      font-size: 1.5em;
+      padding-bottom: 0.3em;
+      border-bottom: 1px solid var(--heading-h2-border-color);
+      letter-spacing: -0.01em;
+    }
+
+    .markdown-section h3 {
+      font-size: 1.25em;
+    }
+
+    .markdown-section h4 {
+      font-size: 1.1em;
+    }
+
+    /* === Links === */
+    .markdown-section a {
+      color: var(--link-color);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .markdown-section a:hover {
+      color: var(--link-color--hover);
+      text-decoration: underline;
+    }
+
+    /* === Code === */
+    .markdown-section code, .markdown-section pre {
+      font-family: var(--mono-font-family);
+    }
+
+    .markdown-section code {
+      background: var(--code-inline-background);
+      color: var(--code-inline-color);
+      padding: 0.2em 0.4em;
+      border-radius: 5px;
+      font-size: 0.875em;
+      white-space: nowrap;
+    }
+
+    .markdown-section pre {
+      background: var(--code-block-background);
+      border-radius: 10px;
+      border: 1px solid var(--code-block-border-color);
+      overflow: hidden;
+    }
+
+    .markdown-section pre > code {
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+      font-size: 0.85em;
+      line-height: 1.6;
+      white-space: pre;
+    }
+
+    /* Prism override for code blocks */
+    .markdown-section pre[class*="language-"] {
+      background: var(--code-block-background);
+      margin: 1.2em 0;
+      padding: 1.2em 1.5em;
+    }
+
+    /* === Tables === */
+    .markdown-section table {
+      display: table;
+      width: 100%;
+      overflow: visible;
+      border-collapse: collapse;
+      margin: 1.5em 0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .markdown-section th {
+      background: var(--theme-color);
+      color: #fff;
+      font-weight: 650;
+      padding: 0.75em 1em;
+      text-align: left;
+      border: 1px solid var(--theme-color-dark);
+    }
+
+    .markdown-section td {
+      padding: 0.65em 1em;
+      border: 1px solid var(--table-border-color);
+    }
+
+    .markdown-section tr:nth-child(2n) {
+      background: var(--table-row-odd-background);
+    }
+
+    /* === Blockquotes === */
+    .markdown-section blockquote {
+      border-left: 4px solid var(--blockquote-border-color);
+      background: var(--blockquote-background);
+      padding: 0.8em 1.2em;
+      margin: 1.2em 0;
+      border-radius: 0 8px 8px 0;
+      color: var(--blockquote-color);
+    }
+
+    .markdown-section blockquote p {
+      margin: 0.5em 0;
+    }
+
+    /* === Details / Summary === */
+    .markdown-section details {
+      margin: 1em 0;
+      border: 1px solid var(--table-border-color);
+      border-radius: 8px;
+      padding: 0.5em 1em;
+      background: var(--table-row-odd-background);
+      transition: border-color 0.2s;
+    }
+
+    .markdown-section details[open] {
+      border-color: var(--theme-color);
+    }
+
+    .markdown-section summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--theme-color);
+      padding: 0.3em 0;
+    }
+
+    .markdown-section details[open] summary {
+      margin-bottom: 0.5em;
+      border-bottom: 1px solid var(--table-border-color);
+      padding-bottom: 0.6em;
+    }
+
+    /* === Images === */
+    .markdown-section img {
+      border-radius: 8px;
+      max-width: 100%;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    /* === Lists === */
+    .markdown-section ul, .markdown-section ol {
+      padding-left: 1.5em;
+    }
+
+    .markdown-section li {
+      margin-bottom: 0.3em;
+    }
+
+    /* === Sidebar === */
+    .sidebar {
+      background-color: var(--sidebar-background);
+      border-right: 1px solid var(--sidebar-border-color);
+      padding-top: 1.5rem;
+      font-size: 14.5px;
+    }
+
+    .sidebar ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .sidebar ul ul {
+      padding-left: 1.1em;
+    }
+
+    .sidebar li {
+      margin: 0;
+    }
+
+    .sidebar a {
+      color: var(--sidebar-item-color);
+      display: block;
+      padding: 0.35em 0.6em;
+      border-radius: 6px;
+      font-weight: 400;
+      line-height: 1.4;
+      transition: all 0.12s ease;
+      text-decoration: none;
+    }
+
+    .sidebar a:hover {
+      background: var(--sidebar-item-active-background);
+      color: var(--sidebar-item-active-color);
+      text-decoration: none;
+    }
+
+    .sidebar a.active {
+      color: var(--sidebar-item-active-color);
+      background: var(--sidebar-item-active-background);
+      font-weight: 600;
+    }
+
+    /* Pattern group headers in sidebar */
+    .sidebar .pattern-header {
+      font-size: 0.7em;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-color-light);
+      padding: 1em 0.6em 0.3em;
+      margin-top: 0.3em;
+    }
+
+    .sidebar .pattern-header:first-child {
+      padding-top: 0;
+    }
+
+    /* Top-level links */
+    .sidebar > ul > li > a {
+      font-weight: 550;
+      font-size: 0.95em;
+    }
+
+    /* Search */
+    .sidebar .search {
+      margin: 0 1rem 1rem;
+    }
+
+    .sidebar .search input {
+      width: 100%;
+      padding: 0.55em 0.8em;
+      border: 1px solid var(--search-input-border-color);
+      border-radius: 8px;
+      background: var(--search-input-background);
+      color: var(--text-color);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .sidebar .search input:focus {
+      border-color: var(--theme-color);
+      box-shadow: 0 0 0 3px var(--theme-color-light);
+    }
+
+    .sidebar .search .results-panel {
+      background: var(--search-result-background);
+      border-radius: 8px;
+      padding: 0.5em;
+      margin-top: 0.5em;
+    }
+
+    .sidebar .search .matching-post {
+      padding: 0.5em 0.6em;
+      border-radius: 6px;
+      transition: background 0.12s;
+    }
+
+    .sidebar .search .matching-post:hover {
+      background: var(--sidebar-item-active-background);
+    }
+
+    .sidebar .search p.empty {
+      color: var(--text-color-light);
+      padding: 0.5em;
+      font-size: 0.85em;
+    }
+
+    .search a {
+      color: var(--text-color);
+    }
+
+    /* === Content area === */
+    .content {
+      padding-top: 1.5rem;
+    }
+
+    .markdown-section {
+      max-width: 850px;
+      padding: 0 3rem 4rem;
+    }
+
+    /* === Cover page === */
+    .cover {
+      background: var(--cover-background) !important;
+      min-height: 100vh !important;
+    }
+
+    .cover .cover-main {
+      max-width: 600px;
+    }
+
+    /* canvas-ui GlyphRain overlay (compiled vanilla; see assets/glyph-rain.js).
+       The cover already centers .cover-main; we only add a sibling canvas
+       behind it via negative z-index, no other layout changes. */
+    .cover-glyph-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    /* Ensure cover content sits above the canvas without touching its layout. */
+    .cover .cover-main,
+    .cover > .mask {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cover h1 {
+      font-size: 3.5em;
+      color: #fff !important;
+      margin-bottom: 0.2em;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+      border: none !important;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .cover .cover-main > p:last-child a {
+      border-radius: 100px;
+      padding: 0.6em 2.2em;
+      font-weight: 600;
+      font-size: 0.95em;
+      border: 2px solid rgba(255,255,255,0.4);
+      color: #fff;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+      letter-spacing: 0.02em;
+    }
+
+    .cover .cover-main > p:last-child a:hover {
+      background: rgba(255,255,255,0.25);
+      border-color: rgba(255,255,255,0.6);
+      transform: translateY(-1px);
+    }
+
+    .cover blockquote {
+      color: rgba(255,255,255,0.9) !important;
+      background: rgba(255,255,255,0.1);
+      border-left: none;
+      border-radius: 12px;
+      padding: 1em 1.5em;
+      backdrop-filter: blur(10px);
+      font-size: 1.15em;
+    }
+
+    /* === Dark mode toggle === */
+    .dark-mode-toggle {
+      position: fixed;
+      bottom: 1.2rem;
+      right: 1.2rem;
+      z-index: 200;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid var(--table-border-color);
+      background: var(--background-color);
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      transition: all 0.2s ease;
+    }
+
+    .dark-mode-toggle:hover {
+      border-color: var(--theme-color);
+      transform: scale(1.08);
+    }
+
+    /* === Scrollbar === */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--table-border-color);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-color-light);
+    }
+
+    /* === Back to top === */
+    .back-to-top {
+      position: fixed;
+      bottom: 5rem;
+      right: 1.2rem;
+      z-index: 200;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid var(--table-border-color);
+      background: var(--background-color);
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+
+    .back-to-top.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .back-to-top:hover {
+      border-color: var(--theme-color);
+      color: var(--theme-color);
+      transform: scale(1.08);
+    }
+
+    /* === App nav bar === */
+    .app-nav {
+      margin-right: 1.5rem;
+    }
+
+    .app-nav a {
+      transition: color 0.15s;
+    }
+
+    /* === Footer text === */
+    .markdown-section .footer-note {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--heading-h2-border-color);
+      font-size: 0.85em;
+      color: var(--text-color-light);
+    }
+
+    /* === HR === */
+    .markdown-section hr {
+      border: none;
+      height: 1px;
+      background: var(--heading-h2-border-color);
+      margin: 2em 0;
+    }
+
+    /* === Mobile sidebar toggle === */
+    @media screen and (max-width: 768px) {
+      .markdown-section {
+        padding: 0 1.5rem 3rem;
+      }
+      .cover h1 {
+        font-size: 2.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    // Dark mode management
+    const darkModeKey = 'leetcode-textbook-dark-mode';
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedDark = localStorage.getItem(darkModeKey);
+    if (savedDark === 'true' || (savedDark === null && prefersDark)) {
+      document.documentElement.classList.add('dark-mode');
+    }
+
+    // Docsify config
+    window.$docsify = {
+      name: '📘 LeetCode Textbook',
+      repo: '',
+      loadSidebar: true,
+      subMaxLevel: 3,
+      maxLevel: 3,
+      loadNavbar: false,
+      coverpage: true,
+      onlyCover: false,
+      auto2top: true,
+      relativePath: false,
+      search: {
+        placeholder: 'Search problems, patterns...',
+        noData: 'No results found',
+        depth: 3,
+        paths: 'auto',
+        hideOtherSidebarContent: false,
+      },
+      copyCode: {
+        buttonText: '📋 Copy',
+        errorText: 'Copy failed',
+        successText: '✓ Copied!',
+      },
+      'flexible-alerts': {
+        style: 'flat',
+      },
+      plugins: [
+        // canvas-ui GlyphRain on the cover page only.
+        // ponytail: one pre-compiled canvas-ui component (assets/glyph-rain.js),
+        // scoped to the cover so content pages stay static and the repo stays build-less.
+        function glyphRainEffect(hook) {
+          var instance = null;
+          var canvas = null;
+
+          function teardown() {
+            if (instance) { try { instance.destroy(); } catch (e) {} instance = null; }
+            if (canvas) { canvas.remove(); canvas = null; }
+          }
+
+          function init() {
+            if (instance || canvas) return;
+            if (typeof window.GlyphRain === 'undefined' || !window.GlyphRain.createGlyphRain) return;
+            var cover = document.querySelector('.cover');
+            if (!cover) return;
+            canvas = document.createElement('canvas');
+            canvas.className = 'cover-glyph-canvas';
+            cover.insertBefore(canvas, cover.firstChild);
+            var dummySource = document.createElement('canvas');
+            var content = cover.querySelector('.cover-main') || cover;
+            try {
+              instance = window.GlyphRain.createGlyphRain(
+                { source: dummySource, content: content, output: canvas },
+                {
+                  color: [0.55, 0.85, 1],
+                  headColor: [0.85, 0.95, 1],
+                  cell: 18,
+                  density: 0.16,
+                  speed: 0.22,
+                  trail: 0.6,
+                  glow: 1.6,
+                  stir: 0.7,
+                  stirRadius: 280,
+                  layers: 2
+                }
+              );
+              if (!instance) {
+                console.warn('[glyphRain] createGlyphRain returned null (WebGL2 unavailable?)');
+                teardown();
+              }
+            } catch (e) {
+              console.warn('[glyphRain] init failed:', e);
+              teardown();
+            }
+          }
+
+          hook.doneEach(function () {
+            var cover = document.querySelector('.cover');
+            var isCoverVisible = !!(cover && cover.classList.contains('show'));
+            if (!isCoverVisible) { teardown(); return; }
+            // init synchronously; if it bailed (e.g. GlyphRain not yet loaded),
+            // retry once on the next animation frame.
+            init();
+            if (!instance && !canvas) {
+              requestAnimationFrame(init);
+              setTimeout(init, 250);
+            }
+          });
+
+          window.addEventListener('beforeunload', teardown);
+        },
+        function darkModeToggle(hook, vars) {
+          hook.doneEach(function() {
+            // Remove existing toggle
+            const existing = document.querySelector('.dark-mode-toggle');
+            const existingBtt = document.querySelector('.back-to-top');
+            if (existing) existing.remove();
+            if (existingBtt) existingBtt.remove();
+
+            // Create dark mode toggle button
+            const btn = document.createElement('button');
+            btn.className = 'dark-mode-toggle';
+            btn.title = 'Toggle dark mode';
+            btn.innerHTML = document.documentElement.classList.contains('dark-mode') ? '☀️' : '🌙';
+            btn.onclick = function() {
+              const isDark = document.documentElement.classList.toggle('dark-mode');
+              localStorage.setItem(darkModeKey, isDark);
+              btn.innerHTML = isDark ? '☀️' : '🌙';
+            };
+            document.body.appendChild(btn);
+
+            // Back to top button
+            const btt = document.createElement('button');
+            btt.className = 'back-to-top';
+            btt.innerHTML = '⬆';
+            btt.title = 'Back to top';
+            btt.onclick = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+            document.body.appendChild(btt);
+
+            window.addEventListener('scroll', function() {
+              if (window.scrollY > 400) {
+                btt.classList.add('visible');
+              } else {
+                btt.classList.remove('visible');
+              }
+            });
+
+            // Add badge styling for problem links in sidebar
+            document.querySelectorAll('.sidebar a').forEach(function(link) {
+              const text = link.textContent.trim();
+              // Add difficulty indicators
+              if (text.match(/\b(Easy|Medium|Hard)\b/)) {
+                const difficulty = text.match(/(Easy|Medium|Hard)/)[1];
+                link.classList.add('difficulty-' + difficulty.toLowerCase());
+              }
+            });
+
+            // Style pattern headers in sidebar
+            document.querySelectorAll('.sidebar li > strong').forEach(function(el) {
+              if (el.parentElement.tagName === 'LI') {
+                const li = el.parentElement;
+                li.classList.add('pattern-header-row');
+              }
+            });
+
+            // === Canvas effects integration ===
+            // Trigger route change in canvas-effects.js
+            if (window.CanvasEffects) {
+              window.CanvasEffects.onRouteChange();
+
+              // Add effects toggle button (next to dark mode toggle)
+              const existingFx = document.querySelector('.effects-toggle');
+              if (existingFx) existingFx.remove();
+              const fxBtn = document.createElement('button');
+              fxBtn.className = 'effects-toggle';
+              fxBtn.title = 'Toggle canvas effects';
+              fxBtn.innerHTML = window.CanvasEffects.effectsEnabled ? '✨' : '⬜';
+              fxBtn.onclick = function() {
+                window.CanvasEffects.toggleEffects();
+                fxBtn.innerHTML = window.CanvasEffects.effectsEnabled ? '✨' : '⬜';
+              };
+              document.body.appendChild(fxBtn);
+            }
+          });
+        }
+      ]
+    };
+  </script>
+
+  <!-- Canvas effects (canvas-ui inspired) -->
+  <script src="canvas-effects.js"></script>
+
+  <!-- Docsify core -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4.13.0/lib/docsify.min.js"></script>
+
+  <!-- canvas-ui GlyphRain (pre-compiled vanilla; only runs on the cover page) -->
+  <script src="assets/glyph-rain.js"></script>
+
+  <!-- Search plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4.13.0/plugins/search.min.js"></script>
+
+  <!-- Copy code plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@3.0.3/dist/docsify-copy-code.min.js"></script>
+
+  <!-- Prism: Java syntax highlighting -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-java.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+
+  <!-- Emoji rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4.13.0/plugins/emoji.min.js"></script>
+
+  <!-- Zoom image plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4.13.0/plugins/zoom-image.min.js"></script>
+</body>
+</html>
