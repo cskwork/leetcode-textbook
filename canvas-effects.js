@@ -527,15 +527,16 @@
       const style = document.createElement('style');
       style.id = 'canvas-effect-styles';
       style.textContent = `
-        /* Page reveal animation */
+        /* Page reveal animation — opacity only, NO transform.
+           transform: translateY breaks getBoundingClientRect() which docsify
+           uses for scroll-to-heading and auto2top, causing the page to land
+           at the wrong position. */
         .canvas-reveal {
           opacity: 0;
-          transform: translateY(20px);
-          transition: opacity 0.5s ease, transform 0.5s ease;
+          transition: opacity 0.4s ease;
         }
         .canvas-revealed {
           opacity: 1 !important;
-          transform: translateY(0) !important;
         }
 
         /* Code block glow */
@@ -560,29 +561,13 @@
           border-radius: inherit;
         }
 
-        /* Sidebar link hover ripple */
+        /* Sidebar link hover indicator — subtle left bar on hover.
+           Active links use box-shadow inset from index.html instead. */
         .sidebar a {
           position: relative;
-          overflow: hidden;
         }
-        .sidebar a::before {
-          content: '';
-          position: absolute;
-          left: 0;
-          top: 50%;
-          width: 0;
-          height: 2px;
-          background: var(--theme-color);
-          transition: width 0.2s ease;
-          transform: translateY(-50%);
-        }
-        .sidebar a:hover::before {
-          width: 3px;
-          border-radius: 2px;
-        }
-        .sidebar a.active::before {
-          width: 3px;
-          border-radius: 2px;
+        .sidebar a:hover {
+          box-shadow: inset 2px 0 0 var(--theme-color);
         }
 
         /* Smooth table hover */
@@ -610,13 +595,14 @@
           scroll-behavior: smooth;
         }
 
-        /* Content fade-in on route change */
+        /* Content fade-in on route change — opacity only to avoid
+           breaking scroll-to-heading calculation. */
         .content {
-          animation: contentFadeIn 0.3s ease;
+          animation: contentFadeIn 0.25s ease;
         }
         @keyframes contentFadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         /* Heading anchor links appear on hover */
