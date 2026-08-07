@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230969da' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'/><path d='M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'/></svg>">
 
   <!-- Theme color -->
   <meta name="theme-color" content="#0969da">
@@ -47,6 +47,7 @@
       --sidebar-item-color: #1f2328;
       --sidebar-item-active-color: #0969da;
       --sidebar-item-active-background: #ddf4ff;
+      --sidebar-width: 300px;
 
       --code-inline-background: #eff1f3;
       --code-inline-color: #1f2328;
@@ -159,6 +160,16 @@
       font-size: 1.1em;
     }
 
+    /* docsify wraps headings in anchor <a> tags. They should look like headings,
+       not blue underlined hyperlinks. */
+    .markdown-section h1 a,
+    .markdown-section h2 a,
+    .markdown-section h3 a,
+    .markdown-section h4 a {
+      color: inherit !important;
+      text-decoration: none !important;
+    }
+
     /* === Links === */
     .markdown-section a {
       color: var(--link-color);
@@ -195,6 +206,7 @@
 
     .markdown-section pre > code {
       background: transparent;
+      color: #e6edf3;
       padding: 0;
       border-radius: 0;
       font-size: 0.85em;
@@ -308,7 +320,39 @@
     }
 
     .sidebar ul ul {
-      padding-left: 1.1em;
+      padding-left: 1.4em;
+    }
+
+    /* Sub-links: heading links (from subMaxLevel) and problem links */
+    .sidebar ul ul a {
+      font-size: 0.88em;
+      color: var(--text-color-light);
+      padding: 0.25em 0.6em;
+      line-height: 1.3;
+      border-left: 2px solid transparent;
+    }
+    .sidebar ul ul a:hover {
+      color: var(--sidebar-item-active-color);
+    }
+    /* CRITICAL: docsify-themeable adds .active to the <li>, not the <a>.
+       The theme styles `li.active > a`. docsify adds .active to the LAST
+       heading's <li> and never clears it. We must override li.active
+       and use our own class instead. */
+    /* Neutralize theme's li.active > a on ALL sub-links */
+    .sidebar ul ul li.active > a {
+      color: var(--text-color-light) !important;
+      font-weight: 400 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border-left-color: transparent !important;
+    }
+    /* Our scroll-spy highlight — the ONLY visible active state on sub-links */
+    .sidebar ul ul li.scrollspy-active > a {
+      color: var(--sidebar-item-active-color) !important;
+      font-weight: 550 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border-left: 2px solid var(--theme-color) !important;
     }
 
     .sidebar li {
@@ -338,6 +382,13 @@
       font-weight: 600;
     }
 
+    /* Active link left accent bar — more visible than the canvas-effects ripple.
+       The ripple (::before from canvas-effects.js) is fine for hover but the
+       .active state needs a bolder indicator. */
+    .sidebar a.active {
+      box-shadow: inset 3px 0 0 var(--theme-color);
+    }
+
     /* `8 problems` counts next to each pattern group — render as a quiet badge
        instead of raw monospace. */
     .sidebar code {
@@ -352,7 +403,31 @@
       white-space: nowrap;
     }
 
-    /* Pattern group headers in sidebar */
+    /* Pattern group headers: **Pattern N: Name** `count` 
+       These render as <strong> + <code> inside <li>. Style as a non-link row
+       that aligns with the links around it. */
+    .sidebar > ul > li > strong {
+      display: block;
+      font-size: 0.82em;
+      font-weight: 700;
+      color: var(--text-color);
+      padding: 0.6em 0.6em 0.25em;
+      margin-top: 0.4em;
+    }
+    .sidebar > ul > li > strong + code,
+    .sidebar > ul > li > code {
+      font-family: var(--base-font-family);
+      font-size: 0.7em;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--text-color-light);
+      background: var(--code-inline-background);
+      border-radius: 999px;
+      padding: 0.1em 0.5em;
+      white-space: nowrap;
+      margin-left: 0.2em;
+    }
+
     .sidebar .pattern-header {
       font-size: 0.7em;
       font-weight: 750;
@@ -367,7 +442,7 @@
       padding-top: 0;
     }
 
-    /* Top-level links */
+    /* Top-level link sizing */
     .sidebar > ul > li > a {
       font-weight: 550;
       font-size: 0.95em;
@@ -443,6 +518,14 @@
       isolation: isolate;
     }
 
+    /* Only apply centering flex when cover is visible — docsify hides .cover
+       without .show via display:none, so we must NOT force display here. */
+    .cover.show {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
     /* Effect canvases (assets/glyph-rain.js, assets/liquid.js). Layer 0 = fluid,
        layer 1 = glyph rain, layer 2 = readability scrim, layer 3 = text. */
     .cover-liquid-canvas,
@@ -474,11 +557,21 @@
       position: relative;
       z-index: 3;
       max-width: 680px;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* Cover book icon */
+    .cover .cover-main > p:first-child {
+      margin-bottom: 1.2em;
+    }
+    .cover .cover-main > p:first-child svg {
+      opacity: 0.9;
     }
 
     .cover h1 {
-      font-size: 3.5em;
-      margin-bottom: 0.2em;
+      font-size: 3.2em;
+      margin-bottom: 0.3em;
       border: none !important;
       font-weight: 800;
       letter-spacing: -0.03em;
@@ -493,43 +586,148 @@
       text-shadow: 0 2px 24px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.4);
     }
 
-    /* CTA button. Targeted by class rather than :last-child — the coverpage has
-       a badge line after the button, so a positional selector silently misses. */
+    /* Cover blockquote: the tagline */
+    .cover blockquote {
+      color: rgba(255,255,255,0.92) !important;
+      background: rgba(255,255,255,0.08);
+      border-left: none;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 1.4em 1.8em;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-size: 1.05em;
+      line-height: 1.8;
+      margin: 1.5em auto 0;
+      max-width: 520px;
+    }
+
+    .cover blockquote p {
+      margin: 0.3em 0;
+    }
+
+    /* CTA button */
+    .cover .cover-main .cover-cta {
+      margin-top: 2em;
+    }
     .cover .cover-main .cover-cta a {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 100px;
-      padding: 0.6em 2.2em;
+      padding: 0.75em 2.4em;
       font-weight: 600;
-      font-size: 0.95em;
-      border: 2px solid rgba(255,255,255,0.45);
+      font-size: 1em;
+      border: 1px solid rgba(255,255,255,0.3);
       color: #fff;
-      background: rgba(255,255,255,0.12);
-      backdrop-filter: blur(10px);
-      transition: all 0.2s ease;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.25s ease;
       letter-spacing: 0.02em;
       text-decoration: none;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
     }
 
     .cover .cover-main .cover-cta a:hover {
-      background: rgba(255,255,255,0.25);
-      border-color: rgba(255,255,255,0.7);
-      transform: translateY(-1px);
+      background: rgba(255,255,255,0.28);
+      border-color: rgba(255,255,255,0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
     }
 
+    .cover .cover-main .cover-cta a svg {
+      margin-right: 8px;
+      flex-shrink: 0;
+      pointer-events: none;
+    }
+
+    /* Badge: test status line */
     .cover .cover-badge {
-      color: rgba(255,255,255,0.78);
-      font-size: 0.85em;
-      margin-top: 1.4em;
+      color: rgba(255,255,255,0.75);
+      font-size: 0.82em;
+      margin-top: 1.6em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .cover .cover-badge svg {
+      color: #4ade80;
+      flex-shrink: 0;
     }
 
-    .cover blockquote {
-      color: rgba(255,255,255,0.92) !important;
-      background: rgba(255,255,255,0.1);
-      border-left: none;
-      border-radius: 12px;
-      padding: 1em 1.5em;
-      backdrop-filter: blur(10px);
-      font-size: 1.15em;
+    /* === SVG icon system === */
+    /* Inline SVG icons replace emojis everywhere — they use currentColor so
+       they automatically adapt to light/dark themes. */
+    .nav-icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 7px;
+      opacity: 0.65;
+      flex-shrink: 0;
+      transition: opacity 0.15s ease;
+    }
+    /* Fallback for browsers without :has() (older Safari) */
+    .sidebar > ul > li > a > .nav-icon:first-child {
+      vertical-align: -3px;
+    }
+    a:hover .nav-icon,
+    .sidebar a:hover .nav-icon {
+      opacity: 1;
+    }
+    .sidebar a.active .nav-icon {
+      opacity: 1;
+    }
+
+    /* Sidebar links with icons: use flexbox so icon + text align cleanly.
+       Only target links that contain an SVG icon — pattern sub-links and 
+       problem links don't have icons and should stay block layout. */
+    .sidebar > ul > li > a:has(> svg) {
+      display: flex !important;
+      align-items: center;
+      padding-left: 0.6em;
+    }
+
+    .btn-icon {
+      width: 20px;
+      height: 20px;
+      display: block;
+    }
+
+    /* Sidebar header icon (docsify name area) */
+    .app-name-link svg,
+    .app-name-link .nav-icon {
+      width: 22px;
+      height: 22px;
+      vertical-align: -5px;
+      margin-right: 4px;
+      opacity: 0.85;
+    }
+
+    /* Sidebar section headers with icons — these are <p> tags inside the
+       sidebar list, so override docsify's default <p> margins. */
+    .sidebar p.section-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.68em;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-color-light);
+      padding: 1.4em 0.6em 0.4em;
+      margin: 0 !important;
+      list-style: none;
+    }
+    .sidebar p.section-header svg {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+      opacity: 0.55;
+    }
+    .sidebar p.section-header:first-child {
+      padding-top: 0;
     }
 
     /* === Dark mode toggle === */
@@ -646,7 +844,15 @@
         font-size: 2.2em;
       }
       .cover .cover-main {
-        padding: 0 1.25rem;
+        padding: 1rem 1.25rem;
+      }
+      .cover .cover-main > p:first-child svg {
+        width: 40px !important;
+        height: 40px !important;
+      }
+      .cover blockquote {
+        font-size: 0.95em;
+        padding: 1em 1.2em;
       }
       /* Let wide comparison tables scroll instead of forcing the page wider. */
       .markdown-section table {
@@ -681,7 +887,7 @@
 
     // Docsify config
     window.$docsify = {
-      name: '📘 LeetCode Textbook',
+      name: '<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> LeetCode Textbook',
       repo: '',
       loadSidebar: true,
       subMaxLevel: 3,
@@ -699,9 +905,9 @@
         hideOtherSidebarContent: false,
       },
       copyCode: {
-        buttonText: '📋 Copy',
+        buttonText: '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-3px;margin-right:4px;width:14px;height:14px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy',
         errorText: 'Copy failed',
-        successText: '✓ Copied!',
+        successText: '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-3px;margin-right:4px;width:14px;height:14px;"><polyline points="20 6 9 17 4 12"/></svg>Copied!',
       },
       'flexible-alerts': {
         style: 'flat',
@@ -822,18 +1028,22 @@
             const btn = document.createElement('button');
             btn.className = 'dark-mode-toggle';
             btn.title = 'Toggle dark mode';
-            btn.innerHTML = document.documentElement.classList.contains('dark-mode') ? '☀️' : '🌙';
+            btn.innerHTML = document.documentElement.classList.contains('dark-mode')
+              ? '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+              : '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
             btn.onclick = function() {
               const isDark = document.documentElement.classList.toggle('dark-mode');
               localStorage.setItem(darkModeKey, isDark);
-              btn.innerHTML = isDark ? '☀️' : '🌙';
+              btn.innerHTML = isDark
+                ? '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+                : '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
             };
             document.body.appendChild(btn);
 
             // Back to top button
             const btt = document.createElement('button');
             btt.className = 'back-to-top';
-            btt.innerHTML = '⬆';
+            btt.innerHTML = '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
             btt.title = 'Back to top';
             btt.onclick = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
             document.body.appendChild(btt);
@@ -864,6 +1074,67 @@
               }
             });
 
+            // === Sidebar scroll-spy ===
+            // docsify-themeable adds .active to the <li> (not <a>). docsify marks
+            // the last heading's <li> as active and never clears it. We use our
+            // own .scrollspy-active class on the <li> and neutralize the theme's
+            // li.active styling via CSS.
+            (function setupScrollSpy() {
+              if (window._scrollSpyHandler) {
+                window.removeEventListener('scroll', window._scrollSpyHandler);
+              }
+
+              var headings = document.querySelectorAll('.markdown-section h2[id], .markdown-section h3[id]');
+              if (!headings.length) return;
+
+              // Map heading IDs to their sidebar <li> elements
+              var headingMap = [];
+              headings.forEach(function(h) {
+                var id = h.getAttribute('id');
+                // Use $= (ends-with) not *= (contains) so 'id=problem' 
+                // doesn't match '?id=problems-in-this-section'
+                var link = document.querySelector('.sidebar a[href$="?id=' + id + '"]');
+                if (link && link.parentElement) {
+                  headingMap.push({ heading: h, li: link.parentElement });
+                }
+              });
+              if (!headingMap.length) return;
+
+              function updateActive() {
+                // Clear our class from all tracked <li>s
+                headingMap.forEach(function(item) {
+                  item.li.classList.remove('scrollspy-active');
+                });
+
+                // Find the heading currently in view
+                var activeIdx = -1;
+                var offset = 100;
+                for (var i = headingMap.length - 1; i >= 0; i--) {
+                  if (headingMap[i].heading.getBoundingClientRect().top <= offset) {
+                    activeIdx = i;
+                    break;
+                  }
+                }
+                if (activeIdx >= 0) {
+                  headingMap[activeIdx].li.classList.add('scrollspy-active');
+                }
+              }
+
+              var ticking = false;
+              window._scrollSpyHandler = function() {
+                if (!ticking) {
+                  requestAnimationFrame(function() {
+                    updateActive();
+                    ticking = false;
+                  });
+                  ticking = true;
+                }
+              };
+              window.addEventListener('scroll', window._scrollSpyHandler, { passive: true });
+              setTimeout(updateActive, 200);
+              setTimeout(updateActive, 600);
+            })();
+
             // === Canvas effects integration ===
             // Trigger route change in canvas-effects.js
             if (window.CanvasEffects) {
@@ -875,10 +1146,14 @@
               const fxBtn = document.createElement('button');
               fxBtn.className = 'effects-toggle';
               fxBtn.title = 'Toggle canvas effects';
-              fxBtn.innerHTML = window.CanvasEffects.effectsEnabled ? '✨' : '⬜';
+              fxBtn.innerHTML = window.CanvasEffects.effectsEnabled
+                ? '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z"/><path d="M19 14l.75 2.5L22 17l-2.25.5L19 20l-.75-2.5L16 17l2.25-.5z"/></svg>'
+                : '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"><path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
               fxBtn.onclick = function() {
                 window.CanvasEffects.toggleEffects();
-                fxBtn.innerHTML = window.CanvasEffects.effectsEnabled ? '✨' : '⬜';
+                fxBtn.innerHTML = window.CanvasEffects.effectsEnabled
+                  ? '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z"/><path d="M19 14l.75 2.5L22 17l-2.25.5L19 20l-.75-2.5L16 17l2.25-.5z"/></svg>'
+                  : '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"><path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
               };
               document.body.appendChild(fxBtn);
             }
