@@ -681,8 +681,9 @@
     }
 
     /* Sidebar links with icons: use flexbox so icon + text align cleanly.
-       Only target links that contain an SVG icon — pattern sub-links and 
-       problem links don't have icons and should stay block layout. */
+       .has-nav-icon is added by JS (darkModeToggle plugin) for cross-browser
+       compat — :has() is not supported on older browsers. */
+    .sidebar > ul > li > a.has-nav-icon,
     .sidebar > ul > li > a:has(> svg) {
       display: flex !important;
       align-items: center;
@@ -693,6 +694,15 @@
       width: 20px;
       height: 20px;
       display: block;
+    }
+
+    /* Copy-code button icon: inline, small, aligned with button text */
+    .copy-btn-icon {
+      display: inline;
+      width: 14px;
+      height: 14px;
+      vertical-align: -3px;
+      margin-right: 4px;
     }
 
     /* Sidebar header icon (docsify name area) */
@@ -887,7 +897,7 @@
 
     // Docsify config
     window.$docsify = {
-      name: '<svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> LeetCode Textbook',
+      name: '<svg class="nav-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> LeetCode Textbook',
       repo: '',
       loadSidebar: true,
       subMaxLevel: 3,
@@ -905,9 +915,9 @@
         hideOtherSidebarContent: false,
       },
       copyCode: {
-        buttonText: '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-3px;margin-right:4px;width:14px;height:14px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy',
+        buttonText: '<svg class="copy-btn-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy',
         errorText: 'Copy failed',
-        successText: '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-3px;margin-right:4px;width:14px;height:14px;"><polyline points="20 6 9 17 4 12"/></svg>Copied!',
+        successText: '<svg class="copy-btn-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Copied!',
       },
       'flexible-alerts': {
         style: 'flat',
@@ -1018,41 +1028,51 @@
         },
         function darkModeToggle(hook, vars) {
           hook.doneEach(function() {
-            // Remove existing toggle
-            const existing = document.querySelector('.dark-mode-toggle');
-            const existingBtt = document.querySelector('.back-to-top');
-            if (existing) existing.remove();
-            if (existingBtt) existingBtt.remove();
+            function updateDarkModeIcon(btn) {
+              btn.innerHTML = document.documentElement.classList.contains('dark-mode')
+                ? '<svg class="btn-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+                : '<svg class="btn-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+            }
 
-            // Create dark mode toggle button
-            const btn = document.createElement('button');
-            btn.className = 'dark-mode-toggle';
-            btn.title = 'Toggle dark mode';
-            btn.innerHTML = document.documentElement.classList.contains('dark-mode')
-              ? '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
-              : '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-            btn.onclick = function() {
-              const isDark = document.documentElement.classList.toggle('dark-mode');
-              localStorage.setItem(darkModeKey, isDark);
-              btn.innerHTML = isDark
-                ? '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
-                : '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-            };
-            document.body.appendChild(btn);
+            // Dark mode toggle: create once, reuse on subsequent navigations
+            let btn = document.querySelector('.dark-mode-toggle');
+            if (!btn) {
+              btn = document.createElement('button');
+              btn.className = 'dark-mode-toggle';
+              btn.title = 'Toggle dark mode';
+              btn.onclick = function() {
+                const isDark = document.documentElement.classList.toggle('dark-mode');
+                localStorage.setItem(darkModeKey, isDark);
+                updateDarkModeIcon(btn);
+              };
+              document.body.appendChild(btn);
+            }
+            updateDarkModeIcon(btn);
 
-            // Back to top button
-            const btt = document.createElement('button');
-            btt.className = 'back-to-top';
-            btt.innerHTML = '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
-            btt.title = 'Back to top';
-            btt.onclick = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
-            document.body.appendChild(btt);
+            // Back to top: create once, reuse on subsequent navigations
+            let btt = document.querySelector('.back-to-top');
+            if (!btt) {
+              btt = document.createElement('button');
+              btt.className = 'back-to-top';
+              btt.title = 'Back to top';
+              btt.innerHTML = '<svg class="btn-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
+              btt.onclick = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+              document.body.appendChild(btt);
+            }
 
             window.addEventListener('scroll', function() {
               if (window.scrollY > 400) {
                 btt.classList.add('visible');
               } else {
                 btt.classList.remove('visible');
+              }
+            });
+
+            // Add flex class to sidebar nav links that contain SVG icons.
+            // This replaces reliance on :has() which lacks older browser support.
+            document.querySelectorAll('.sidebar > ul > li > a').forEach(function(link) {
+              if (link.querySelector('svg.nav-icon')) {
+                link.classList.add('has-nav-icon');
               }
             });
 
@@ -1140,22 +1160,24 @@
             if (window.CanvasEffects) {
               window.CanvasEffects.onRouteChange();
 
-              // Add effects toggle button (next to dark mode toggle)
-              const existingFx = document.querySelector('.effects-toggle');
-              if (existingFx) existingFx.remove();
-              const fxBtn = document.createElement('button');
-              fxBtn.className = 'effects-toggle';
-              fxBtn.title = 'Toggle canvas effects';
-              fxBtn.innerHTML = window.CanvasEffects.effectsEnabled
-                ? '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z"/><path d="M19 14l.75 2.5L22 17l-2.25.5L19 20l-.75-2.5L16 17l2.25-.5z"/></svg>'
-                : '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"><path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
-              fxBtn.onclick = function() {
-                window.CanvasEffects.toggleEffects();
+              // Add effects toggle: create once, reuse on subsequent navigations
+              function updateFxIcon(fxBtn) {
                 fxBtn.innerHTML = window.CanvasEffects.effectsEnabled
-                  ? '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z"/><path d="M19 14l.75 2.5L22 17l-2.25.5L19 20l-.75-2.5L16 17l2.25-.5z"/></svg>'
-                  : '<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"><path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
-              };
-              document.body.appendChild(fxBtn);
+                  ? '<svg class="btn-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z"/><path d="M19 14l.75 2.5L22 17l-2.25.5L19 20l-.75-2.5L16 17l2.25-.5z"/></svg>'
+                  : '<svg class="btn-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.4"><path d="M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+              }
+              let fxBtn = document.querySelector('.effects-toggle');
+              if (!fxBtn) {
+                fxBtn = document.createElement('button');
+                fxBtn.className = 'effects-toggle';
+                fxBtn.title = 'Toggle canvas effects';
+                fxBtn.onclick = function() {
+                  window.CanvasEffects.toggleEffects();
+                  updateFxIcon(fxBtn);
+                };
+                document.body.appendChild(fxBtn);
+              }
+              updateFxIcon(fxBtn);n);
             }
           });
         }
