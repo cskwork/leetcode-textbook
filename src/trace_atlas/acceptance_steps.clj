@@ -20,6 +20,14 @@
       (throw (ex-info (str "Expected a positive finite number, got: " value) {:value value})))
     number))
 
+(def three-to-one-pairs
+  #{["--ta-control-rule" "--ta-paper-raised"]
+    ["--ta-search-glyph-ink" "--search-input-background-color"]
+    ["--search-clear-icon-color1" "--search-clear-icon-color2"]})
+
+(defn required-contrast [foreground background]
+  (if (contains? three-to-one-pairs [foreground background]) 3.0 4.5))
+
 (defn step-handler [text]
   (or
    (when (= text "the TRACE ATLAS theme stylesheet and learning shell are loaded")
@@ -31,12 +39,23 @@
    (when-let [[_ foreground background theme]
               (re-matches #"I resolve \"([^\"]+)\" against \"([^\"]+)\" in the \"([^\"]+)\" theme" text)]
      (fn [{:keys [stylesheet] :as world}]
-       (assoc world :contrast (contract/contrast-for stylesheet theme foreground background))))
+       (assoc world
+              :contrast (contract/contrast-for stylesheet theme foreground background)
+              :foreground foreground
+              :background background)))
 
    (when-let [[_ minimum]
               (re-matches #"the source-level contrast ratio is at least \"([^\"]+)\"" text)]
-     (fn [{:keys [contrast] :as world}]
-       (let [threshold (parse-positive-number minimum)]
+     (fn [{:keys [contrast foreground background] :as world}]
+       (let [threshold (parse-positive-number minimum)
+             required (required-contrast foreground background)]
+         (when-not (= required threshold)
+           (throw (ex-info (format "Contrast contract for %s on %s must be %.1f, got %.2f"
+                                   foreground background required threshold)
+                           {:foreground foreground
+                            :background background
+                            :minimum threshold
+                            :required required})))
          (when (or (nil? contrast) (< contrast threshold))
            (throw (ex-info (format "Contrast %.2f is below %.2f" (or contrast 0.0) threshold)
                            {:contrast contrast :minimum threshold})))
@@ -135,3 +154,7 @@
                  (re-find #"detail\.setAttribute\(['\"]open" shell))
          (throw (ex-info "Checkpoint restoration must not force the disclosure open" {})))
        world))))
+
+;; clj-mutate-manifest-begin
+;; {:version 1, :tested-at "2026-08-11T01:02:16.918658+09:00", :module-hash "152406198", :forms [{:id "form/0/ns", :kind "ns", :line 1, :end-line 3, :hash "-900386403"} {:id "defn/require-fragments!", :kind "defn", :line 5, :end-line 9, :hash "1883487050"} {:id "defn/rule-body", :kind "defn", :line 11, :end-line 15, :hash "-376294777"} {:id "defn/parse-positive-number", :kind "defn", :line 17, :end-line 21, :hash "1063838340"} {:id "def/three-to-one-pairs", :kind "def", :line 23, :end-line 26, :hash "1025725968"} {:id "defn/required-contrast", :kind "defn", :line 28, :end-line 29, :hash "-75388106"} {:id "defn/step-handler", :kind "defn", :line 31, :end-line 156, :hash "-771570408"}]}
+;; clj-mutate-manifest-end

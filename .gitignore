@@ -16,6 +16,7 @@ build/
 out/
 target/
 tmp/
+.cpcache/
 
 # OS junk
 Thumbs.db

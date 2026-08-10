@@ -16,6 +16,14 @@
     (should= "#f5efd9" (contract/resolve-property stylesheet "dark" "--ta-ink"))
     (should= "#173d32" (contract/resolve-property stylesheet "light" "--ta-ink")))
 
+  (it "resolves nested color tokens and rejects circular token references"
+    (should= "#ffffff" (contract/resolve-value {"--ink" "#ffffff"} "var(--ink)" #{}))
+    (should= :rejected
+             (try
+               (contract/resolve-value {"--ink" "var(--ink)"} "var(--ink)" #{})
+               :accepted
+               (catch Exception _ :rejected))))
+
   (it "keeps fixed cream and saffron action surfaces readable in every theme"
     (let [ink (custom-property "--ta-fixed-action-ink")
           cream (custom-property "--ta-fixed-action-cream")

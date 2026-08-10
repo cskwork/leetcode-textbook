@@ -66,3 +66,7 @@
 
 (defn contains-all? [source fragments]
   (every? #(str/includes? source %) fragments))
+
+;; clj-mutate-manifest-begin
+;; {:version 1, :tested-at "2026-08-11T00:59:39.400777+09:00", :module-hash "-859212648", :forms [{:id "form/0/ns", :kind "ns", :line 1, :end-line 2, :hash "-379301843"} {:id "defn/declarations", :kind "defn", :line 4, :end-line 7, :hash "681897191"} {:id "defn/block-body", :kind "defn", :line 9, :end-line 11, :hash "-1019325734"} {:id "defn/theme-properties", :kind "defn", :line 13, :end-line 23, :hash "474299566"} {:id "defn/resolve-value", :kind "defn", :line 25, :end-line 35, :hash "184019936"} {:id "defn/resolve-property", :kind "defn", :line 37, :end-line 41, :hash "-470235103"} {:id "defn/hex-channel", :kind "defn", :line 43, :end-line 44, :hash "-1964897212"} {:id "defn/linear-channel", :kind "defn", :line 46, :end-line 50, :hash "-465873462"} {:id "defn/luminance", :kind "defn", :line 52, :end-line 56, :hash "-1830221655"} {:id "defn/contrast", :kind "defn", :line 58, :end-line 61, :hash "-1998225452"} {:id "defn/contrast-for", :kind "defn", :line 63, :end-line 65, :hash "2134119718"} {:id "defn/contains-all?", :kind "defn", :line 67, :end-line 68, :hash "239036841"}]}
+;; clj-mutate-manifest-end

@@ -26,11 +26,29 @@
                :accepted
                (catch Exception _ :rejected))))
 
+  (it "validates CLI arity without terminating the test process"
+    (should= ["input.json" "generated"]
+             (generator/validated-args ["input.json" "generated"]))
+    (let [error (try
+                  (generator/validated-args ["input.json"])
+                  nil
+                  (catch Exception error error))]
+      (should-not-be-nil error)
+      (should= 2 (generator/error-exit-code error))
+      (should= generator/usage (generator/error-message error))))
+
+  (it "uses a failure exit code for generation errors"
+    (let [error (ex-info "generation failed" {})]
+      (should= 1 (generator/error-exit-code error))
+      (should= "generation failed" (generator/error-message error))))
+
   (it "generates a thin Babashka executable that delegates to the shared runtime"
     (let [entrypoint (generator/entrypoint-source "build/acceptance/theme.json")]
       (should-contain "trace-atlas.acceptance-runtime" entrypoint)
       (should-contain "trace-atlas.acceptance-steps" entrypoint)
       (should-contain "runtime/run-feature!" entrypoint)
       (should-contain "steps/step-handler" entrypoint)
+      (should-contain ";; acceptance-dependencies sha256:" entrypoint)
+      (should-contain "(first *command-line-args*)" entrypoint)
       (should-contain "build/acceptance/theme.json" entrypoint)
       (should-not-contain "gherkin" entrypoint))))

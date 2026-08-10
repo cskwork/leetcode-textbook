@@ -1,3 +1,8 @@
+# mutation-stamp: sha256=bc546520d11493217a60982a440ee1e1847e679783db0a1326938f30889120db
+# acceptance-mutation-manifest-begin
+# {"version":1,"tested_at":"2026-08-10T16:05:52.805013Z","feature_name":"TRACE ATLAS source contracts","feature_path":"acceptance/trace-atlas-source-contracts.feature","background_hash":"3c1f5a90c2306c8ba3e30cb9f451d440f3e99bc0cdbd30dace2079d838ff5ffa","implementation_hash":"sha256:1846daf1feddcb2b1b7a180a1fb858f8fc8cd80f0cc2d15b7497e5834929dc5d","scenarios":[{"index":0,"name":"Semantic theme pairs meet their source-level contrast contract","scenario_hash":"7a9362902e48aced23c371eab43f8b568636edeebcb66d25c06768a3ed120c7d","mutation_count":112,"result":{"Total":112,"Killed":112,"Survived":0,"Errors":0},"tested_at":"2026-08-10T15:56:22.390427Z"}]}
+# acceptance-mutation-manifest-end
+
 Feature: TRACE ATLAS source contracts
   Background:
     Given the TRACE ATLAS theme stylesheet and learning shell are loaded
