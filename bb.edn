@@ -1,0 +1,16 @@
+{:paths ["src" "spec"]
+ :mvn/local-repo ".swarmforge/m2"
+ :deps {speclj/speclj {:mvn/version "3.13.0"}}
+ :tasks
+ {spec {:doc "Run focused Babashka unit specs"
+        :requires ([speclj.main :as speclj])
+        :task (apply speclj/-main "-c" "spec" *command-line-args*)}
+  gherkin-parser
+  {:doc "Parse a feature with the pinned upstream APS parser"
+   :task (apply shell "scripts/run-aps-tool.sh" "gherkin-parser" *command-line-args*)}
+  acceptance-entrypoint-generator
+  {:doc "Generate a TRACE ATLAS acceptance entrypoint"
+   :requires ([trace-atlas.acceptance-generator :as generator])
+   :task (apply generator/-main *command-line-args*)}
+  acceptance {:doc "Parse, generate, and run the acceptance feature"
+              :task (shell "bash scripts/run-acceptance.sh")}}}

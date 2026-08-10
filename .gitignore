@@ -15,6 +15,7 @@
 build/
 out/
 target/
+tmp/
 
 # OS junk
 Thumbs.db

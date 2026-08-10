@@ -37,6 +37,7 @@
   var activeDialog = null;
   var dialogOpener = null;
   var inertSiblings = [];
+  var themeSwitchFrame = null;
 
   function makeDefaultState() {
     return {
@@ -923,11 +924,24 @@
     }
   }
 
+  function switchThemeWithoutTransition(theme) {
+    var root = document.documentElement;
+    if (themeSwitchFrame !== null) window.cancelAnimationFrame(themeSwitchFrame);
+    root.classList.add('ta-theme-switching');
+    applyTheme(theme);
+    themeSwitchFrame = window.requestAnimationFrame(function () {
+      themeSwitchFrame = window.requestAnimationFrame(function () {
+        root.classList.remove('ta-theme-switching');
+        themeSwitchFrame = null;
+      });
+    });
+  }
+
   function toggleTheme() {
     var current = document.documentElement.getAttribute('data-ta-theme') || preferredTheme();
     var next = current === 'dark' ? 'light' : 'dark';
     safeSet(THEME_KEY, next);
-    applyTheme(next);
+    switchThemeWithoutTransition(next);
   }
 
   function ensureThemeToggle() {
@@ -1088,7 +1102,7 @@
     });
     window.addEventListener('storage', function (event) {
       if (event.key !== STORAGE_KEY && event.key !== THEME_KEY) return;
-      if (event.key === THEME_KEY) applyTheme(preferredTheme());
+      if (event.key === THEME_KEY) switchThemeWithoutTransition(preferredTheme());
       if (event.key === STORAGE_KEY) {
         volatileState = makeDefaultState();
         enhanceSidebar(currentModels);
