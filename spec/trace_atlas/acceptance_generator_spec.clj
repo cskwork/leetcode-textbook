@@ -29,6 +29,8 @@
   (it "generates a thin Babashka executable that delegates to the shared runtime"
     (let [entrypoint (generator/entrypoint-source "build/acceptance/theme.json")]
       (should-contain "trace-atlas.acceptance-runtime" entrypoint)
+      (should-contain "trace-atlas.acceptance-steps" entrypoint)
       (should-contain "runtime/run-feature!" entrypoint)
+      (should-contain "steps/step-handler" entrypoint)
       (should-contain "build/acceptance/theme.json" entrypoint)
       (should-not-contain "gherkin" entrypoint))))

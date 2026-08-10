@@ -14,8 +14,9 @@
 
 (defn entrypoint-source [ir-path]
   (str "#!/usr/bin/env bb\n"
-       "(require '[trace-atlas.acceptance-runtime :as runtime])\n\n"
-       "(runtime/run-feature! " (pr-str ir-path) ")\n"))
+       "(require '[trace-atlas.acceptance-runtime :as runtime]\n"
+       "         '[trace-atlas.acceptance-steps :as steps])\n\n"
+       "(runtime/run-feature! " (pr-str ir-path) " steps/step-handler)\n"))
 
 (defn sha256 [value]
   (let [digest (java.security.MessageDigest/getInstance "SHA-256")]
