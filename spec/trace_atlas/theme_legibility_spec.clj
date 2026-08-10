@@ -4,6 +4,7 @@
 
 (def stylesheet (slurp "assets/atlas-theme.css"))
 (def shell-script (slurp "assets/atlas-shell.js"))
+(def ui-qa-runner (slurp "scripts/run-trace-atlas-theme-legibility-ui-qa.sh"))
 
 (defn custom-property [name]
   (contract/resolve-property stylesheet "light" name))
@@ -82,6 +83,17 @@
     (should-contain "markCheckpointRevealed(route, id)" shell-script)
     (should-be-nil (re-find #"detail\.open\s*=" shell-script))
     (should-be-nil (re-find #"detail\.setAttribute\(['\"]open" shell-script)))
+
+  (it "returns focus to the walkthrough dialog if iframe traversal escapes"
+    (should-contain "function watchDialogFocus()" shell-script)
+    (should-contain "activeDialog.contains(document.activeElement)" shell-script)
+    (should-contain "activeDialog === overlay && !overlay.contains(document.activeElement)" shell-script)
+    (should-contain "window.requestAnimationFrame(keepFocusInside)" shell-script)
+    (should-contain "window.cancelAnimationFrame(dialogFocusFrame)" shell-script))
+
+  (it "keeps the real-browser focus regression executable with the proven helper"
+    (should-contain "pressKey('Tab')" ui-qa-runner)
+    (should-be-nil (re-find #"dispatchKey" ui-qa-runner)))
 
   (it "removes both duration and delay under reduced motion"
     (should-contain "animation-delay: 0s !important;" stylesheet)

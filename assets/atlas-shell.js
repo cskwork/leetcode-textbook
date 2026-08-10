@@ -36,6 +36,7 @@
   var currentModels = { patterns: [], lessons: [], lessonByRoute: {} };
   var activeDialog = null;
   var dialogOpener = null;
+  var dialogFocusFrame = null;
   var inertSiblings = [];
   var themeSwitchFrame = null;
 
@@ -758,6 +759,9 @@
       frame.loading = 'lazy';
       frame.setAttribute('sandbox', 'allow-scripts');
       frame.src = source;
+      frame.addEventListener('load', function () {
+        if (activeDialog === overlay && !overlay.contains(document.activeElement)) close.focus();
+      });
       body.appendChild(frame);
     } else {
       var fallback = createElement('div', 'ta-dialog__fallback');
@@ -783,10 +787,15 @@
     document.body.classList.add('ta-dialog-open');
     activeDialog = overlay;
     close.focus();
+    watchDialogFocus();
   }
 
   function closeWalkthrough() {
     if (!activeDialog) return;
+    if (dialogFocusFrame !== null) {
+      window.cancelAnimationFrame(dialogFocusFrame);
+      dialogFocusFrame = null;
+    }
     var restore = dialogOpener;
     activeDialog.remove();
     activeDialog = null;
@@ -1054,6 +1063,22 @@
       event.preventDefault();
       first.focus();
     }
+  }
+
+  function watchDialogFocus() {
+    if (dialogFocusFrame !== null) window.cancelAnimationFrame(dialogFocusFrame);
+    function keepFocusInside() {
+      if (!activeDialog) {
+        dialogFocusFrame = null;
+        return;
+      }
+      if (!activeDialog.contains(document.activeElement)) {
+        var focusables = focusableElements(activeDialog);
+        if (focusables.length) focusables[0].focus();
+      }
+      dialogFocusFrame = window.requestAnimationFrame(keepFocusInside);
+    }
+    dialogFocusFrame = window.requestAnimationFrame(keepFocusInside);
   }
 
   function syncExplicitStation() {

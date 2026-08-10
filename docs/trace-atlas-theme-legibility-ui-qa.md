@@ -5,6 +5,7 @@ This suite exercises only browser-visible controls and pages. It does not call a
 ## Test setup
 
 - Use an isolated real Chromium context against `http://127.0.0.1:8765`.
+- Run `scripts/run-trace-atlas-theme-legibility-ui-qa.sh` against the dedicated server to execute the repeatable Ego Browser checks and worktree-to-HTTP hash guard.
 - Run every applicable case at 1440×900 and 390×844 CSS pixels.
 - Test dark and light themes using the visible theme control. Start each theme run with a reload to verify persistence.
 - Record uncaught exceptions, unhandled rejections, `console.error`, and failed resources from first navigation through the final dialog close.
