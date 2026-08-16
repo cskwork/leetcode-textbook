@@ -23,3 +23,6 @@ Thumbs.db
 .swarmforge/
 .worktrees/
 swarmforge/scripts/
+
+# Browser QA session artifacts
+.playwright-cli/

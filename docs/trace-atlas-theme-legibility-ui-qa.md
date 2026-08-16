@@ -2,6 +2,17 @@
 
 This suite exercises only browser-visible controls and pages. It does not call a project API or mutate storage directly.
 
+> **2026-08-16 Expedition redesign.** The lesson surface now defaults to the
+> step-by-step Lesson Player; the old lesson toolbar became the lesson brief,
+> and the pattern cards became unit paths (see
+> [changelog-2026-08-16.md](./changelog-2026-08-16.md)). The runner
+> `scripts/run-trace-atlas-theme-legibility-ui-qa.sh` was updated accordingly:
+> it pins Reading Mode per check (steps geometry in step mode, station rail,
+> copy control, and keyboard flows in one-page mode), asserts 16 units and 100
+> lesson nodes on the dashboard, and force-finishes frozen CSS transitions
+> before asserting the mobile sidebar position. The section prose below
+> documents the pre-redesign July runs and is kept as historical evidence.
+
 ## Test setup
 
 - Use an isolated real Chromium context against `http://127.0.0.1:8765`.

@@ -31,3 +31,23 @@ _Avoid_: Reading progress, mastery
 **Interactive Walkthrough**:
 An optional step-by-step visualization backed by a real visualization file for a specific Problem Lesson.
 _Avoid_: Animation, demo
+
+**Lesson Player**:
+The guided presentation of a Problem Lesson that shows one Step at a time behind a progress bar. The Markdown stays the source of truth; the player only reveals it little by little.
+_Avoid_: Wizard, slideshow
+
+**Step**:
+One bite-size segment of a Problem Lesson inside the Lesson Player. Every Learning Station is a Step; Warm-up, The problem, Traps, and Next up are Steps too.
+_Avoid_: Slide, page
+
+**Reading Mode**:
+The learner's device-local choice between the step-by-step Lesson Player and the one-page scroll view. Both render the same Markdown.
+_Avoid_: Layout, display setting
+
+**XP**:
+Device-local reward points for finishing Problem Lessons and first-time Checkpoint reveals. XP makes small sessions feel rewarding; it does not prove mastery.
+_Avoid_: Score, grade
+
+**Streak**:
+The count of consecutive local days with learning activity. A streak survives until a full day is missed.
+_Avoid_: Combo, chain

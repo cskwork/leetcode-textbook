@@ -44,6 +44,21 @@ async function ensureTheme(theme, route) {
   check(await js(`document.documentElement.dataset.taTheme`) === theme, 'theme did not persist after reload')
 }
 
+// Reading Mode is a persisted learner preference; lesson checks pin the mode
+// they need instead of assuming a fresh profile. The shell enhances the
+// article after Docsify's doneEach, so wait for the chrome before deciding.
+async function setMode(mode) {
+  for (let attempt = 0; attempt < 40 && !(await js(`!!document.querySelector('.ta-view-toggle')`)); attempt += 1) await wait(0.15)
+  check(await js(`!!document.querySelector('.ta-view-toggle')`), 'lesson chrome did not enhance')
+  const wantSteps = mode === 'steps'
+  if (await js(`!!document.querySelector('.ta-quest-bar__track')`) !== wantSteps) {
+    await js(`window.scrollTo(0, 0)`)
+    await click('.ta-view-toggle', { label: 'switch reading mode' })
+    for (let attempt = 0; attempt < 20 && (await js(`!!document.querySelector('.ta-quest-bar__track')`)) !== wantSteps; attempt += 1) await wait(0.15)
+  }
+  check(await js(`!!document.querySelector('.ta-quest-bar__track')`) === wantSteps, 'reading mode did not switch to ' + mode)
+}
+
 const contrastExpression = String.raw`(() => {
   const parse = value => { const match = value.match(/[\d.]+/g); if (!match) return [0,0,0,0]; const n = match.map(Number); return [n[0],n[1],n[2],n.length > 3 ? n[3] : 1] }
   const over = (fg,bg) => { const a = fg[3] + bg[3] * (1 - fg[3]); return [(fg[0]*fg[3] + bg[0]*bg[3]*(1-fg[3]))/a,(fg[1]*fg[3] + bg[1]*bg[3]*(1-fg[3]))/a,(fg[2]*fg[3] + bg[2]*bg[3]*(1-fg[3]))/a,a] }
@@ -69,6 +84,27 @@ async function contrast(label) {
   check(result.failures.length === 0, label + ': contrast failures ' + JSON.stringify(result.failures.slice(0, 4)))
   check(result.overflow <= 0, label + ': document overflow ' + result.overflow)
   return result.minimum
+}
+
+// The ego environment can freeze the CSS transition clock, leaving a
+// transition-driven surface (like the mobile sidebar slide) stuck at its
+// start frame forever. Force running transitions to their end state so the
+// checks measure the settled UI, not a frozen first frame.
+async function settleMotion() {
+  await js(`document.getAnimations().forEach(a => { try { a.finish() } catch (e) {} })`)
+  await wait(0.05)
+}
+
+async function stepsGeometry(label) {
+  const result = await js(String.raw`(() => {
+    const steps=[...document.querySelectorAll('.ta-step')]
+    return {dots:document.querySelectorAll('.ta-step-dot').length,visible:steps.filter(s=>!s.hidden).length,total:steps.length,bar:!!document.querySelector('.ta-quest-bar__track'),continueButton:!!document.querySelector('.ta-btn--continue'),statuses:document.querySelectorAll('.ta-status-button').length,overflow:document.documentElement.scrollWidth-innerWidth}
+  })()`)
+  check(result.bar && result.continueButton, label + ': lesson player chrome missing')
+  check(result.total >= 8 && result.dots === result.total, label + ': expected one step dot per step')
+  check(result.visible === 1, label + ': expected exactly one visible step')
+  check(result.statuses === 3, label + ': expected three statuses')
+  check(result.overflow <= 0, label + ': steps overflow')
 }
 
 async function lessonGeometry(label) {
@@ -105,11 +141,15 @@ for (const [width,height,theme] of cases) {
   await viewport(width,height)
   await ensureTheme(theme,'#/')
   const rootMinimum=await contrast(`${width}x${height} ${theme} root`)
-  const root=await js(`({title:document.querySelector('.ta-dashboard h2')?.textContent||document.querySelector('h1')?.textContent,cards:document.querySelectorAll('.ta-pattern-card').length,overflow:document.documentElement.scrollWidth-innerWidth})`)
-  check(root.title && root.cards===16 && root.overflow<=0, 'cover/dashboard contract failed')
+  const root=await js(`({title:document.querySelector('.ta-dashboard h2')?.textContent||document.querySelector('h1')?.textContent,units:document.querySelectorAll('.ta-unit').length,nodes:document.querySelectorAll('.ta-node').length,overflow:document.documentElement.scrollWidth-innerWidth})`)
+  check(root.title && root.units===16 && root.nodes===100 && root.overflow<=0, 'cover/dashboard contract failed')
 
   await fresh(lessonRoute)
   await wait(0.6)
+  await setMode('steps')
+  const stepsMinimum=await contrast(`${width}x${height} ${theme} lesson steps`)
+  await stepsGeometry(`${width}x${height} ${theme} steps`)
+  await setMode('page')
   const lessonMinimum=await contrast(`${width}x${height} ${theme} lesson`)
   await lessonGeometry(`${width}x${height} ${theme}`)
 
@@ -136,11 +176,12 @@ for (const [width,height,theme] of cases) {
   check(await js(`window.top.document.querySelector('.ta-dialog').contains(window.top.document.activeElement)`), 'dialog focus escaped after repeated Tab traversal')
   await pressKey('Escape'); await wait(0.1)
   check(await js(`!window.top.document.querySelector('.ta-dialog') && window.top.document.activeElement===window.top.document.querySelector('.ta-walkthrough-button')`), 'dialog did not close and restore focus')
-  matrix.push({width,height,theme,rootMinimum,lessonMinimum})
+  matrix.push({width,height,theme,rootMinimum,stepsMinimum,lessonMinimum})
 }
 
 await viewport(1440,900)
 await ensureTheme('dark',lessonRoute)
+await setMode('page')
 await click('.ta-status-button[data-status="studying"]',{label:'set Studying status'})
 const checkpointOpen=await js(`document.querySelector('details[data-ta-checkpoint]').open`)
 if(!checkpointOpen) await click('details[data-ta-checkpoint] > summary',{label:'reveal checkpoint'})
@@ -185,6 +226,7 @@ await cdp('Emulation.setEmulatedMedia',{media:'screen',features:[{name:'prefers-
 const reduced=[]
 for(const [width,height,theme] of cases) {
   await viewport(width,height); await ensureTheme(theme,lessonRoute)
+  await setMode('page'); await fresh(lessonRoute)
   await pressKey('Tab')
   const skip=await js(`({isSkip:document.activeElement.classList.contains('ta-skip-link'),outline:getComputedStyle(document.activeElement).outlineWidth})`)
   await pressKey('Enter'); await wait(0.05)
@@ -192,9 +234,9 @@ for(const [width,height,theme] of cases) {
   await js(`document.querySelector('.ta-theme-toggle').focus()`); await pressKey('Enter'); await wait(0.05)
   await js(`document.querySelector('details[data-ta-checkpoint] > summary').focus()`); await pressKey('Enter'); await wait(0.05)
   if(width===390) {
-    await js(`document.querySelector('button[aria-label="Menu"]').focus()`); await pressKey('Enter'); await wait(0.05)
+    await js(`document.querySelector('button[aria-label="Menu"]').focus()`); await pressKey('Enter'); await wait(0.05); await settleMotion()
     check(await js(`document.querySelector('.sidebar').getBoundingClientRect().x`)>=-1,'reduced-motion sidebar did not open')
-    await js(`document.querySelector('button[aria-label="Menu"]').focus()`); await pressKey('Enter'); await wait(0.05)
+    await js(`document.querySelector('button[aria-label="Menu"]').focus()`); await pressKey('Enter'); await wait(0.05); await settleMotion()
   } else {
     await js(`document.querySelectorAll('.ta-pattern-toggle')[1].focus()`); await pressKey('Enter'); await wait(0.05)
   }

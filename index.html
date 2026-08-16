@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A pattern-first Java curriculum with 100 beginner-friendly LeetCode problem lessons across 16 reusable algorithm patterns.">
+  <meta name="description" content="Master LeetCode in tiny steps: 100 beginner-friendly Java problem lessons across 16 reusable patterns, taught one small step at a time.">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#f3eddf" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#16221b" media="(prefers-color-scheme: dark)">
-  <title>TRACE ATLAS — A pattern-first Java curriculum</title>
+  <title>TRACE ATLAS — Master LeetCode in tiny steps</title>
 
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23e64f2e' d='M5 5h22v22H5z'/%3E%3Cpath fill='%2316221b' d='M10 10h12v3H10zm0 5h8v3h-8zm0 5h12v3H10z'/%3E%3C/svg%3E">
 
@@ -51,8 +51,8 @@
   <div id="app" aria-busy="true">
     <main class="ta-loading" role="status" aria-live="polite" aria-labelledby="ta-loading-title">
       <p class="ta-loading__mark" aria-hidden="true">TA</p>
-      <h1 id="ta-loading-title">Opening the atlas…</h1>
-      <p>Loading the curriculum and your device-local lesson status.</p>
+      <h1 id="ta-loading-title">Setting up your path…</h1>
+      <p>Loading the curriculum and your device-local progress.</p>
     </main>
   </div>
 
@@ -101,6 +101,9 @@
 
   <!-- TRACE ATLAS enhancement must register before Docsify reads its config. -->
   <script src="assets/walkthrough-manifest.js" onerror="window.TraceAtlasDependencyError('Walkthrough capability map', false)"></script>
+  <!-- Optional canvas layer: Canvas UI GlyphRain on the cover plus completion confetti. -->
+  <script src="assets/glyph-rain.js" onerror="window.TraceAtlasDependencyError('Cover canvas effect', false)"></script>
+  <script src="assets/atlas-fx.js" onerror="window.TraceAtlasDependencyError('Canvas effects layer', false)"></script>
   <script src="assets/atlas-shell.js" onerror="window.TraceAtlasDependencyError('TRACE ATLAS shell', true)"></script>
   <script src="assets/docsify-config.js" onerror="window.TraceAtlasDependencyError('Docsify configuration', true)"></script>
 
