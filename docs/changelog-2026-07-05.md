@@ -9,7 +9,7 @@ shown alongside every Java solution.
 **Options considered.**
 1. Language: Python vs JavaScript vs Java vs C++ vs Python+second. **Chose Java** per user.
 2. Folder location: inside PARA/Resource vs a separate Projects folder. **Chose
-   `/Users/danny/Documents/PARA/Resource/leetcode-textbook/`** per user.
+   `/Users/<user>/Documents/PARA/Resource/leetcode-textbook/`** per user.
 3. Curation: pattern-structured vs Blind 75+25 vs NeetCode 150 subset vs top-100-by-acceptance.
    **Chose pattern-structured** (NeetCode-style 16-pattern map) per user.
 
